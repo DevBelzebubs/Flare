@@ -1,4 +1,4 @@
-package com.example.flare
+package com.social.flare
 
 import org.junit.Test
 

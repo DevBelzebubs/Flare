@@ -1,4 +1,4 @@
-package com.example.flare.ui.theme
+package com.social.flare.core.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
