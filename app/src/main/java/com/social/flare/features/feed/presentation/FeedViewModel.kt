@@ -33,7 +33,7 @@ class FeedViewModel : ViewModel() {
                     authorUsername = "@mitaka_asa",
                     authorAvatarUrl = null,
                     content = "Esa mezcla de monólogos internos constantes y análisis excesivo de la realidad te hace sentir un poco fuera de lugar a veces...",
-                    createdAt = System.currentTimeMillis() - 7200000, // Hace 2 horas
+                    createdAt = System.currentTimeMillis() - 7200000,
                     likesCount = 2451,
                     commentsCount = 342,
                     isLikedByMe = true
@@ -44,7 +44,7 @@ class FeedViewModel : ViewModel() {
                     authorDisplayName = "Mythos",
                     authorUsername = "@mythos_dev",
                     authorAvatarUrl = null,
-                    content = "Implementando la arquitectura hexagonal en el nuevo microservicio. Todo en orden por ahora.",
+                    content = "Estoy feliz con mi china miau.",
                     createdAt = System.currentTimeMillis() - 14400000,
                     likesCount = 128,
                     commentsCount = 15
