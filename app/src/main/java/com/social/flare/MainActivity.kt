@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.social.flare.core.ui.theme.FlareTheme
 import com.social.flare.features.feed.presentation.FeedScreen
+import com.social.flare.features.main.presentation.MainScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -23,11 +24,8 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             FlareTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    FeedScreen()
+                Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+                    MainScreen()
                 }
             }
         }
