@@ -25,7 +25,11 @@ import com.social.flare.features.feed.domain.model.Post
 @Composable
 fun PostCard(
     post: Post,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onLikeClick: () -> Unit = {},
+    onCommentClick: () -> Unit = {},
+    onSaveClick: () -> Unit = {},
+    onShareClick: () -> Unit = {}
 ) {
     Card(
         modifier = modifier
@@ -62,7 +66,8 @@ fun PostCard(
             HorizontalDivider(color = Color.DarkGray, thickness = 0.5.dp)
             Spacer(modifier = Modifier.height(4.dp))
 
-            PostActionButtons()
+            PostActionButtons(commentsCount = post.commentsCount, onLikeClick = onLikeClick, onCommentClick = onCommentClick,
+                onSaveClick = onSaveClick, onShareClick = onShareClick)
         }
     }
 }
@@ -143,25 +148,26 @@ private fun PostStats(likesCount: Int, commentsCount: Int) {
 }
 
 @Composable
-private fun PostActionButtons() {
+private fun PostActionButtons(commentsCount: Int, onLikeClick: () -> Unit,
+                              onCommentClick: () -> Unit, onSaveClick: () -> Unit, onShareClick: () -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = { /* Like */ }) {
+            IconButton(onClick = onLikeClick) {
                 Icon(Icons.Outlined.FavoriteBorder, contentDescription = "Like", tint = Color.White)
             }
-            IconButton(onClick = { /* Comentar */ }) {
+            IconButton(onClick = onCommentClick) {
                 Icon(Icons.Outlined.ChatBubbleOutline, contentDescription = "Comment", tint = Color.White)
             }
-            IconButton(onClick = { /* Compartir */ }) {
+            IconButton(onClick = onShareClick) {
                 Icon(Icons.Outlined.Send, contentDescription = "Share", tint = Color.White)
             }
         }
 
-        IconButton(onClick = { /* Guardar */ }) {
+        IconButton(onClick = onSaveClick) {
             Icon(Icons.Outlined.BookmarkBorder, contentDescription = "Save", tint = Color.White)
         }
     }

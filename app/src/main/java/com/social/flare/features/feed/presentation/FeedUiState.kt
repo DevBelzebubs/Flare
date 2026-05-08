@@ -5,5 +5,6 @@ import com.social.flare.features.feed.domain.model.Post
 data class FeedUiState(
     val isLoading: Boolean = false,
     val posts: List<Post> = emptyList(),
-    val error: String? = null
+    val error: String? = null,
+    val isGuest : Boolean = true
 )
