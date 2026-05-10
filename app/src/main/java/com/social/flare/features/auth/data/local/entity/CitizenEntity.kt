@@ -10,5 +10,6 @@ data class CitizenEntity(
     val username: String,
     val display_name: String,
     val avatar_url: String?,
+    val banner_url: String? = null,
     val bio: String?
 )

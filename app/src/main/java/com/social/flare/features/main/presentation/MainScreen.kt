@@ -13,6 +13,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -21,29 +22,38 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+
+// Importaciones cruciales de tus features y core
+import com.social.flare.core.navigation.Screen
 import com.social.flare.core.ui.components.AuthDialog
-import com.social.flare.features.feed.presentation.FeedScreen
-import com.social.flare.features.search.presentation.SearchScreen
 import com.social.flare.features.auth.presentation.LoginScreen
 import com.social.flare.features.auth.presentation.SignUpScreen
+import com.social.flare.features.feed.presentation.FeedScreen
+import com.social.flare.features.search.presentation.SearchScreen
 
-sealed class Screen(val route: String) {
-    object Feed : Screen("feed")
-    object Search : Screen("search")
-    object AddPost : Screen("add_post")
-    object Notifications : Screen("notifications")
-    object Profile : Screen("profile")
-    object Login : Screen("login")
-    object SignUp : Screen("signup")
-}
+// Importaciones NUEVAS para el Perfil
+import com.social.flare.FlareApp
+import com.social.flare.features.profile.presentation.ProfileScreen
 
 @Composable
 fun MainScreen() {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
+    val context = LocalContext.current
 
     var showAuthDialog by remember { mutableStateOf(false) }
+
+    // BYPASS TEMPORAL DE SESIÓN:
+    // Aquí almacenaremos el ID de prueba para renderizar el perfil.
+    var citizenIdLoadedByRoomForTesting by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(Unit) {
+        // TODO: En el próximo paso integraremos DataStore para guardar el ID real del usuario al hacer Login.
+        // Por ahora, si usaste el repositorio falso temporalmente, el ID era "user-fake-uuid".
+        // Si ya estás en Room 100%, deberás revisar el Logcat para ver qué UUID se generó al registrarte
+        citizenIdLoadedByRoomForTesting = "user-fake-uuid"
+    }
 
     Scaffold(
         topBar = {
@@ -90,6 +100,34 @@ fun MainScreen() {
                 composable(Screen.Search.route) {
                     SearchScreen()
                 }
+                composable(Screen.AddPost.route) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text("Add Post Screen", color = Color.White)
+                    }
+                }
+                composable(Screen.Notifications.route) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text("Notifications Screen", color = Color.White)
+                    }
+                }
+
+                // --- NUEVA RUTA DE PERFIL INTEGRADA ---
+                composable(Screen.Profile.route) {
+                    if (citizenIdLoadedByRoomForTesting != null) {
+                        ProfileScreen(citizenId = citizenIdLoadedByRoomForTesting!!)
+                    } else {
+                        // Estado de carga por si la lectura de SQLite / DataStore toma tiempo
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(color = Color(0xFFFF5722))
+                            Text(
+                                "Loading active session...",
+                                modifier = Modifier.padding(top = 80.dp),
+                                color = Color.Gray
+                            )
+                        }
+                    }
+                }
+
                 composable(Screen.Login.route) {
                     LoginScreen(
                         onNavigateBack = { navController.popBackStack() },
@@ -108,24 +146,10 @@ fun MainScreen() {
                         }
                     )
                 }
-                composable(Screen.AddPost.route) {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("Add Post Screen", color = Color.White)
-                    }
-                }
-                composable(Screen.Notifications.route) {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("Notifications Screen", color = Color.White)
-                    }
-                }
-                composable(Screen.Profile.route) {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("Profile Screen", color = Color.White)
-                    }
-                }
             }
         }
 
+        // El modal intercepta a nivel global
         if (showAuthDialog) {
             AuthDialog(
                 onDismiss = { showAuthDialog = false },

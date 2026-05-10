@@ -8,7 +8,7 @@ import com.social.flare.features.auth.data.local.entity.CitizenEntity
     entities = [
         CitizenEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class FlareDatabase : RoomDatabase() {
