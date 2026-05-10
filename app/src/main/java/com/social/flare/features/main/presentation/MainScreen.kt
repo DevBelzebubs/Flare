@@ -15,20 +15,59 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
+import com.social.flare.core.ui.components.AuthDialog
 import com.social.flare.features.feed.presentation.FeedScreen
 import com.social.flare.features.search.presentation.SearchScreen
+import com.social.flare.features.auth.presentation.LoginScreen
+import com.social.flare.features.auth.presentation.SignUpScreen
+
+sealed class Screen(val route: String) {
+    object Feed : Screen("feed")
+    object Search : Screen("search")
+    object AddPost : Screen("add_post")
+    object Notifications : Screen("notifications")
+    object Profile : Screen("profile")
+    object Login : Screen("login")
+    object SignUp : Screen("signup")
+}
 
 @Composable
 fun MainScreen() {
-    var currentTab by remember { mutableStateOf(0) }
+    val navController = rememberNavController()
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
+
+    var showAuthDialog by remember { mutableStateOf(false) }
 
     Scaffold(
-        topBar = { FlareTopBar() },
+        topBar = {
+            if (currentRoute != Screen.Login.route && currentRoute != Screen.SignUp.route) {
+                FlareTopBar()
+            }
+        },
         bottomBar = {
-            FlareBottomNavigation(
-                currentTab = currentTab,
-                onTabSelected = { currentTab = it }
-            )
+            val isMainTab = listOf(
+                Screen.Feed.route, Screen.Search.route, Screen.AddPost.route,
+                Screen.Notifications.route, Screen.Profile.route
+            ).contains(currentRoute)
+
+            if (isMainTab) {
+                FlareBottomNavigation(
+                    currentRoute = currentRoute ?: Screen.Feed.route,
+                    onNavigate = { route ->
+                        navController.navigate(route) {
+                            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
+                )
+            }
         },
         containerColor = Color.Black
     ) { paddingValues ->
@@ -38,13 +77,51 @@ fun MainScreen() {
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            when (currentTab) {
-                0 -> FeedScreen()
-                1 -> SearchScreen()
-                // 2 -> AddPostScreen()
-                // 3 -> NotificationsScreen()
-                // 4 -> ProfileScreen()
+            NavHost(
+                navController = navController,
+                startDestination = Screen.Feed.route
+            ) {
+                composable(Screen.Feed.route) {
+                    FeedScreen(
+                        onRequireAuth = { showAuthDialog = true }
+                    )
+                }
+                composable(Screen.Search.route) {
+                    SearchScreen()
+                }
+                composable(Screen.Login.route) {
+                    LoginScreen(
+                        onNavigateBack = { navController.popBackStack() },
+                        onNavigateToSignUp = { navController.navigate(Screen.SignUp.route) },
+                        onLoginSuccess = {
+                            navController.navigate(Screen.Feed.route) { popUpTo(0) }
+                        }
+                    )
+                }
+                composable(Screen.SignUp.route) {
+                    SignUpScreen(
+                        onNavigateBack = { navController.popBackStack() },
+                        onNavigateToLogin = { navController.navigate(Screen.Login.route) },
+                        onSignUpSuccess = {
+                            navController.navigate(Screen.Feed.route) { popUpTo(0) }
+                        }
+                    )
+                }
             }
+        }
+
+        if (showAuthDialog) {
+            AuthDialog(
+                onDismiss = { showAuthDialog = false },
+                onLoginClick = {
+                    showAuthDialog = false
+                    navController.navigate(Screen.Login.route)
+                },
+                onSignUpClick = {
+                    showAuthDialog = false
+                    navController.navigate(Screen.SignUp.route)
+                }
+            )
         }
     }
 }
@@ -62,20 +139,18 @@ private fun FlareTopBar() {
             )
         },
         actions = {
-            IconButton(onClick = { /* TODO: Notificaciones */ }) {
+            IconButton(onClick = { /* TODO */ }) {
                 Icon(Icons.Outlined.Notifications, contentDescription = "Notificaciones", tint = Color.White)
             }
         },
-        colors = TopAppBarDefaults.topAppBarColors(
-            containerColor = Color.Black
-        )
+        colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Black)
     )
 }
 
 @Composable
 private fun FlareBottomNavigation(
-    currentTab: Int,
-    onTabSelected: (Int) -> Unit
+    currentRoute: String,
+    onNavigate: (String) -> Unit
 ) {
     NavigationBar(
         containerColor = Color.Black,
@@ -83,8 +158,8 @@ private fun FlareBottomNavigation(
         tonalElevation = 0.dp
     ) {
         NavigationBarItem(
-            selected = currentTab == 0,
-            onClick = { onTabSelected(0) },
+            selected = currentRoute == Screen.Feed.route,
+            onClick = { onNavigate(Screen.Feed.route) },
             icon = { Icon(Icons.Default.Home, contentDescription = "Home") },
             colors = NavigationBarItemDefaults.colors(
                 selectedIconColor = Color(0xFFFF5722),
@@ -93,8 +168,8 @@ private fun FlareBottomNavigation(
             )
         )
         NavigationBarItem(
-            selected = currentTab == 1,
-            onClick = { onTabSelected(1) },
+            selected = currentRoute == Screen.Search.route,
+            onClick = { onNavigate(Screen.Search.route) },
             icon = { Icon(Icons.Default.Search, contentDescription = "Search") },
             colors = NavigationBarItemDefaults.colors(
                 selectedIconColor = Color(0xFFFF5722),
@@ -103,16 +178,14 @@ private fun FlareBottomNavigation(
             )
         )
         NavigationBarItem(
-            selected = currentTab == 2,
-            onClick = { onTabSelected(2) },
+            selected = currentRoute == Screen.AddPost.route,
+            onClick = { onNavigate(Screen.AddPost.route) },
             icon = { Icon(Icons.Default.AddCircle, contentDescription = "Add", tint = Color(0xFFFF5722), modifier = Modifier.size(36.dp)) },
-            colors = NavigationBarItemDefaults.colors(
-                indicatorColor = Color.Transparent
-            )
+            colors = NavigationBarItemDefaults.colors(indicatorColor = Color.Transparent)
         )
         NavigationBarItem(
-            selected = currentTab == 3,
-            onClick = { onTabSelected(3) },
+            selected = currentRoute == Screen.Notifications.route,
+            onClick = { onNavigate(Screen.Notifications.route) },
             icon = { Icon(Icons.Default.Notifications, contentDescription = "Activity") },
             colors = NavigationBarItemDefaults.colors(
                 selectedIconColor = Color(0xFFFF5722),
@@ -121,8 +194,8 @@ private fun FlareBottomNavigation(
             )
         )
         NavigationBarItem(
-            selected = currentTab == 4,
-            onClick = { onTabSelected(4) },
+            selected = currentRoute == Screen.Profile.route,
+            onClick = { onNavigate(Screen.Profile.route) },
             icon = { Icon(Icons.Default.Person, contentDescription = "Profile") },
             colors = NavigationBarItemDefaults.colors(
                 selectedIconColor = Color(0xFFFF5722),

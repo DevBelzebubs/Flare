@@ -70,4 +70,12 @@ class FeedViewModel : ViewModel() {
             }
         }
     }
+    fun onEvent(event: FeedEvent) {
+        when (event) {
+            is FeedEvent.OnLikeClick -> { /* Lógica de like */ }
+            is FeedEvent.OnRefresh -> { /* Lógica de recargar */ }
+            is FeedEvent.OnShareClick -> { /* Lógica de compartir */ }
+            else -> {}
+        }
+    }
 }

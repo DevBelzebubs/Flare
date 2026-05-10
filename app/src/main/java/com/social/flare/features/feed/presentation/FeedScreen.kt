@@ -21,7 +21,8 @@ import com.social.flare.features.feed.presentation.components.StoryCarousel
 
 @Composable
 fun FeedScreen(
-    viewModel: FeedViewModel = viewModel()
+    viewModel: FeedViewModel = viewModel(),
+    onRequireAuth: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var showAuthDialog by remember { mutableStateOf(false) }
@@ -56,8 +57,11 @@ fun FeedScreen(
                 }
 
                 items(uiState.posts) { post ->
-                    PostCard(post = post,
-                        onLikeClick = { requireAuth { }
+                    PostCard(
+                        post = post,
+                        onLikeClick = {
+                            if (uiState.isGuest) onRequireAuth()
+                            else viewModel.onEvent(FeedEvent.OnLikeClick(post.id))
                         },
                         onCommentClick = { requireAuth {}
                         },
