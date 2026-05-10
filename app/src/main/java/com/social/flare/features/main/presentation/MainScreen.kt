@@ -10,6 +10,7 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -106,6 +107,21 @@ fun MainScreen() {
                             navController.navigate(Screen.Feed.route) { popUpTo(0) }
                         }
                     )
+                }
+                composable(Screen.AddPost.route) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text("Add Post Screen", color = Color.White)
+                    }
+                }
+                composable(Screen.Notifications.route) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text("Notifications Screen", color = Color.White)
+                    }
+                }
+                composable(Screen.Profile.route) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text("Profile Screen", color = Color.White)
+                    }
                 }
             }
         }

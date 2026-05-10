@@ -1,7 +1,7 @@
 package com.social.flare.features.feed.data.local.entity
 
-import androidx.room3.Entity
-import androidx.room3.PrimaryKey
+import androidx.room.Entity
+import androidx.room.PrimaryKey
 
 @Entity(tableName = "post_table")
 data class PostEntity(
