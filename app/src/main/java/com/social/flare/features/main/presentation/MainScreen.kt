@@ -7,6 +7,7 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -34,6 +35,7 @@ import com.social.flare.features.search.presentation.SearchScreen
 // Importaciones NUEVAS para el Perfil
 import com.social.flare.FlareApp
 import com.social.flare.features.profile.presentation.ProfileScreen
+import com.social.flare.features.profile.presentation.SettingsScreen
 
 @Composable
 fun MainScreen() {
@@ -44,21 +46,18 @@ fun MainScreen() {
 
     var showAuthDialog by remember { mutableStateOf(false) }
 
-    // BYPASS TEMPORAL DE SESIÓN:
-    // Aquí almacenaremos el ID de prueba para renderizar el perfil.
     var citizenIdLoadedByRoomForTesting by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(Unit) {
-        // TODO: En el próximo paso integraremos DataStore para guardar el ID real del usuario al hacer Login.
-        // Por ahora, si usaste el repositorio falso temporalmente, el ID era "user-fake-uuid".
-        // Si ya estás en Room 100%, deberás revisar el Logcat para ver qué UUID se generó al registrarte
-        citizenIdLoadedByRoomForTesting = "user-fake-uuid"
+        citizenIdLoadedByRoomForTesting = null
     }
 
     Scaffold(
         topBar = {
             if (currentRoute != Screen.Login.route && currentRoute != Screen.SignUp.route) {
-                FlareTopBar()
+                FlareTopBar(onSettingsClick = {
+                    navController.navigate(Screen.Settings.route)
+                })
             }
         },
         bottomBar = {
@@ -94,6 +93,7 @@ fun MainScreen() {
             ) {
                 composable(Screen.Feed.route) {
                     FeedScreen(
+                        activeCitizenId = citizenIdLoadedByRoomForTesting,
                         onRequireAuth = { showAuthDialog = true }
                     )
                 }
@@ -111,28 +111,21 @@ fun MainScreen() {
                     }
                 }
 
-                // --- NUEVA RUTA DE PERFIL INTEGRADA ---
                 composable(Screen.Profile.route) {
-                    if (citizenIdLoadedByRoomForTesting != null) {
-                        ProfileScreen(citizenId = citizenIdLoadedByRoomForTesting!!)
-                    } else {
-                        // Estado de carga por si la lectura de SQLite / DataStore toma tiempo
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            CircularProgressIndicator(color = Color(0xFFFF5722))
-                            Text(
-                                "Loading active session...",
-                                modifier = Modifier.padding(top = 80.dp),
-                                color = Color.Gray
-                            )
+                    ProfileScreen(
+                        citizenId = citizenIdLoadedByRoomForTesting,
+                        onNavigateToLogin = {
+                            navController.navigate(Screen.Login.route)
                         }
-                    }
+                    )
                 }
 
                 composable(Screen.Login.route) {
                     LoginScreen(
                         onNavigateBack = { navController.popBackStack() },
                         onNavigateToSignUp = { navController.navigate(Screen.SignUp.route) },
-                        onLoginSuccess = {
+                        onLoginSuccess = { tokenOrId ->
+                            citizenIdLoadedByRoomForTesting = tokenOrId
                             navController.navigate(Screen.Feed.route) { popUpTo(0) }
                         }
                     )
@@ -141,15 +134,18 @@ fun MainScreen() {
                     SignUpScreen(
                         onNavigateBack = { navController.popBackStack() },
                         onNavigateToLogin = { navController.navigate(Screen.Login.route) },
-                        onSignUpSuccess = {
+                        onSignUpSuccess = { tokenOrId ->
+                            citizenIdLoadedByRoomForTesting = tokenOrId
                             navController.navigate(Screen.Feed.route) { popUpTo(0) }
                         }
                     )
                 }
+                composable(Screen.Settings.route) {
+                    SettingsScreen(onNavigateBack = { navController.popBackStack() })
+                }
             }
         }
 
-        // El modal intercepta a nivel global
         if (showAuthDialog) {
             AuthDialog(
                 onDismiss = { showAuthDialog = false },
@@ -168,19 +164,14 @@ fun MainScreen() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun FlareTopBar() {
+private fun FlareTopBar(onSettingsClick: () -> Unit) {
     TopAppBar(
         title = {
-            Text(
-                text = "Flare",
-                color = Color(0xFFFF5722),
-                fontWeight = FontWeight.ExtraBold,
-                fontSize = 24.sp
-            )
+            Text(text = "Flare", color = Color(0xFFFF5722), fontWeight = FontWeight.ExtraBold, fontSize = 24.sp)
         },
         actions = {
-            IconButton(onClick = { /* TODO */ }) {
-                Icon(Icons.Outlined.Notifications, contentDescription = "Notificaciones", tint = Color.White)
+            IconButton(onClick = onSettingsClick) {
+                Icon(imageVector = Icons.Default.Settings, contentDescription = "Settings", tint = Color.White)
             }
         },
         colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Black)

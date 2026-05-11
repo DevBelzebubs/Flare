@@ -16,6 +16,8 @@ class FlareApp : Application() {
             applicationContext,
             FlareDatabase::class.java,
             "flare_offline_database"
-        ).build()
+        )
+            .fallbackToDestructiveMigration(false)
+            .build()
     }
 }

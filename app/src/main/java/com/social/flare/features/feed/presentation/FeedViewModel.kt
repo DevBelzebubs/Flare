@@ -2,6 +2,7 @@ package com.social.flare.features.feed.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.social.flare.core.navigation.Screen
 import com.social.flare.features.feed.domain.model.Post
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -36,7 +37,6 @@ class FeedViewModel : ViewModel() {
                     createdAt = System.currentTimeMillis() - 7200000,
                     likesCount = 2451,
                     commentsCount = 342,
-                    isLikedByMe = true
                 ),
                 Post(
                     id = "2",
@@ -72,7 +72,19 @@ class FeedViewModel : ViewModel() {
     }
     fun onEvent(event: FeedEvent) {
         when (event) {
-            is FeedEvent.OnLikeClick -> { /* Lógica de like */ }
+            is FeedEvent.OnLikeClick -> { _uiState.update { currentState ->
+                val updatedPosts = currentState.posts.map { post ->
+                    if (post.id == event.postId) {
+                        val isnowLiked = !post.isLikedByMe
+                        post.copy(isLikedByMe = isnowLiked,
+                            likesCount = post.likesCount + if (isnowLiked) 1 else -1)
+                    } else {
+                        post
+                    }
+                }
+                currentState.copy(posts = updatedPosts)
+                }
+            }
             is FeedEvent.OnRefresh -> { /* Lógica de recargar */ }
             is FeedEvent.OnShareClick -> { /* Lógica de compartir */ }
             else -> {}

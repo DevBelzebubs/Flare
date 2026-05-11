@@ -17,25 +17,32 @@ class AuthViewModel(
 ) : ViewModel() {
     fun login(username: String,
               pass: String,
-              onSuccess: () -> Unit,
+              onSuccess: (String) -> Unit,
               onError: (String) -> Unit = {}){
         viewModelScope.launch {
             val result = loginUseCase(username, pass)
             if (result.isSuccess){
-                onSuccess()
+                val tokenOrId = result.getOrNull() ?: ""
+                onSuccess(tokenOrId)
+            } else {
+                val errorMessage = result.exceptionOrNull()?.message ?: "Error desconocido"
+                onError(errorMessage)
             }
         }
     }
-    fun registerUser(displayName: String,
-                     username: String,
-                     email: String,
-                     pass: String,
-                     onSuccess: () -> Unit,
-                     onError: (String) -> Unit = {}){
+    fun registerUser(
+        displayName: String,
+        username: String,
+        email: String,
+        pass: String,
+        onSuccess: (String) -> Unit,
+        onError: (String) -> Unit = {}
+    ) {
         viewModelScope.launch {
-            val result = registerUseCase.invoke(displayName,username,email,pass)
+            val result = registerUseCase.invoke(displayName, username, email, pass)
             if (result.isSuccess) {
-                val generatedId = result.getOrNull()
+                val generatedId = result.getOrNull() ?: ""
+                onSuccess(generatedId)
             } else {
                 val errorMessage = result.exceptionOrNull()?.message ?: "Error al registrar usuario"
                 onError(errorMessage)

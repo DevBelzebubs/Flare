@@ -3,6 +3,7 @@ package com.social.flare.features.auth.data.repository
 import com.social.flare.features.auth.data.local.dao.CitizenDao
 import com.social.flare.features.auth.data.local.entity.CitizenEntity
 import com.social.flare.features.auth.domain.repository.AuthRepository
+import java.security.MessageDigest
 import java.util.UUID
 
 class AuthRepositoryImpl(
@@ -11,7 +12,7 @@ class AuthRepositoryImpl(
     override suspend fun login(username: String, pass: String): Result<String> {
         return try {
             val citizen = citizenDao.getCitizenByUsername(username)
-            if (citizen != null){
+            if (citizen != null && citizen.password == pass.toSHA256()){
                 Result.success(citizen.citizen_id)
             }else{
                 Result.failure(Exception("Usuario no encontrado"))
@@ -30,6 +31,7 @@ class AuthRepositoryImpl(
             val newCitizen = CitizenEntity(citizen_id = newCitizenId,
                 username = username,
                 display_name = displayName,
+                password = pass.toSHA256(),
                 avatar_url = null,
                 bio = "I am new to Flare!"
             )
@@ -38,6 +40,10 @@ class AuthRepositoryImpl(
         }catch (e: Exception) {
             Result.failure(e);
         }
+    }
+    fun String.toSHA256(): String {
+        val bytes = MessageDigest.getInstance("SHA-256").digest(this.toByteArray())
+        return bytes.joinToString("") { "%02x".format(it) }
     }
 
     override suspend fun logout() {

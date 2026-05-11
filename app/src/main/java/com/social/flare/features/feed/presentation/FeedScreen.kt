@@ -17,12 +17,14 @@ import com.social.flare.features.feed.presentation.components.StoryCarousel
 
 @Composable
 fun FeedScreen(
+    activeCitizenId: String?,
     viewModel: FeedViewModel = viewModel(),
     onRequireAuth: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val isGuest = activeCitizenId == null
     val requireAuth: (() -> Unit) -> Unit = { action ->
-        if (uiState.isGuest) {
+        if (isGuest) {
             onRequireAuth()
         } else {
             action()
@@ -51,8 +53,9 @@ fun FeedScreen(
                 }
 
                 items(uiState.posts) { post ->
+                    val displayPost = if (isGuest) post.copy(isLikedByMe = false) else post
                     PostCard(
-                        post = post,
+                        post = displayPost,
                         onLikeClick = {
                             requireAuth { viewModel.onEvent(FeedEvent.OnLikeClick(post.id)) }
                         },

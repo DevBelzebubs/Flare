@@ -21,7 +21,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 fun LoginScreen(
     onNavigateBack: () -> Unit,
     onNavigateToSignUp: () -> Unit,
-    onLoginSuccess: () -> Unit,
+    onLoginSuccess: (String) -> Unit,
     viewModel: AuthViewModel = viewModel(factory = AuthViewModel.AuthViewModelFactory(LocalContext.current))
 ) {
     var username by remember { mutableStateOf("") }

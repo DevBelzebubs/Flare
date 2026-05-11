@@ -11,22 +11,27 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SignUpScreen(
     onNavigateBack: () -> Unit,
     onNavigateToLogin: () -> Unit,
-    onSignUpSuccess: () -> Unit
+    onSignUpSuccess: (String) -> Unit,
+    viewModel: AuthViewModel = viewModel(factory = AuthViewModel.AuthViewModelFactory(LocalContext.current))
 ) {
     var displayName by remember { mutableStateOf("") }
     var username by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+
+    var errorMessage by remember { mutableStateOf<String?>(null) }
 
     Column(
         modifier = Modifier
@@ -56,19 +61,39 @@ fun SignUpScreen(
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        FlareTextField(value = displayName, label = "Display Name", onValueChange = { displayName = it })
+        errorMessage?.let { msg ->
+            Text(
+                text = msg,
+                color = Color.Red,
+                fontSize = 14.sp,
+                modifier = Modifier.padding(bottom = 16.dp).align(Alignment.Start)
+            )
+        }
+
+        FlareTextField(value = displayName, label = "Display Name", onValueChange = {
+            displayName = it
+            errorMessage = null
+        })
         Spacer(modifier = Modifier.height(16.dp))
-        FlareTextField(value = username, label = "Username (e.g. @cooluser)", onValueChange = { username = it })
+        FlareTextField(value = username, label = "Username (e.g. @cooluser)", onValueChange = {
+            username = it
+            errorMessage = null
+        })
         Spacer(modifier = Modifier.height(16.dp))
-        FlareTextField(value = email, label = "Email", onValueChange = { email = it })
+        FlareTextField(value = email, label = "Email", onValueChange = {
+            email = it
+            errorMessage = null
+        })
         Spacer(modifier = Modifier.height(16.dp))
 
         OutlinedTextField(
             value = password,
-            onValueChange = { password = it },
+            onValueChange = {
+                password = it
+                errorMessage = null
+            },
             label = { Text("Password", color = Color.Gray) },
             visualTransformation = PasswordVisualTransformation(),
-            // AQUI ESTÁ EL CAMBIO CLAVE
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = Color(0xFFFF5722),
                 unfocusedBorderColor = Color.DarkGray,
@@ -86,7 +111,18 @@ fun SignUpScreen(
 
         Button(
             onClick = {
-                onSignUpSuccess()
+                if (username.isNotBlank() && password.isNotBlank() && displayName.isNotBlank()) {
+                    viewModel.registerUser(
+                        displayName = displayName,
+                        username = username,
+                        email = email,
+                        pass = password,
+                        onSuccess = onSignUpSuccess,
+                        onError = { error -> errorMessage = error }
+                    )
+                } else {
+                    errorMessage = "Por favor llena todos los campos"
+                }
             },
             modifier = Modifier
                 .fillMaxWidth()
@@ -118,7 +154,6 @@ fun FlareTextField(value: String, label: String, onValueChange: (String) -> Unit
         value = value,
         onValueChange = onValueChange,
         label = { Text(label, color = Color.Gray) },
-        // AQUI ESTÁ EL CAMBIO CLAVE
         colors = OutlinedTextFieldDefaults.colors(
             focusedBorderColor = Color(0xFFFF5722),
             unfocusedBorderColor = Color.DarkGray,

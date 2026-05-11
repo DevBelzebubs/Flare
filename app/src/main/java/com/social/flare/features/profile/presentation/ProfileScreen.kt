@@ -6,10 +6,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.BookmarkBorder
-import androidx.compose.material.icons.filled.GridOn
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Wallpaper
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
@@ -32,33 +29,63 @@ import com.social.flare.features.auth.data.local.entity.CitizenEntity
 
 @Composable
 fun ProfileScreen(
-    citizenId: String,
-    viewModel: ProfileViewModel = viewModel(factory = ProfileViewModelFactory(LocalContext.current))
+    citizenId: String?,
+    viewModel: ProfileViewModel = viewModel(factory = ProfileViewModelFactory(LocalContext.current)),
+    onNavigateToLogin: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
     LaunchedEffect(citizenId) {
-        viewModel.loadActiveUserProfile(citizenId)
+        if (citizenId != null) {
+            viewModel.loadActiveUserProfile(citizenId)
+        }
     }
 
-    Scaffold(
-        containerColor = Color.Black
-    ) { paddingValues ->
-        Box(modifier = Modifier.padding(paddingValues)) {
-            when (val state = uiState) {
-                is ProfileUiState.Loading -> {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center), color = Color(0xFFFF5722))
-                }
-                is ProfileUiState.Success -> {
-                    ProfileContent(state)
-                }
-                is ProfileUiState.UserNotFound -> {
-                    Text("Session error: Citizen not found.", color = Color.Gray, modifier = Modifier.align(Alignment.Center))
-                }
-                is ProfileUiState.Error -> {
-                    Text("Error: ${state.message}", color = Color.Red, modifier = Modifier.align(Alignment.Center))
+    Scaffold(containerColor = Color.Black) { paddingValues ->
+        Box(modifier = Modifier.padding(paddingValues).fillMaxSize()) {
+            // SI NO HAY ID DE USUARIO -> VISTA DE INVITADO
+            if (citizenId == null) {
+                GuestProfileView(onNavigateToLogin)
+            } else {
+                when (val state = uiState) {
+                    is ProfileUiState.Loading -> {
+                        CircularProgressIndicator(modifier = Modifier.align(Alignment.Center), color = Color(0xFFFF5722))
+                    }
+                    is ProfileUiState.Success -> {
+                        ProfileContent(state)
+                    }
+                    // SI EL USUARIO NO EXISTE EN ROOM -> VISTA DE INVITADO
+                    is ProfileUiState.UserNotFound -> {
+                        GuestProfileView(onNavigateToLogin)
+                    }
+                    is ProfileUiState.Error -> {
+                        Text("Error: ${state.message}", color = Color.Red, modifier = Modifier.align(Alignment.Center))
+                    }
                 }
             }
+        }
+    }
+}
+
+// NUEVA VISTA PARA USUARIOS NO LOGEADOS
+@Composable
+private fun GuestProfileView(onNavigateToLogin: () -> Unit) {
+    Column(
+        modifier = Modifier.fillMaxSize().padding(32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Icon(Icons.Default.PersonOutline, contentDescription = null, tint = Color.DarkGray, modifier = Modifier.size(80.dp))
+        Spacer(Modifier.height(16.dp))
+        Text("Not Logged In", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 20.sp)
+        Text("Please log in to see your profile and posts.", color = Color.Gray, textAlign = TextAlign.Center, modifier = Modifier.padding(vertical = 8.dp))
+        Spacer(Modifier.height(24.dp))
+        Button(
+            onClick = onNavigateToLogin,
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF5722)),
+            shape = RoundedCornerShape(8.dp)
+        ) {
+            Text("Log In / Sign Up", fontWeight = FontWeight.Bold)
         }
     }
 }
@@ -66,7 +93,6 @@ fun ProfileScreen(
 @Composable
 private fun ProfileContent(state: ProfileUiState.Success) {
     val citizen = state.citizen
-    // Corrección de mutableIntOf a mutableStateOf
     var selectedTab by remember { mutableStateOf(0) }
     val tabs = listOf("Photos" to Icons.Default.GridOn, "Saved" to Icons.Default.BookmarkBorder)
 
@@ -74,28 +100,13 @@ private fun ProfileContent(state: ProfileUiState.Success) {
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        item {
-            ProfileHeaderSection(citizen)
-        }
-
-        item {
-            ProfileInfoSection(citizen)
-        }
-
-        item {
-            ProfileStatsSection(state)
-        }
-
-        item {
-            ProfileTabSection(tabs, selectedTab) { selectedTab = it }
-        }
-
+        item { ProfileHeaderSection(citizen) }
+        item { ProfileInfoSection(citizen) }
+        item { ProfileStatsSection(state) }
+        item { ProfileTabSection(tabs, selectedTab) { selectedTab = it } }
         item {
             Box(modifier = Modifier.height(300.dp).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                Text(
-                    text = "Grid content for ${tabs[selectedTab].first}...",
-                    color = Color.DarkGray
-                )
+                Text(text = "No posts yet.", color = Color.DarkGray)
             }
         }
     }
@@ -103,45 +114,24 @@ private fun ProfileContent(state: ProfileUiState.Success) {
 
 @Composable
 private fun ProfileHeaderSection(citizen: CitizenEntity) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(260.dp)
-    ) {
-        // En lugar de R.drawable, usamos un icono vectorial de Material como placeholder
+    Box(modifier = Modifier.fillMaxWidth().height(260.dp)) {
         AsyncImage(
             model = citizen.banner_url,
             contentDescription = "Banner",
             placeholder = rememberVectorPainter(image = Icons.Default.Wallpaper),
             error = rememberVectorPainter(image = Icons.Default.Wallpaper),
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(180.dp)
-                .background(Color.DarkGray), // Fondo gris si no hay imagen
+            modifier = Modifier.fillMaxWidth().height(180.dp).background(Color.DarkGray),
             contentScale = ContentScale.Crop
         )
-
-        Box(modifier = Modifier
-            .fillMaxWidth()
-            .height(180.dp)
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(Color.Transparent, Color(0xFF1F1F1F)),
-                    startY = 100f
-                )
-            ))
-
+        Box(modifier = Modifier.fillMaxWidth().height(180.dp).background(
+            Brush.verticalGradient(colors = listOf(Color.Transparent, Color(0xFF1F1F1F)), startY = 100f)
+        ))
         AsyncImage(
             model = citizen.avatar_url,
             contentDescription = "Avatar",
             placeholder = rememberVectorPainter(image = Icons.Default.Person),
             error = rememberVectorPainter(image = Icons.Default.Person),
-            modifier = Modifier
-                .size(100.dp)
-                .align(Alignment.BottomCenter)
-                .clip(CircleShape)
-                .background(Color.Gray) // Fondo gris si no hay imagen
-                .border(4.dp, Color.Black, CircleShape),
+            modifier = Modifier.size(100.dp).align(Alignment.BottomCenter).clip(CircleShape).background(Color.Gray).border(4.dp, Color.Black, CircleShape),
             contentScale = ContentScale.Crop
         )
     }
@@ -149,11 +139,7 @@ private fun ProfileHeaderSection(citizen: CitizenEntity) {
 
 @Composable
 private fun ProfileInfoSection(citizen: CitizenEntity) {
-    Column(
-        modifier = Modifier
-            .padding(horizontal = 24.dp, vertical = 16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
+    Column(modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
             OutlinedButton(
                 onClick = { /* TODO: Navegar a Editar */ },
@@ -164,32 +150,11 @@ private fun ProfileInfoSection(citizen: CitizenEntity) {
                 Text("Edit Profile", color = Color.White, fontSize = 12.sp)
             }
         }
-
         Spacer(modifier = Modifier.height(8.dp))
-
-        Text(
-            text = citizen.display_name,
-            color = Color.White,
-            fontWeight = FontWeight.Bold,
-            fontSize = 24.sp
-        )
-
-        Text(
-            text = citizen.username,
-            color = Color(0xFFFF5722),
-            fontSize = 14.sp
-        )
-
+        Text(text = citizen.display_name, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 24.sp)
+        Text(text = citizen.username, color = Color(0xFFFF5722), fontSize = 14.sp)
         Spacer(modifier = Modifier.height(12.dp))
-
-        Text(
-            text = citizen.bio ?: "No bio yet.",
-            color = Color.LightGray,
-            fontSize = 14.sp,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(horizontal = 16.dp)
-        )
-
+        Text(text = citizen.bio ?: "No bio yet.", color = Color.LightGray, fontSize = 14.sp, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 16.dp))
         Spacer(modifier = Modifier.height(24.dp))
     }
 }
@@ -197,11 +162,7 @@ private fun ProfileInfoSection(citizen: CitizenEntity) {
 @Composable
 private fun ProfileStatsSection(state: ProfileUiState.Success) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 12.dp)
-            .background(Color(0xFF121212))
-            .padding(vertical = 16.dp),
+        modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp).background(Color(0xFF121212)).padding(vertical = 16.dp),
         horizontalArrangement = Arrangement.SpaceEvenly
     ) {
         StatItem(state.postsCount.toString(), "Posts")
@@ -224,21 +185,13 @@ private fun StatItem(number: String, label: String) {
 @Composable
 private fun ProfileTabSection(tabs: List<Pair<String, ImageVector>>, selectedTab: Int, onTabSelected: (Int) -> Unit) {
     TabRow(
-        selectedTabIndex = selectedTab,
-        containerColor = Color.Black,
-        contentColor = Color(0xFFFF5722),
+        selectedTabIndex = selectedTab, containerColor = Color.Black, contentColor = Color(0xFFFF5722),
         indicator = { tabPositions ->
-            // Corrección de la firma del Indicator para Material 3
-            TabRowDefaults.SecondaryIndicator(
-                Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
-                color = Color(0xFFFF5722)
-            )
+            TabRowDefaults.SecondaryIndicator(Modifier.tabIndicatorOffset(tabPositions[selectedTab]), color = Color(0xFFFF5722))
         }
     ) {
         tabs.forEachIndexed { index, pair ->
-            Tab(
-                selected = selectedTab == index,
-                onClick = { onTabSelected(index) },
+            Tab(selected = selectedTab == index, onClick = { onTabSelected(index) },
                 text = { Text(pair.first, color = if (selectedTab == index) Color.White else Color.Gray) },
                 icon = { Icon(pair.second, contentDescription = pair.first, tint = if (selectedTab == index) Color(0xFFFF5722) else Color.Gray) }
             )
