@@ -2,90 +2,57 @@ package com.social.flare.features.feed.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.social.flare.core.navigation.Screen
-import com.social.flare.features.feed.domain.model.Post
-import kotlinx.coroutines.delay
+import com.social.flare.features.feed.domain.repository.FeedRepository
+import com.social.flare.features.feed.domain.usecase.GetFeedUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-class FeedViewModel : ViewModel() {
+class FeedViewModel(
+    private val getFeedUseCase: GetFeedUseCase,
+    private val repository: FeedRepository
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(FeedUiState())
     val uiState: StateFlow<FeedUiState> = _uiState.asStateFlow()
 
-    init {
-        loadMockFeed()
-    }
+    private var currentUserId: String? = null
 
-    private fun loadMockFeed() {
+    fun loadFeed(activeUserId: String) {
+        currentUserId = activeUserId
+
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
 
-            delay(1500)
-
-            val mockPosts = listOf(
-                Post(
-                    id = "1",
-                    authorId = "user-asa",
-                    authorDisplayName = "Asa Mitaka",
-                    authorUsername = "@mitaka_asa",
-                    authorAvatarUrl = null,
-                    content = "Esa mezcla de monólogos internos constantes y análisis excesivo de la realidad te hace sentir un poco fuera de lugar a veces...",
-                    createdAt = System.currentTimeMillis() - 7200000,
-                    likesCount = 2451,
-                    commentsCount = 342,
-                ),
-                Post(
-                    id = "2",
-                    authorId = "user-mythos",
-                    authorDisplayName = "Mythos",
-                    authorUsername = "@mythos_dev",
-                    authorAvatarUrl = null,
-                    content = "Estoy feliz con mi china miau.",
-                    createdAt = System.currentTimeMillis() - 14400000,
-                    likesCount = 128,
-                    commentsCount = 15
-                ),
-                Post(
-                    id = "3",
-                    authorId = "user-dominid",
-                    authorDisplayName = "Dominid",
-                    authorUsername = "@dominid",
-                    authorAvatarUrl = null,
-                    content = "Revisando los últimos pull requests del equipo.",
-                    createdAt = System.currentTimeMillis() - 86400000,
-                    likesCount = 56,
-                    commentsCount = 3
-                )
-            )
-
-            _uiState.update {
-                it.copy(
-                    isLoading = false,
-                    posts = mockPosts
-                )
+            getFeedUseCase(activeUserId).collect { databasePosts ->
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        posts = databasePosts
+                    )
+                }
             }
         }
     }
+
     fun onEvent(event: FeedEvent) {
         when (event) {
-            is FeedEvent.OnLikeClick -> { _uiState.update { currentState ->
-                val updatedPosts = currentState.posts.map { post ->
-                    if (post.id == event.postId) {
-                        val isnowLiked = !post.isLikedByMe
-                        post.copy(isLikedByMe = isnowLiked,
-                            likesCount = post.likesCount + if (isnowLiked) 1 else -1)
-                    } else {
-                        post
-                    }
-                }
-                currentState.copy(posts = updatedPosts)
+            is FeedEvent.OnLikeClick -> {
+                val userId = currentUserId ?: return
+
+                val post = _uiState.value.posts.find { it.id == event.postId } ?: return
+
+                viewModelScope.launch {
+                    repository.toggleLike(
+                        postId = post.id,
+                        citizenId = userId,
+                        isCurrentlyLiked = post.isLikedByMe
+                    )
                 }
             }
-            is FeedEvent.OnRefresh -> { /* Lógica de recargar */ }
+            is FeedEvent.OnRefresh -> { /* Flow es reactivo, ya no se ocupa */ }
             is FeedEvent.OnShareClick -> { /* Lógica de compartir */ }
             else -> {}
         }

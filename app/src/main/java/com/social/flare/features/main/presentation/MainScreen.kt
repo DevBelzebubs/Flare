@@ -1,5 +1,6 @@
 package com.social.flare.features.main.presentation
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircle
@@ -8,7 +9,6 @@ import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -18,24 +18,33 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 
-// Importaciones cruciales de tus features y core
+// Importaciones de core y features existentes
+import com.social.flare.FlareApp
 import com.social.flare.core.navigation.Screen
 import com.social.flare.core.ui.components.AuthDialog
 import com.social.flare.features.auth.presentation.LoginScreen
 import com.social.flare.features.auth.presentation.SignUpScreen
 import com.social.flare.features.feed.presentation.FeedScreen
-import com.social.flare.features.search.presentation.SearchScreen
-
-// Importaciones NUEVAS para el Perfil
-import com.social.flare.FlareApp
 import com.social.flare.features.profile.presentation.ProfileScreen
 import com.social.flare.features.profile.presentation.SettingsScreen
+import com.social.flare.features.search.presentation.SearchScreen
+
+// NUEVAS importaciones para Post y Cloudinary
+import com.social.flare.core.media.CloudinaryService
+import com.social.flare.features.feed.data.repository.FeedRepositoryImpl
+import com.social.flare.features.feed.presentation.FeedViewModel
+import com.social.flare.features.post.domain.usecase.CreatePostUseCase
+import com.social.flare.features.post.presentation.AddPostScreen
+import com.social.flare.features.post.presentation.AddPostViewModel
 
 @Composable
 fun MainScreen() {
@@ -45,7 +54,6 @@ fun MainScreen() {
     val context = LocalContext.current
 
     var showAuthDialog by remember { mutableStateOf(false) }
-
     var citizenIdLoadedByRoomForTesting by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(Unit) {
@@ -69,6 +77,8 @@ fun MainScreen() {
             if (isMainTab) {
                 FlareBottomNavigation(
                     currentRoute = currentRoute ?: Screen.Feed.route,
+                    isGuest = citizenIdLoadedByRoomForTesting == null,
+                    onRequireAuth = { showAuthDialog = true },
                     onNavigate = { route ->
                         navController.navigate(route) {
                             popUpTo(navController.graph.findStartDestination().id) { saveState = true }
@@ -92,19 +102,90 @@ fun MainScreen() {
                 startDestination = Screen.Feed.route
             ) {
                 composable(Screen.Feed.route) {
+                    val app = context.applicationContext as FlareApp
+                    val repository = FeedRepositoryImpl(app.database.postDao())
+                    val getFeedUseCase = com.social.flare.features.feed.domain.usecase.GetFeedUseCase(repository)
+
+                    val feedViewModel: FeedViewModel = viewModel(
+                        factory = object : ViewModelProvider.Factory {
+                            @Suppress("UNCHECKED_CAST")
+                            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                                return FeedViewModel(getFeedUseCase, repository) as T
+                            }
+                        }
+                    )
+                    LaunchedEffect(citizenIdLoadedByRoomForTesting) {
+                        citizenIdLoadedByRoomForTesting?.let { userId ->
+                            feedViewModel.loadFeed(userId)
+                        }
+                    }
                     FeedScreen(
                         activeCitizenId = citizenIdLoadedByRoomForTesting,
+                        viewModel = feedViewModel,
                         onRequireAuth = { showAuthDialog = true }
                     )
                 }
+
                 composable(Screen.Search.route) {
                     SearchScreen()
                 }
+
                 composable(Screen.AddPost.route) {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("Add Post Screen", color = Color.White)
+                    val app = context.applicationContext as FlareApp
+                    val repository = FeedRepositoryImpl(app.database.postDao())
+                    val cloudinaryService = CloudinaryService(context)
+                    val useCase = CreatePostUseCase(repository, cloudinaryService)
+
+                    val viewModel: AddPostViewModel = viewModel(
+                        factory = object : ViewModelProvider.Factory {
+                            @Suppress("UNCHECKED_CAST")
+                            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                                return AddPostViewModel(useCase) as T
+                            }
+                        }
+                    )
+
+                    val uiState by viewModel.uiState.collectAsState()
+
+                    LaunchedEffect(uiState.isSuccess) {
+                        if (uiState.isSuccess) {
+                            navController.navigate(Screen.Feed.route) {
+                                popUpTo(navController.graph.findStartDestination().id)
+                            }
+                        }
+                    }
+
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        AddPostScreen(
+                            onNavigateBack = { navController.popBackStack() },
+                            onPostClick = { content, uris ->
+                                citizenIdLoadedByRoomForTesting?.let { userId ->
+                                    viewModel.createPost(
+                                        authorId = userId,
+                                        content = content,
+                                        mediaUris = uris
+                                    )
+                                }
+                            }
+                        )
+
+                        if (uiState.isUploading) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(Color.Black.copy(alpha = 0.8f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    CircularProgressIndicator(color = Color(0xFFFF5722))
+                                    Spacer(modifier = Modifier.height(16.dp))
+                                    Text("Uploading to Flare...", color = Color.White)
+                                }
+                            }
+                        }
                     }
                 }
+
                 composable(Screen.Notifications.route) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Text("Notifications Screen", color = Color.White)
@@ -130,6 +211,7 @@ fun MainScreen() {
                         }
                     )
                 }
+
                 composable(Screen.SignUp.route) {
                     SignUpScreen(
                         onNavigateBack = { navController.popBackStack() },
@@ -140,6 +222,7 @@ fun MainScreen() {
                         }
                     )
                 }
+
                 composable(Screen.Settings.route) {
                     SettingsScreen(onNavigateBack = { navController.popBackStack() })
                 }
@@ -181,6 +264,8 @@ private fun FlareTopBar(onSettingsClick: () -> Unit) {
 @Composable
 private fun FlareBottomNavigation(
     currentRoute: String,
+    isGuest: Boolean,
+    onRequireAuth: () -> Unit,
     onNavigate: (String) -> Unit
 ) {
     NavigationBar(
@@ -208,9 +293,16 @@ private fun FlareBottomNavigation(
                 indicatorColor = Color.Transparent
             )
         )
+        // EL BOTÓN CENTRAL INTERCEPTADO
         NavigationBarItem(
             selected = currentRoute == Screen.AddPost.route,
-            onClick = { onNavigate(Screen.AddPost.route) },
+            onClick = {
+                if (isGuest) {
+                    onRequireAuth() // Levanta el modal si no hay sesión
+                } else {
+                    onNavigate(Screen.AddPost.route) // Va a la vista de publicar
+                }
+            },
             icon = { Icon(Icons.Default.AddCircle, contentDescription = "Add", tint = Color(0xFFFF5722), modifier = Modifier.size(36.dp)) },
             colors = NavigationBarItemDefaults.colors(indicatorColor = Color.Transparent)
         )

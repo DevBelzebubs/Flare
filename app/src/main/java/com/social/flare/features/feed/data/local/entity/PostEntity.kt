@@ -8,7 +8,7 @@ data class PostEntity(
     @PrimaryKey val post_id: String,
     val author_id: String,
     val content: String?,
-    val media_urls: String,
+    val media_urls: List<String> = emptyList(),
     val reply_to_post_id: String? = null,
     val created_at: Long,
     val sync_status: Int
