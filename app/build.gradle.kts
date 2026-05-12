@@ -42,6 +42,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
     compileOptions {
@@ -83,5 +84,6 @@ dependencies {
     implementation("com.cloudinary:cloudinary-android:3.1.2")
     implementation("androidx.media3:media3-exoplayer:1.3.0")
     implementation("androidx.media3:media3-ui:1.3.0")
+    implementation("androidx.datastore:datastore-preferences:1.1.1")
     ksp("androidx.room:room-compiler:$room_version")
 }

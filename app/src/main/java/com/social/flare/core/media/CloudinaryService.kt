@@ -10,7 +10,6 @@ import kotlinx.coroutines.withContext
 import java.io.File
 
 class CloudinaryService(private val context: Context) {
-
     suspend fun uploadImage(uri: Uri): String = withContext(Dispatchers.IO) {
         val mimeType = context.contentResolver.getType(uri)
         val extension = MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType) ?: "bin"

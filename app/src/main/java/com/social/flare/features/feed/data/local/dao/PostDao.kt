@@ -86,4 +86,19 @@ interface PostDao {
             throw SecurityException("Access Denied: No tienes permisos para borrar este post.")
         }
     }
+    @Query("""
+        SELECT 
+            p.*, 
+            c.display_name AS authorDisplayName, 
+            c.username AS authorUsername, 
+            c.avatar_url AS authorAvatarUrl,
+            (SELECT COUNT(*) FROM post_likes WHERE post_id = p.post_id) AS likesCount,
+            (SELECT COUNT(*) FROM post_table WHERE reply_to_post_id = p.post_id) AS commentsCount,
+            (SELECT EXISTS(SELECT 1 FROM post_likes WHERE post_id = p.post_id AND citizen_id = :userId)) AS isLikedByMe
+        FROM post_table p
+        INNER JOIN citizen_table c ON p.author_id = c.citizen_id
+        WHERE p.author_id = :userId
+        ORDER BY p.created_at DESC
+    """)
+    fun getPostsByAuthor(userId: String): Flow<List<PostWithDetails>>
 }

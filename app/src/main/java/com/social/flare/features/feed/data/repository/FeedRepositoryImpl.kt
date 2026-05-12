@@ -4,6 +4,7 @@ import com.social.flare.features.feed.data.local.dao.PostDao
 import com.social.flare.features.feed.data.local.entity.PostEntity
 import com.social.flare.features.feed.data.local.entity.PostLikeEntity
 import com.social.flare.features.feed.data.mapper.toDomain
+import com.social.flare.features.feed.data.mapper.toDomainModel
 import com.social.flare.features.feed.domain.model.Post
 import com.social.flare.features.feed.domain.repository.FeedRepository
 import kotlinx.coroutines.flow.Flow
@@ -92,6 +93,12 @@ class FeedRepositoryImpl(
             Result.success(Unit)
         }catch (e: Exception){
             Result.failure(e);
+        }
+    }
+
+    override fun getUserPosts(userId: String): Flow<List<Post>> {
+        return postDao.getPostsByAuthor(userId).map { entities ->
+            entities.map { it.toDomain() }
         }
     }
 }

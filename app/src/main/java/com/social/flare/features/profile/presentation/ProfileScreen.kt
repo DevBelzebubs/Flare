@@ -3,6 +3,10 @@ package com.social.flare.features.profile.presentation
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -26,6 +30,8 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.social.flare.features.auth.data.local.entity.CitizenEntity
+import com.social.flare.features.feed.domain.model.Post
+import com.social.flare.features.profile.presentation.components.ProfileGridItem
 
 @Composable
 fun ProfileScreen(
@@ -34,16 +40,13 @@ fun ProfileScreen(
     onNavigateToLogin: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
-
     LaunchedEffect(citizenId) {
         if (citizenId != null) {
             viewModel.loadActiveUserProfile(citizenId)
         }
     }
-
     Scaffold(containerColor = Color.Black) { paddingValues ->
         Box(modifier = Modifier.padding(paddingValues).fillMaxSize()) {
-            // SI NO HAY ID DE USUARIO -> VISTA DE INVITADO
             if (citizenId == null) {
                 GuestProfileView(onNavigateToLogin)
             } else {
@@ -52,9 +55,8 @@ fun ProfileScreen(
                         CircularProgressIndicator(modifier = Modifier.align(Alignment.Center), color = Color(0xFFFF5722))
                     }
                     is ProfileUiState.Success -> {
-                        ProfileContent(state)
+                        ProfileContent(state, userPosts = state.posts)
                     }
-                    // SI EL USUARIO NO EXISTE EN ROOM -> VISTA DE INVITADO
                     is ProfileUiState.UserNotFound -> {
                         GuestProfileView(onNavigateToLogin)
                     }
@@ -67,7 +69,6 @@ fun ProfileScreen(
     }
 }
 
-// NUEVA VISTA PARA USUARIOS NO LOGEADOS
 @Composable
 private fun GuestProfileView(onNavigateToLogin: () -> Unit) {
     Column(
@@ -91,22 +92,60 @@ private fun GuestProfileView(onNavigateToLogin: () -> Unit) {
 }
 
 @Composable
-private fun ProfileContent(state: ProfileUiState.Success) {
-    val citizen = state.citizen
+private fun ProfileContent(
+    state: ProfileUiState.Success,
+    userPosts: List<Post>
+) {
+    val citizen by state.citizen.collectAsState(initial = null)
     var selectedTab by remember { mutableStateOf(0) }
-    val tabs = listOf("Photos" to Icons.Default.GridOn, "Saved" to Icons.Default.BookmarkBorder)
 
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        horizontalAlignment = Alignment.CenterHorizontally
+    val tabs = listOf(
+        "Posts" to Icons.Default.ViewList,
+        "Saved" to Icons.Default.BookmarkBorder,
+        "Shared" to Icons.Default.Share
+    )
+
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(3),
+        modifier = Modifier.fillMaxSize()
     ) {
-        item { ProfileHeaderSection(citizen) }
-        item { ProfileInfoSection(citizen) }
-        item { ProfileStatsSection(state) }
-        item { ProfileTabSection(tabs, selectedTab) { selectedTab = it } }
-        item {
-            Box(modifier = Modifier.height(300.dp).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                Text(text = "No posts yet.", color = Color.DarkGray)
+        if (citizen != null) {
+            val safeCitizen = citizen!!
+            item(span = { GridItemSpan(3) }) { ProfileHeaderSection(safeCitizen) }
+            item(span = { GridItemSpan(3) }) { ProfileInfoSection(safeCitizen) }
+        }
+        item(span = { GridItemSpan(3) }) { ProfileStatsSection(state) }
+        item(span = { GridItemSpan(3) }) {
+            ProfileTabSection(tabs, selectedTab) { selectedTab = it }
+        }
+        if (selectedTab == 0) {
+            if (userPosts.isEmpty()) {
+                item(span = { GridItemSpan(3) }) {
+                    Box(modifier = Modifier.height(200.dp).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        Text("Aún no hay publicaciones", color = Color.Gray)
+                    }
+                }
+            } else {
+                items(userPosts) { post ->
+                    ProfileGridItem(
+                        post = post,
+                        onClick = {
+                            // navController.navigate(Screen.PostDetail.route + "/${post.id}")
+                        }
+                    )
+                }
+            }
+        } else if (selectedTab == 1) {
+            item(span = { GridItemSpan(3) }) {
+                Box(modifier = Modifier.height(200.dp).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    Text("No hay posts guardados.", color = Color.DarkGray)
+                }
+            }
+        } else {
+            item(span = { GridItemSpan(3) }) {
+                Box(modifier = Modifier.height(200.dp).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    Text("No hay posts compartidos.", color = Color.DarkGray)
+                }
             }
         }
     }

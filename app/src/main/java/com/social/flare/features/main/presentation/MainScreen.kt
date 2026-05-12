@@ -27,9 +27,10 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import kotlinx.coroutines.launch
 
-// Importaciones de core y features existentes
 import com.social.flare.FlareApp
+import com.social.flare.core.data.SessionManager
 import com.social.flare.core.navigation.Screen
 import com.social.flare.core.ui.components.AuthDialog
 import com.social.flare.features.auth.presentation.LoginScreen
@@ -39,13 +40,14 @@ import com.social.flare.features.profile.presentation.ProfileScreen
 import com.social.flare.features.profile.presentation.SettingsScreen
 import com.social.flare.features.search.presentation.SearchScreen
 
-// NUEVAS importaciones para Post y Cloudinary
 import com.social.flare.core.media.CloudinaryService
 import com.social.flare.features.feed.data.repository.FeedRepositoryImpl
 import com.social.flare.features.feed.presentation.FeedViewModel
 import com.social.flare.features.post.domain.usecase.CreatePostUseCase
+import com.social.flare.features.post.domain.usecase.GetUserPostsUseCase
 import com.social.flare.features.post.presentation.AddPostScreen
 import com.social.flare.features.post.presentation.AddPostViewModel
+import com.social.flare.features.profile.presentation.ProfileViewModel
 
 @Composable
 fun MainScreen() {
@@ -54,11 +56,12 @@ fun MainScreen() {
     val currentRoute = navBackStackEntry?.destination?.route
     val context = LocalContext.current
     var showAuthDialog by remember { mutableStateOf(false) }
-    var citizenIdLoadedByRoomForTesting by remember { mutableStateOf<String?>(null) }
-    LaunchedEffect(Unit) {
-        citizenIdLoadedByRoomForTesting = null
-    }
-
+    val app = context.applicationContext as FlareApp
+    val feedRepository = remember { FeedRepositoryImpl(app.database.postDao()) }
+    val getPostsUseCase = remember { GetUserPostsUseCase(feedRepository) }
+    val sessionManager = remember { SessionManager(context) }
+    val scope = rememberCoroutineScope()
+    val activeCitizenId by sessionManager.activeCitizenIdFlow.collectAsState(initial = null)
     Scaffold(
         topBar = {
             if (currentRoute != Screen.Login.route && currentRoute != Screen.SignUp.route) {
@@ -76,7 +79,7 @@ fun MainScreen() {
             if (isMainTab) {
                 FlareBottomNavigation(
                     currentRoute = currentRoute ?: Screen.Feed.route,
-                    isGuest = citizenIdLoadedByRoomForTesting == null,
+                    isGuest = activeCitizenId == null,
                     onRequireAuth = { showAuthDialog = true },
                     onNavigate = { route ->
                         navController.navigate(route) {
@@ -121,15 +124,14 @@ fun MainScreen() {
                             }
                         }
                     )
-
-                    LaunchedEffect(citizenIdLoadedByRoomForTesting) {
-                        citizenIdLoadedByRoomForTesting?.let { userId ->
+                    LaunchedEffect(activeCitizenId) {
+                        activeCitizenId?.let { userId ->
                             feedViewModel.loadFeed(userId)
                         }
                     }
 
                     FeedScreen(
-                        activeCitizenId = citizenIdLoadedByRoomForTesting,
+                        activeCitizenId = activeCitizenId,
                         viewModel = feedViewModel,
                         onRequireAuth = { showAuthDialog = true }
                     )
@@ -172,7 +174,7 @@ fun MainScreen() {
                         AddPostScreen(
                             onNavigateBack = { navController.popBackStack() },
                             onPostClick = { content, uris ->
-                                citizenIdLoadedByRoomForTesting?.let { userId ->
+                                activeCitizenId?.let { userId ->
                                     viewModel.createPost(
                                         authorId = userId,
                                         content = content,
@@ -206,8 +208,23 @@ fun MainScreen() {
                 }
 
                 composable(Screen.Profile.route) {
+                    val profileRepository = remember {
+                        com.social.flare.features.profile.data.repository.ProfileRepositoryImpl(app.database.citizenDao())
+                    }
+                    val profileViewModel: ProfileViewModel = viewModel(
+                        factory = object : ViewModelProvider.Factory {
+                            @Suppress("UNCHECKED_CAST")
+                            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                                return ProfileViewModel(
+                                    repository = profileRepository,
+                                    getUserPostsUseCase = getPostsUseCase
+                                ) as T
+                            }
+                        }
+                    )
                     ProfileScreen(
-                        citizenId = citizenIdLoadedByRoomForTesting,
+                        citizenId = activeCitizenId,
+                        viewModel = profileViewModel,
                         onNavigateToLogin = {
                             navController.navigate(Screen.Login.route)
                         }
@@ -219,8 +236,10 @@ fun MainScreen() {
                         onNavigateBack = { navController.popBackStack() },
                         onNavigateToSignUp = { navController.navigate(Screen.SignUp.route) },
                         onLoginSuccess = { tokenOrId ->
-                            citizenIdLoadedByRoomForTesting = tokenOrId
-                            navController.navigate(Screen.Feed.route) { popUpTo(0) }
+                            scope.launch {
+                                sessionManager.saveSession(tokenOrId)
+                                navController.navigate(Screen.Feed.route) { popUpTo(0) }
+                            }
                         }
                     )
                 }
@@ -230,8 +249,10 @@ fun MainScreen() {
                         onNavigateBack = { navController.popBackStack() },
                         onNavigateToLogin = { navController.navigate(Screen.Login.route) },
                         onSignUpSuccess = { tokenOrId ->
-                            citizenIdLoadedByRoomForTesting = tokenOrId
-                            navController.navigate(Screen.Feed.route) { popUpTo(0) }
+                            scope.launch {
+                                sessionManager.saveSession(tokenOrId)
+                                navController.navigate(Screen.Feed.route) { popUpTo(0) }
+                            }
                         }
                     )
                 }
@@ -306,14 +327,13 @@ private fun FlareBottomNavigation(
                 indicatorColor = Color.Transparent
             )
         )
-        // EL BOTÓN CENTRAL INTERCEPTADO
         NavigationBarItem(
             selected = currentRoute == Screen.AddPost.route,
             onClick = {
                 if (isGuest) {
-                    onRequireAuth() // Levanta el modal si no hay sesión
+                    onRequireAuth()
                 } else {
-                    onNavigate(Screen.AddPost.route) // Va a la vista de publicar
+                    onNavigate(Screen.AddPost.route)
                 }
             },
             icon = { Icon(Icons.Default.AddCircle, contentDescription = "Add", tint = Color(0xFFFF5722), modifier = Modifier.size(36.dp)) },

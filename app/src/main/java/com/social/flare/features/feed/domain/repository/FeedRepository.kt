@@ -16,4 +16,5 @@ interface FeedRepository {
     suspend fun toggleLike(postId: String, citizenId: String, isCurrentlyLiked: Boolean): Result<Unit>
     suspend fun updatePost(postId: String, currentUserId: String, newContent: String): Result<Unit>
     suspend fun deletePost(postId: String, currentUserId: String): Result<Unit>
+    fun getUserPosts(userId: String): Flow<List<Post>>
 }
