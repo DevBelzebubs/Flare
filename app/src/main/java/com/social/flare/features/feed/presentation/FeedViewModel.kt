@@ -46,6 +46,7 @@ class FeedViewModel(
             is FeedEvent.OnShareClick -> { /* Lógica de compartir */ }
             is FeedEvent.OnCommentClick -> { /* Lógica de comentarios */ }
             is FeedEvent.OnSaveClick -> { /* Lógica de guardado */ }
+            is FeedEvent.OnPostClick -> { }
         }
     }
 

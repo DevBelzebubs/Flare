@@ -43,6 +43,7 @@ import com.social.flare.features.search.presentation.SearchScreen
 import com.social.flare.core.media.CloudinaryService
 import com.social.flare.features.feed.data.repository.FeedRepositoryImpl
 import com.social.flare.features.feed.presentation.FeedViewModel
+import com.social.flare.features.feed.presentation.components.PostDetailScreen
 import com.social.flare.features.post.domain.usecase.CreatePostUseCase
 import com.social.flare.features.post.domain.usecase.GetUserPostsUseCase
 import com.social.flare.features.post.presentation.AddPostScreen
@@ -133,7 +134,16 @@ fun MainScreen() {
                     FeedScreen(
                         activeCitizenId = activeCitizenId,
                         viewModel = feedViewModel,
-                        onRequireAuth = { showAuthDialog = true }
+                        onRequireAuth = { showAuthDialog = true },
+                        onPostClick = { postId ->
+                            navController.navigate("${Screen.PostDetail.route}/$postId")
+                        }
+                    )
+                }
+                composable("${Screen.PostDetail.route}/{postId}") { backStackEntry ->
+                    val postId = backStackEntry.arguments?.getString("postId")
+                    PostDetailScreen(
+                        onNavigateBack = { navController.popBackStack() }
                     )
                 }
 

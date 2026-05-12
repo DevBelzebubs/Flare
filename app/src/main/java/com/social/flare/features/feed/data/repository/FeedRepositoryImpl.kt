@@ -7,7 +7,10 @@ import com.social.flare.features.feed.data.mapper.toDomain
 import com.social.flare.features.feed.data.mapper.toDomainModel
 import com.social.flare.features.feed.domain.model.Post
 import com.social.flare.features.feed.domain.repository.FeedRepository
+import com.social.flare.features.post.domain.model.PostDetail
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
 import java.util.UUID
 
@@ -80,7 +83,7 @@ class FeedRepositoryImpl(
                 Result.failure(Exception("No se pudo editar. El post no existe o no te pertenece."))
             }
         }catch (e: Exception){
-            Result.failure(e);
+            Result.failure(e)
         }
     }
 
@@ -92,13 +95,29 @@ class FeedRepositoryImpl(
             postDao.deletePostSafely(postId,currentUserId)
             Result.success(Unit)
         }catch (e: Exception){
-            Result.failure(e);
+            Result.failure(e)
         }
     }
 
     override fun getUserPosts(userId: String): Flow<List<Post>> {
         return postDao.getPostsByAuthor(userId).map { entities ->
             entities.map { it.toDomain() }
+        }
+    }
+
+    override fun getPostDetail(
+        postId: String,
+        currentUserId: String
+    ): Flow<PostDetail> {
+        val mainPostFlow = postDao.getPostById(postId, currentUserId).filterNotNull()
+
+        val repliesFlow = postDao.getPostReplies(postId, currentUserId)
+
+        return combine(mainPostFlow, repliesFlow) { mainPostEntity, repliesEntities ->
+            PostDetail(
+                mainPost = mainPostEntity.toDomain(),
+                replies = repliesEntities.map { it.toDomain() }
+            )
         }
     }
 }

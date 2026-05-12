@@ -1,6 +1,7 @@
 package com.social.flare.features.feed.domain.repository
 
 import com.social.flare.features.feed.domain.model.Post
+import com.social.flare.features.post.domain.model.PostDetail
 import kotlinx.coroutines.flow.Flow
 
 interface FeedRepository {
@@ -17,4 +18,5 @@ interface FeedRepository {
     suspend fun updatePost(postId: String, currentUserId: String, newContent: String): Result<Unit>
     suspend fun deletePost(postId: String, currentUserId: String): Result<Unit>
     fun getUserPosts(userId: String): Flow<List<Post>>
+    fun getPostDetail(postId: String, currentUserId: String): Flow<PostDetail>
 }

@@ -19,7 +19,8 @@ import com.social.flare.features.feed.presentation.components.StoryCarousel
 fun FeedScreen(
     activeCitizenId: String?,
     viewModel: FeedViewModel = viewModel(),
-    onRequireAuth: () -> Unit
+    onRequireAuth: () -> Unit,
+    onPostClick: (String) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val isGuest = activeCitizenId == null
@@ -58,8 +59,10 @@ fun FeedScreen(
                         post = displayPost,
                         activeCitizenId = activeCitizenId,
                         onEvent = { event ->
-                            requireAuth {
-                                viewModel.onEvent(event)
+                            if (event is FeedEvent.OnPostClick) {
+                                onPostClick(event.postId)
+                            } else {
+                                requireAuth { viewModel.onEvent(event) }
                             }
                         }
                     )

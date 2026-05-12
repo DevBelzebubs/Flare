@@ -1,6 +1,7 @@
 package com.social.flare.features.feed.data.local.dao
 
 import androidx.room.Dao
+import androidx.room.Delete
 import androidx.room.Embedded
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
@@ -45,6 +46,20 @@ interface PostDao {
         ORDER BY p.created_at DESC
     """)
     fun getFeedPosts(currentUserId: String): Flow<List<PostWithDetails>>
+    @Query("""
+        SELECT 
+            p.*, 
+            c.display_name AS authorDisplayName, 
+            c.username AS authorUsername, 
+            c.avatar_url AS authorAvatarUrl,
+            (SELECT COUNT(*) FROM post_likes WHERE post_id = p.post_id) AS likesCount,
+            (SELECT COUNT(*) FROM post_table WHERE reply_to_post_id = p.post_id) AS commentsCount,
+            (SELECT EXISTS(SELECT 1 FROM post_likes WHERE post_id = p.post_id AND citizen_id = :currentUserId)) AS isLikedByMe
+        FROM post_table p
+        INNER JOIN citizen_table c ON p.author_id = c.citizen_id
+        WHERE p.post_id = :postId
+    """)
+    fun getPostById(postId: String, currentUserId: String): Flow<PostWithDetails?>
     @Query("""
         SELECT p.*,
                c.display_name AS authorDisplayName,
@@ -101,4 +116,19 @@ interface PostDao {
         ORDER BY p.created_at DESC
     """)
     fun getPostsByAuthor(userId: String): Flow<List<PostWithDetails>>
+    @Query("""
+        SELECT 
+            p.*, 
+            c.display_name AS authorDisplayName, 
+            c.username AS authorUsername, 
+            c.avatar_url AS authorAvatarUrl,
+            (SELECT COUNT(*) FROM post_likes WHERE post_id = p.post_id) AS likesCount,
+            (SELECT COUNT(*) FROM post_table WHERE reply_to_post_id = p.post_id) AS commentsCount,
+            (SELECT EXISTS(SELECT 1 FROM post_likes WHERE post_id = p.post_id AND citizen_id = :currentUserId)) AS isLikedByMe
+        FROM post_table p
+        INNER JOIN citizen_table c ON p.author_id = c.citizen_id
+        WHERE p.reply_to_post_id = :parentId
+        ORDER BY p.created_at ASC
+    """)
+    fun getRepliesForPost(parentId: String, currentUserId: String): Flow<List<PostWithDetails>>
 }
