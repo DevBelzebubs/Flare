@@ -26,9 +26,9 @@ android {
         versionName = "1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        val cloudName = localProperties.getProperty("CLOUDINARY_CLOUD_NAME", "")
-        val apiKey = localProperties.getProperty("CLOUDINARY_API_KEY", "")
-        val apiSecret = localProperties.getProperty("CLOUDINARY_API_SECRET", "")
+        val cloudName = localProperties.getProperty("CLOUD_NAME", "")
+        val apiKey = localProperties.getProperty("CLOUD_API_KEY", "")
+        val apiSecret = localProperties.getProperty("CLOUD_PRIVATE_API_KEY", "")
 
         buildConfigField("String", "CLOUDINARY_CLOUD_NAME", "\"$cloudName\"")
         buildConfigField("String", "CLOUDINARY_API_KEY", "\"$apiKey\"")
@@ -65,6 +65,7 @@ dependencies {
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.runtime)
     implementation(libs.androidx.compose.foundation.layout)
+    implementation(libs.androidx.compiler)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -80,5 +81,7 @@ dependencies {
     implementation("androidx.room:room-ktx:$room_version")
     implementation("io.coil-kt:coil-compose:2.6.0")
     implementation("com.cloudinary:cloudinary-android:3.1.2")
+    implementation("androidx.media3:media3-exoplayer:1.3.0")
+    implementation("androidx.media3:media3-ui:1.3.0")
     ksp("androidx.room:room-compiler:$room_version")
 }

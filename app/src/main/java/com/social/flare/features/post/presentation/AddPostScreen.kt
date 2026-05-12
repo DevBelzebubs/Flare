@@ -25,10 +25,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.social.flare.features.feed.presentation.components.VideoPlayer
+
 @Composable
 fun AddPostScreen(
     onNavigateBack: () -> Unit,
@@ -153,16 +156,30 @@ private fun AddPostMediaPreview(
     mediaUris: List<Uri>,
     onRemoveMedia: (Uri) -> Unit
 ) {
+    val context = LocalContext.current
     LazyRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier.padding(start = 56.dp)
     ) {
         items(mediaUris) { uri ->
+            val mimeType = context.contentResolver.getType(uri)
+            val isVideo = mimeType?.startsWith("video") == true
+
             Box(modifier = Modifier.size(120.dp).clip(RoundedCornerShape(12.dp))) {
-                AsyncImage(
-                    model = uri, contentDescription = null,
-                    contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize()
-                )
+                if (isVideo) {
+                    VideoPlayer(
+                        videoUrl = uri.toString(),
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } else {
+                    AsyncImage(
+                        model = uri,
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopEnd).padding(4.dp).size(24.dp)

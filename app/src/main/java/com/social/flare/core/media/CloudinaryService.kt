@@ -2,46 +2,51 @@ package com.social.flare.core.media
 
 import android.content.Context
 import android.net.Uri
+import android.util.Log
+import android.webkit.MimeTypeMap
 import com.cloudinary.android.MediaManager
-import com.cloudinary.android.callback.ErrorInfo
-import com.cloudinary.android.callback.UploadCallback
-import kotlinx.coroutines.suspendCancellableCoroutine
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.io.File
 
 class CloudinaryService(private val context: Context) {
 
-    suspend fun uploadImage(uri: Uri): String = suspendCancellableCoroutine { continuation ->
+    suspend fun uploadImage(uri: Uri): String = withContext(Dispatchers.IO) {
+        val mimeType = context.contentResolver.getType(uri)
+        val extension = MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType) ?: "bin"
+
+        val tempFile = File(context.cacheDir, "flare_media_${System.currentTimeMillis()}.$extension")
+
         try {
-            val bytes = context.contentResolver.openInputStream(uri)?.readBytes()
-            if (bytes == null) {
-                if (continuation.isActive) continuation.resumeWithException(Exception("No se pudo leer la imagen local"))
-                return@suspendCancellableCoroutine
+            context.contentResolver.openInputStream(uri)?.use { input ->
+                tempFile.outputStream().use { output -> input.copyTo(output) }
             }
-            MediaManager.get().upload(bytes)
-                .callback(object : UploadCallback {
-                    override fun onStart(requestId: String) {}
-                    override fun onProgress(requestId: String, bytes: Long, totalBytes: Long) {}
-                    override fun onReschedule(requestId: String, error: ErrorInfo) {}
 
-                    override fun onSuccess(requestId: String, resultData: Map<*, *>) {
-                        val secureUrl = resultData["secure_url"] as? String ?: ""
-                        if (continuation.isActive) continuation.resume(secureUrl)
-                    }
+            if (!tempFile.exists() || tempFile.length() == 0L) {
+                throw Exception("No se pudo leer el archivo de la galería")
+            }
 
-                    override fun onError(requestId: String, error: ErrorInfo) {
-                        if (continuation.isActive) continuation.resumeWithException(Exception(error.description))
-                    }
-                })
-                .dispatch()
+            val params = mapOf("resource_type" to "auto")
+            val resultData = MediaManager.get().cloudinary.uploader().upload(tempFile, params)
+
+            val url = (resultData["secure_url"] ?: resultData["url"]) as? String ?: ""
+            Log.d("FLARE_DEBUG", "URL generada por Cloudinary: $url")
+
+            if (url.isBlank()) {
+                throw Exception("Cloudinary subió el archivo pero no devolvió el enlace")
+            }
+
+            return@withContext url
+
         } catch (e: Exception) {
-            if (continuation.isActive) continuation.resumeWithException(e)
+            e.printStackTrace()
+            throw Exception("Fallo en la subida: ${e.message ?: e.javaClass.simpleName}")
+        } finally {
+            if (tempFile.exists()) tempFile.delete()
         }
     }
 
     suspend fun uploadMultipleImages(uris: List<Uri>): List<String> {
-        return uris.map { uri ->
-            uploadImage(uri)
-        }
+        return uris.map { uploadImage(it) }
     }
 }

@@ -1,5 +1,6 @@
 package com.social.flare.features.main.presentation
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -52,10 +53,8 @@ fun MainScreen() {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
     val context = LocalContext.current
-
     var showAuthDialog by remember { mutableStateOf(false) }
     var citizenIdLoadedByRoomForTesting by remember { mutableStateOf<String?>(null) }
-
     LaunchedEffect(Unit) {
         citizenIdLoadedByRoomForTesting = null
     }
@@ -104,21 +103,31 @@ fun MainScreen() {
                 composable(Screen.Feed.route) {
                     val app = context.applicationContext as FlareApp
                     val repository = FeedRepositoryImpl(app.database.postDao())
+
                     val getFeedUseCase = com.social.flare.features.feed.domain.usecase.GetFeedUseCase(repository)
+                    val deletePostUseCase = com.social.flare.features.post.domain.usecase.DeletePostUseCase(repository)
+                    val updatePostUseCase = com.social.flare.features.post.domain.usecase.UpdatePostUseCase(repository)
 
                     val feedViewModel: FeedViewModel = viewModel(
                         factory = object : ViewModelProvider.Factory {
                             @Suppress("UNCHECKED_CAST")
                             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                                return FeedViewModel(getFeedUseCase, repository) as T
+                                return FeedViewModel(
+                                    getFeedUseCase,
+                                    deletePostUseCase,
+                                    updatePostUseCase,
+                                    repository
+                                ) as T
                             }
                         }
                     )
+
                     LaunchedEffect(citizenIdLoadedByRoomForTesting) {
                         citizenIdLoadedByRoomForTesting?.let { userId ->
                             feedViewModel.loadFeed(userId)
                         }
                     }
+
                     FeedScreen(
                         activeCitizenId = citizenIdLoadedByRoomForTesting,
                         viewModel = feedViewModel,
@@ -147,11 +156,15 @@ fun MainScreen() {
 
                     val uiState by viewModel.uiState.collectAsState()
 
-                    LaunchedEffect(uiState.isSuccess) {
+                    LaunchedEffect(uiState.isSuccess, uiState.errorMessage) {
                         if (uiState.isSuccess) {
                             navController.navigate(Screen.Feed.route) {
                                 popUpTo(navController.graph.findStartDestination().id)
                             }
+                        }
+                        if (uiState.errorMessage != null) {
+                            Toast.makeText(context, "Error: ${uiState.errorMessage}", Toast.LENGTH_LONG).show()
+                            viewModel.clearError()
                         }
                     }
 

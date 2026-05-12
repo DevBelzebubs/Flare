@@ -14,30 +14,43 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.ChatBubbleOutline
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Send
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.social.flare.features.feed.domain.model.Post
+import com.social.flare.features.feed.presentation.FeedEvent
 
 @Composable
 fun PostCard(
     post: Post,
+    activeCitizenId: String?,
     modifier: Modifier = Modifier,
-    onLikeClick: () -> Unit = {},
-    onCommentClick: () -> Unit = {},
-    onSaveClick: () -> Unit = {},
-    onShareClick: () -> Unit = {}
+    onEvent: (FeedEvent) -> Unit = {}
 ) {
+    var menuExpanded by remember { mutableStateOf(false) }
+    var showEditDialog by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var editContentText by remember { mutableStateOf(post.content ?: "") }
+
+    val isOwner = post.authorId == activeCitizenId
+
     Card(
         modifier = modifier
             .fillMaxWidth()
@@ -52,7 +65,19 @@ fun PostCard(
         ) {
             PostHeader(
                 displayName = post.authorDisplayName,
-                username = post.authorUsername
+                username = post.authorUsername,
+                isOwner = isOwner,
+                menuExpanded = menuExpanded,
+                onMenuExpandedChange = { menuExpanded = it },
+                onEditClick = {
+                    menuExpanded = false
+                    editContentText = post.content ?: ""
+                    showEditDialog = true
+                },
+                onDeleteClick = {
+                    menuExpanded = false
+                    showDeleteDialog = true
+                }
             )
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -64,10 +89,31 @@ fun PostCard(
                     fontSize = 15.sp,
                     lineHeight = 22.sp
                 )
+                if (post.mediaUrls.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    val mediaUrl = post.mediaUrls.first()
+                    val isVideo = mediaUrl.endsWith(".mp4", ignoreCase = true) ||
+                            mediaUrl.endsWith(".webm", ignoreCase = true) ||
+                            mediaUrl.endsWith(".mkv", ignoreCase = true) ||
+                            mediaUrl.endsWith(".mov", ignoreCase = true)
+                    if (isVideo) {
+                        VideoPlayer(videoUrl = mediaUrl)
+                    } else {
+                        AsyncImage(
+                            model = mediaUrl,
+                            contentDescription = "Post image",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(250.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                        )
+                    }
+                }
                 Spacer(modifier = Modifier.height(16.dp))
             }
 
-            // Pasamos isLikedByMe para que las estadísticas cambien de color
             PostStats(
                 likesCount = post.likesCount,
                 commentsCount = post.commentsCount,
@@ -78,20 +124,88 @@ fun PostCard(
             HorizontalDivider(color = Color.DarkGray, thickness = 0.5.dp)
             Spacer(modifier = Modifier.height(4.dp))
 
-            // Pasamos isLikedByMe a los botones de acción
             PostActionButtons(
                 isLikedByMe = post.isLikedByMe,
-                onLikeClick = onLikeClick,
-                onCommentClick = onCommentClick,
-                onSaveClick = onSaveClick,
-                onShareClick = onShareClick
+                onLikeClick = { onEvent(FeedEvent.OnLikeClick(post.id)) },
+                onCommentClick = { onEvent(FeedEvent.OnCommentClick(post.id)) },
+                onSaveClick = { onEvent(FeedEvent.OnSaveClick(post.id)) },
+                onShareClick = { onEvent(FeedEvent.OnShareClick(post.id)) }
             )
         }
+    }
+
+
+    if (showEditDialog) {
+        AlertDialog(
+            onDismissRequest = { showEditDialog = false },
+            containerColor = Color(0xFF1E1E1E),
+            title = { Text("Editar Publicación", color = Color.White) },
+            text = {
+                OutlinedTextField(
+                    value = editContentText,
+                    onValueChange = { if (it.length <= 500) editContentText = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        focusedBorderColor = Color(0xFFFF5722)
+                    )
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    onEvent(FeedEvent.OnEditPost(post.id, editContentText))
+                    showEditDialog = false
+                }) {
+                    Text("Guardar", color = Color(0xFFFF5722))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showEditDialog = false }) {
+                    Text("Cancelar", color = Color.Gray)
+                }
+            }
+        )
+    }
+
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            containerColor = Color(0xFF1E1E1E),
+            title = { Text("Eliminar Publicación", color = Color.White) },
+            text = {
+                Text(
+                    text = "¿Estás seguro de que deseas eliminar esta publicación? Esta acción no se puede deshacer.",
+                    color = Color.LightGray
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    onEvent(FeedEvent.OnDeletePost(post.id))
+                    showDeleteDialog = false
+                }) {
+                    Text("Eliminar", color = Color.Red, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text("Cancelar", color = Color.Gray)
+                }
+            }
+        )
     }
 }
 
 @Composable
-private fun PostHeader(displayName: String, username: String) {
+private fun PostHeader(
+    displayName: String,
+    username: String,
+    isOwner: Boolean,
+    menuExpanded: Boolean,
+    onMenuExpandedChange: (Boolean) -> Unit,
+    onEditClick: () -> Unit,
+    onDeleteClick: () -> Unit
+) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
@@ -119,12 +233,33 @@ private fun PostHeader(displayName: String, username: String) {
             )
         }
 
-        IconButton(onClick = { /* Opciones */ }) {
-            Icon(
-                imageVector = Icons.Default.MoreVert,
-                contentDescription = "Opciones",
-                tint = Color.Gray
-            )
+        if (isOwner) {
+            Box {
+                IconButton(onClick = { onMenuExpandedChange(true) }) {
+                    Icon(
+                        imageVector = Icons.Default.MoreVert,
+                        contentDescription = "Opciones",
+                        tint = Color.Gray
+                    )
+                }
+
+                DropdownMenu(
+                    expanded = menuExpanded,
+                    onDismissRequest = { onMenuExpandedChange(false) },
+                    modifier = Modifier.background(Color(0xFF1E1E1E))
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("Editar", color = Color.White) },
+                        leadingIcon = { Icon(Icons.Outlined.Edit, contentDescription = null, tint = Color.White) },
+                        onClick = onEditClick
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Eliminar", color = Color.Red) },
+                        leadingIcon = { Icon(Icons.Outlined.Delete, contentDescription = null, tint = Color.Red) },
+                        onClick = onDeleteClick
+                    )
+                }
+            }
         }
     }
 }
@@ -138,7 +273,6 @@ private fun PostStats(likesCount: Int, commentsCount: Int, isLikedByMe: Boolean)
         Icon(
             imageVector = Icons.Filled.Favorite,
             contentDescription = "Likes",
-            // Si le di like es Naranja Flare, si no, es Gris
             tint = if (isLikedByMe) Color(0xFFFF5722) else Color.Gray,
             modifier = Modifier.size(16.dp)
         )

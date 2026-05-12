@@ -65,4 +65,33 @@ class FeedRepositoryImpl(
             Result.failure(e)
         }
     }
+
+    override suspend fun updatePost(
+        postId: String,
+        currentUserId: String,
+        newContent: String
+    ): Result<Unit> {
+        return try {
+            val rowsAffected = postDao.updatePostContent(postId,currentUserId,newContent)
+            if (rowsAffected > 0){
+                Result.success(Unit)
+            } else {
+                Result.failure(Exception("No se pudo editar. El post no existe o no te pertenece."))
+            }
+        }catch (e: Exception){
+            Result.failure(e);
+        }
+    }
+
+    override suspend fun deletePost(
+        postId: String,
+        currentUserId: String
+    ): Result<Unit> {
+        return try {
+            postDao.deletePostSafely(postId,currentUserId)
+            Result.success(Unit)
+        }catch (e: Exception){
+            Result.failure(e);
+        }
+    }
 }

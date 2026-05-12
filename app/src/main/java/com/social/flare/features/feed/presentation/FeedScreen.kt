@@ -56,17 +56,11 @@ fun FeedScreen(
                     val displayPost = if (isGuest) post.copy(isLikedByMe = false) else post
                     PostCard(
                         post = displayPost,
-                        onLikeClick = {
-                            requireAuth { viewModel.onEvent(FeedEvent.OnLikeClick(post.id)) }
-                        },
-                        onCommentClick = {
-                            requireAuth { viewModel.onEvent(FeedEvent.OnCommentClick(post.id)) }
-                        },
-                        onSaveClick = {
-                            requireAuth { viewModel.onEvent(FeedEvent.OnSaveClick(post.id)) }
-                        },
-                        onShareClick = {
-                            requireAuth { viewModel.onEvent(FeedEvent.OnShareClick(post.id)) }
+                        activeCitizenId = activeCitizenId,
+                        onEvent = { event ->
+                            requireAuth {
+                                viewModel.onEvent(event)
+                            }
                         }
                     )
                 }

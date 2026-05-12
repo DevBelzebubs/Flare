@@ -5,6 +5,7 @@ import androidx.room.Embedded
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import com.social.flare.features.feed.data.local.entity.PostEntity
 import com.social.flare.features.feed.data.local.entity.PostLikeEntity
 import kotlinx.coroutines.flow.Flow
@@ -58,5 +59,31 @@ interface PostDao {
         ORDER BY p.created_at ASC
     """)
     fun getPostReplies(parentPostId: String, currentUserId: String): Flow<List<PostWithDetails>>
+    @Query("UPDATE post_table SET content = :newContent, sync_status = 0 WHERE post_id = :postId AND author_id = :currentUserId")
+    suspend fun updatePostContent(postId: String, currentUserId: String, newContent: String): Int
 
+
+    @Query("SELECT author_id FROM post_table WHERE post_id = :postId")
+    suspend fun getPostAuthor(postId: String): String?
+
+    @Query("DELETE FROM post_likes WHERE post_id = :postId")
+    suspend fun deleteAdjacentLikes(postId: String)
+
+    @Query("DELETE FROM post_table WHERE reply_to_post_id = :postId")
+    suspend fun deleteAdjacentReplies(postId: String)
+
+    @Query("DELETE FROM post_table WHERE post_id = :postId")
+    suspend fun deleteTargetPost(postId: String)
+
+    @Transaction
+    suspend fun deletePostSafely(postId: String, currentUserId: String) {
+        val author = getPostAuthor(postId)
+        if (author == currentUserId) {
+            deleteAdjacentLikes(postId)
+            deleteAdjacentReplies(postId)
+            deleteTargetPost(postId)
+        } else {
+            throw SecurityException("Access Denied: No tienes permisos para borrar este post.")
+        }
+    }
 }

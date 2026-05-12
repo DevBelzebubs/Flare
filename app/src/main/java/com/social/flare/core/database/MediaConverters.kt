@@ -5,12 +5,13 @@ import androidx.room.TypeConverter
 class MediaConverters {
     @TypeConverter
     fun fromMediaList(urls: List<String>?): String {
-        return urls?.joinToString(separator = ",") ?: ""
+        if (urls.isNullOrEmpty()) return ""
+        return urls.filter { it.isNotBlank() }.joinToString(separator = ",")
     }
 
     @TypeConverter
     fun toMediaList(data: String?): List<String> {
         if (data.isNullOrBlank()) return emptyList()
-        return data.split(",")
+        return data.split(",").filter { it.isNotBlank() }
     }
 }
