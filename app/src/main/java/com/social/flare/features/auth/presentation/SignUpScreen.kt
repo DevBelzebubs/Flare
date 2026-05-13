@@ -17,7 +17,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-
+import com.social.flare.features.auth.presentation.components.FlareTextField
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SignUpScreen(
@@ -145,25 +145,4 @@ fun SignUpScreen(
             )
         }
     }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun FlareTextField(value: String, label: String, onValueChange: (String) -> Unit) {
-    OutlinedTextField(
-        value = value,
-        onValueChange = onValueChange,
-        label = { Text(label, color = Color.Gray) },
-        colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = Color(0xFFFF5722),
-            unfocusedBorderColor = Color.DarkGray,
-            focusedTextColor = Color.White,
-            unfocusedTextColor = Color.White,
-            cursorColor = Color(0xFFFF5722),
-            focusedLabelColor = Color(0xFFFF5722),
-            unfocusedLabelColor = Color.Gray
-        ),
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp)
-    )
 }

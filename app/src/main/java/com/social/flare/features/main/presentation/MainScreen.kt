@@ -16,9 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -50,7 +48,8 @@ import com.social.flare.features.post.presentation.AddPostScreen
 import com.social.flare.features.post.presentation.AddPostViewModel
 import com.social.flare.features.post.presentation.PostDetailViewModel
 import com.social.flare.features.profile.presentation.ProfileViewModel
-
+import com.social.flare.features.main.presentation.components.FlareTopBar
+import com.social.flare.features.main.presentation.components.FlareBottomNavigation
 @Composable
 fun MainScreen() {
     val navController = rememberNavController()
@@ -300,88 +299,5 @@ fun MainScreen() {
                 }
             )
         }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun FlareTopBar(onSettingsClick: () -> Unit) {
-    TopAppBar(
-        title = {
-            Text(text = "Flare", color = Color(0xFFFF5722), fontWeight = FontWeight.ExtraBold, fontSize = 24.sp)
-        },
-        actions = {
-            IconButton(onClick = onSettingsClick) {
-                Icon(imageVector = Icons.Default.Settings, contentDescription = "Settings", tint = Color.White)
-            }
-        },
-        colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Black)
-    )
-}
-
-@Composable
-private fun FlareBottomNavigation(
-    currentRoute: String,
-    isGuest: Boolean,
-    onRequireAuth: () -> Unit,
-    onNavigate: (String) -> Unit
-) {
-    NavigationBar(
-        containerColor = Color.Black,
-        contentColor = Color.White,
-        tonalElevation = 0.dp
-    ) {
-        NavigationBarItem(
-            selected = currentRoute == Screen.Feed.route,
-            onClick = { onNavigate(Screen.Feed.route) },
-            icon = { Icon(Icons.Default.Home, contentDescription = "Home") },
-            colors = NavigationBarItemDefaults.colors(
-                selectedIconColor = Color(0xFFFF5722),
-                unselectedIconColor = Color.Gray,
-                indicatorColor = Color.Transparent
-            )
-        )
-        NavigationBarItem(
-            selected = currentRoute == Screen.Search.route,
-            onClick = { onNavigate(Screen.Search.route) },
-            icon = { Icon(Icons.Default.Search, contentDescription = "Search") },
-            colors = NavigationBarItemDefaults.colors(
-                selectedIconColor = Color(0xFFFF5722),
-                unselectedIconColor = Color.Gray,
-                indicatorColor = Color.Transparent
-            )
-        )
-        NavigationBarItem(
-            selected = currentRoute == Screen.AddPost.route,
-            onClick = {
-                if (isGuest) {
-                    onRequireAuth()
-                } else {
-                    onNavigate(Screen.AddPost.route)
-                }
-            },
-            icon = { Icon(Icons.Default.AddCircle, contentDescription = "Add", tint = Color(0xFFFF5722), modifier = Modifier.size(36.dp)) },
-            colors = NavigationBarItemDefaults.colors(indicatorColor = Color.Transparent)
-        )
-        NavigationBarItem(
-            selected = currentRoute == Screen.Notifications.route,
-            onClick = { onNavigate(Screen.Notifications.route) },
-            icon = { Icon(Icons.Default.Notifications, contentDescription = "Activity") },
-            colors = NavigationBarItemDefaults.colors(
-                selectedIconColor = Color(0xFFFF5722),
-                unselectedIconColor = Color.Gray,
-                indicatorColor = Color.Transparent
-            )
-        )
-        NavigationBarItem(
-            selected = currentRoute == Screen.Profile.route,
-            onClick = { onNavigate(Screen.Profile.route) },
-            icon = { Icon(Icons.Default.Person, contentDescription = "Profile") },
-            colors = NavigationBarItemDefaults.colors(
-                selectedIconColor = Color(0xFFFF5722),
-                unselectedIconColor = Color.Gray,
-                indicatorColor = Color.Transparent
-            )
-        )
     }
 }
