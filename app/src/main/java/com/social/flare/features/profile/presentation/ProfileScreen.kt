@@ -37,7 +37,8 @@ import com.social.flare.features.profile.presentation.components.ProfileGridItem
 fun ProfileScreen(
     citizenId: String?,
     viewModel: ProfileViewModel = viewModel(factory = ProfileViewModelFactory(LocalContext.current)),
-    onNavigateToLogin: () -> Unit = {}
+    onNavigateToLogin: () -> Unit = {},
+    onPostClick: (String) -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
     LaunchedEffect(citizenId) {
@@ -55,7 +56,11 @@ fun ProfileScreen(
                         CircularProgressIndicator(modifier = Modifier.align(Alignment.Center), color = Color(0xFFFF5722))
                     }
                     is ProfileUiState.Success -> {
-                        ProfileContent(state, userPosts = state.posts)
+                        ProfileContent(
+                            state = state,
+                            userPosts = state.posts,
+                            onPostClick = onPostClick
+                        )
                     }
                     is ProfileUiState.UserNotFound -> {
                         GuestProfileView(onNavigateToLogin)
@@ -94,7 +99,8 @@ private fun GuestProfileView(onNavigateToLogin: () -> Unit) {
 @Composable
 private fun ProfileContent(
     state: ProfileUiState.Success,
-    userPosts: List<Post>
+    userPosts: List<Post>,
+    onPostClick: (String) -> Unit
 ) {
     val citizen by state.citizen.collectAsState(initial = null)
     var selectedTab by remember { mutableStateOf(0) }
@@ -129,9 +135,7 @@ private fun ProfileContent(
                 items(userPosts) { post ->
                     ProfileGridItem(
                         post = post,
-                        onClick = {
-                            // navController.navigate(Screen.PostDetail.route + "/${post.id}")
-                        }
+                        onClick = { onPostClick(post.id) }
                     )
                 }
             }

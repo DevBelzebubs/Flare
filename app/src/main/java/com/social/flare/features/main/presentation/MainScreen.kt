@@ -48,6 +48,7 @@ import com.social.flare.features.post.domain.usecase.CreatePostUseCase
 import com.social.flare.features.post.domain.usecase.GetUserPostsUseCase
 import com.social.flare.features.post.presentation.AddPostScreen
 import com.social.flare.features.post.presentation.AddPostViewModel
+import com.social.flare.features.post.presentation.PostDetailViewModel
 import com.social.flare.features.profile.presentation.ProfileViewModel
 
 @Composable
@@ -141,8 +142,19 @@ fun MainScreen() {
                     )
                 }
                 composable("${Screen.PostDetail.route}/{postId}") { backStackEntry ->
-                    val postId = backStackEntry.arguments?.getString("postId")
+                    val postId = backStackEntry.arguments?.getString("postId") ?: return@composable
+                    val postDetailViewModel: PostDetailViewModel = viewModel(
+                        factory = object : ViewModelProvider.Factory {
+                            @Suppress("UNCHECKED_CAST")
+                            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                                return PostDetailViewModel(feedRepository) as T
+                            }
+                        }
+                    )
                     PostDetailScreen(
+                        postId = postId,
+                        activeCitizenId = activeCitizenId,
+                        viewModel = postDetailViewModel,
                         onNavigateBack = { navController.popBackStack() }
                     )
                 }
@@ -234,9 +246,11 @@ fun MainScreen() {
                     )
                     ProfileScreen(
                         citizenId = activeCitizenId,
-                        viewModel = profileViewModel,
                         onNavigateToLogin = {
                             navController.navigate(Screen.Login.route)
+                        },
+                        onPostClick = { postId ->
+                            navController.navigate("${Screen.PostDetail.route}/$postId")
                         }
                     )
                 }
