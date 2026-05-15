@@ -12,6 +12,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.social.flare.features.profile.presentation.components.profile.GuestProfileView
 import com.social.flare.features.profile.presentation.components.profile.ProfileContent
+import com.social.flare.features.profile.presentation.viewmodel.ProfileUiState
+import com.social.flare.features.profile.presentation.viewmodel.ProfileViewModel
 
 @Composable
 fun ProfileScreen(

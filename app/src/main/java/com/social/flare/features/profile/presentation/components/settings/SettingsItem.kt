@@ -21,11 +21,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun SettingsItem(icon: ImageVector, title: String, isExternal: Boolean = false) {
+fun SettingsItem(
+    icon: ImageVector,
+    title: String,
+    isExternal: Boolean = false,
+    onClick: () -> Unit = {}
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { }
+            .clickable { onClick() }
             .padding(horizontal = 24.dp, vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {

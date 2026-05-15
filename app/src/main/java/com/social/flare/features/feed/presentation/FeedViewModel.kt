@@ -6,6 +6,7 @@ import com.social.flare.features.feed.domain.repository.FeedRepository
 import com.social.flare.features.feed.domain.usecase.GetFeedUseCase
 import com.social.flare.features.post.domain.usecase.DeletePostUseCase
 import com.social.flare.features.post.domain.usecase.UpdatePostUseCase
+import com.social.flare.features.profile.domain.repository.ProfileRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -16,23 +17,24 @@ class FeedViewModel(
     private val getFeedUseCase: GetFeedUseCase,
     private val deletePostUseCase: DeletePostUseCase,
     private val updatePostUseCase: UpdatePostUseCase,
-    private val repository: FeedRepository
+    private val repository: FeedRepository,
+    private val profileRepository: ProfileRepository
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(FeedUiState())
-    val uiState: StateFlow<FeedUiState> = _uiState.asStateFlow()
-
+    val uiState = _uiState.asStateFlow()
     private var currentUserId: String? = null
 
     fun loadFeed(activeUserId: String) {
         currentUserId = activeUserId
 
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, error = null) }
-
-            getFeedUseCase(activeUserId).collect { databasePosts ->
-                _uiState.update {
-                    it.copy(isLoading = false, posts = databasePosts)
-                }
+            profileRepository.getCitizenProfile(activeUserId).collect { user ->
+                _uiState.update { it.copy(activeUser = user) }
+            }
+        }
+        viewModelScope.launch {
+            getFeedUseCase(activeUserId).collect { posts ->
+                _uiState.update { it.copy(posts = posts, isLoading = false) }
             }
         }
     }

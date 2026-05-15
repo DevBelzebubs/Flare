@@ -1,10 +1,13 @@
-package com.social.flare.features.profile.presentation
+package com.social.flare.features.profile.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.social.flare.features.post.domain.usecase.GetUserPostsUseCase
 import com.social.flare.features.profile.domain.repository.ProfileRepository
-import kotlinx.coroutines.flow.*
+import com.social.flare.features.profile.presentation.viewmodel.ProfileUiState
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class ProfileViewModel(

@@ -12,7 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.social.flare.features.profile.presentation.ProfileUiState
+import com.social.flare.features.profile.presentation.viewmodel.ProfileUiState
 import com.social.flare.features.profile.presentation.components.profile.StatItem
 
 @Composable

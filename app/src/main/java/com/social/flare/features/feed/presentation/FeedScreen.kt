@@ -1,5 +1,9 @@
 package com.social.flare.features.feed.presentation
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -20,9 +24,19 @@ fun FeedScreen(
     activeCitizenId: String?,
     viewModel: FeedViewModel = viewModel(),
     onRequireAuth: () -> Unit,
-    onPostClick: (String) -> Unit
+    onPostClick: (String) -> Unit,
+    onStoryClick: (String) -> Unit,
+    onNavigateToAddStory: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val photoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia(),
+        onResult = { uri ->
+            if (uri != null) {
+                onNavigateToAddStory()
+            }
+        }
+    )
     val isGuest = activeCitizenId == null
     val requireAuth: (() -> Unit) -> Unit = { action ->
         if (isGuest) {
@@ -48,7 +62,12 @@ fun FeedScreen(
             ) {
                 item {
                     StoryCarousel(
-                        // onAddStoryClick = { requireAuth { /* Lógica de agregar historia */ } }
+                        activeUserAvatarUrl = uiState.activeUser?.avatar_url,
+                        onAddStoryClick = {
+                            photoPickerLauncher.launch(
+                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                            )
+                        },
                     )
                     HorizontalDivider(color = Color(0xFF1A1A1A), thickness = 1.dp)
                 }

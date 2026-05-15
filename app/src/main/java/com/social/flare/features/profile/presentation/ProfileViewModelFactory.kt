@@ -8,6 +8,7 @@ import com.social.flare.FlareApp
 import com.social.flare.features.feed.data.repository.FeedRepositoryImpl
 import com.social.flare.features.post.domain.usecase.GetUserPostsUseCase
 import com.social.flare.features.profile.data.repository.ProfileRepositoryImpl
+import com.social.flare.features.profile.presentation.viewmodel.ProfileViewModel
 
 class ProfileViewModelFactory(private val context: Context) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")

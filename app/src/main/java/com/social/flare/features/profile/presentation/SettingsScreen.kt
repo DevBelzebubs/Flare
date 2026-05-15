@@ -20,7 +20,8 @@ import com.social.flare.features.profile.presentation.components.settings.Settin
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(onNavigateBack: () -> Unit) {
+fun SettingsScreen(onNavigateBack: () -> Unit,
+                   onNavigateToEditProfile: () -> Unit) {
     Scaffold(
         containerColor = Color.Black,
         topBar = {
@@ -44,7 +45,7 @@ fun SettingsScreen(onNavigateBack: () -> Unit) {
             SettingsProfileHeader()
 
             SettingsSectionTitle("ACCOUNT")
-            SettingsItem(Icons.Default.Person, "Edit Profile")
+            SettingsItem(Icons.Default.Person, "Edit Profile", onClick = onNavigateToEditProfile)
             SettingsItem(Icons.Default.Lock, "Change Password")
             SettingsItem(Icons.Default.Shield, "Privacy Settings")
 
