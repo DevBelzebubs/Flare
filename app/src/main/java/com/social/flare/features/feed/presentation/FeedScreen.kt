@@ -20,7 +20,9 @@ fun FeedScreen(
     activeCitizenId: String?,
     viewModel: FeedViewModel = viewModel(),
     onRequireAuth: () -> Unit,
-    onPostClick: (String) -> Unit
+    onPostClick: (String) -> Unit,
+    onStoryClick: (String) -> Unit,
+    onNavigateToAddStory: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val isGuest = activeCitizenId == null
@@ -31,6 +33,7 @@ fun FeedScreen(
             action()
         }
     }
+
     when {
         uiState.isLoading -> {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -48,12 +51,22 @@ fun FeedScreen(
             ) {
                 item {
                     StoryCarousel(
-                        // onAddStoryClick = { requireAuth { /* Lógica de agregar historia */ } }
+                        activeUserAvatarUrl = uiState.activeUser?.avatar_url,
+                        stories = uiState.stories,
+                        onAddStoryClick = {
+                            requireAuth { onNavigateToAddStory() }
+                        },
+                        onStoryClick = { username ->
+                            requireAuth { onStoryClick(username) }
+                        }
                     )
                     HorizontalDivider(color = Color(0xFF1A1A1A), thickness = 1.dp)
                 }
 
-                items(uiState.posts) { post ->
+                items(
+                    items = uiState.posts,
+                    key = { post -> post.id }
+                ) { post ->
                     val displayPost = if (isGuest) post.copy(isLikedByMe = false) else post
                     PostCard(
                         post = displayPost,

@@ -19,4 +19,19 @@ interface CitizenDao {
 
     @Query("SELECT * FROM citizen_table WHERE username = :username LIMIT 1")
     suspend fun getCitizenByUsername(username: String): CitizenEntity?
+    @Query("""
+        UPDATE citizen_table 
+        SET display_name = :displayName, 
+            bio = :bio, 
+            avatar_url = :avatarUrl, 
+            banner_url = :bannerUrl 
+        WHERE citizen_id = :citizenId
+    """)
+    suspend fun updateCitizenProfile(
+        citizenId: String,
+        displayName: String,
+        bio: String?,
+        avatarUrl: String?,
+        bannerUrl: String?
+    )
 }

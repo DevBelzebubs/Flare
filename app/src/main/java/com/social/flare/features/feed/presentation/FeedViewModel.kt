@@ -3,9 +3,12 @@ package com.social.flare.features.feed.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.social.flare.features.feed.domain.repository.FeedRepository
+import com.social.flare.features.feed.domain.repository.StoryRepository
 import com.social.flare.features.feed.domain.usecase.GetFeedUseCase
 import com.social.flare.features.post.domain.usecase.DeletePostUseCase
 import com.social.flare.features.post.domain.usecase.UpdatePostUseCase
+import com.social.flare.features.profile.domain.repository.ProfileRepository
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -16,23 +19,40 @@ class FeedViewModel(
     private val getFeedUseCase: GetFeedUseCase,
     private val deletePostUseCase: DeletePostUseCase,
     private val updatePostUseCase: UpdatePostUseCase,
-    private val repository: FeedRepository
+    private val repository: FeedRepository,
+    private val profileRepository: ProfileRepository,
+    private val storyRepository: StoryRepository
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(FeedUiState())
-    val uiState: StateFlow<FeedUiState> = _uiState.asStateFlow()
-
+    val uiState = _uiState.asStateFlow()
     private var currentUserId: String? = null
+
+    // Variables para rastrear y cancelar las corrutinas
+    private var userJob: Job? = null
+    private var feedJob: Job? = null
+    private var storyJob: Job? = null
 
     fun loadFeed(activeUserId: String) {
         currentUserId = activeUserId
+        userJob?.cancel()
+        feedJob?.cancel()
+        storyJob?.cancel()
 
-        viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, error = null) }
+        userJob = viewModelScope.launch {
+            profileRepository.getCitizenProfile(activeUserId).collect { user ->
+                _uiState.update { it.copy(activeUser = user) }
+            }
+        }
 
-            getFeedUseCase(activeUserId).collect { databasePosts ->
-                _uiState.update {
-                    it.copy(isLoading = false, posts = databasePosts)
-                }
+        feedJob = viewModelScope.launch {
+            getFeedUseCase(activeUserId).collect { posts ->
+                _uiState.update { it.copy(posts = posts, isLoading = false) }
+            }
+        }
+
+        storyJob = viewModelScope.launch {
+            storyRepository.getActiveStories().collect { stories ->
+                _uiState.update { it.copy(stories = stories) }
             }
         }
     }

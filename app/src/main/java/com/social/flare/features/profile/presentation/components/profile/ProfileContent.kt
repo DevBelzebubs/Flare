@@ -28,7 +28,7 @@ import com.social.flare.features.profile.presentation.components.profile.Profile
 import com.social.flare.features.profile.presentation.components.profile.ProfileInfoSection
 import com.social.flare.features.profile.presentation.components.profile.ProfileStatsSection
 import com.social.flare.features.profile.presentation.components.profile.ProfileTabSection
-import com.social.flare.features.profile.presentation.ProfileUiState
+import com.social.flare.features.profile.presentation.viewmodel.ProfileUiState
 import com.social.flare.features.profile.presentation.components.ProfileGridItem
 
 @Composable

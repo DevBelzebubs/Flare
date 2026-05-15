@@ -24,16 +24,6 @@ import com.social.flare.features.auth.data.local.entity.CitizenEntity
 @Composable
 fun ProfileInfoSection(citizen: CitizenEntity) {
     Column(modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-            OutlinedButton(
-                onClick = { /* TODO: Navegar a Editar */ },
-                border = BorderStroke(1.dp, Color.Gray),
-                shape = RoundedCornerShape(8.dp),
-                modifier = Modifier.height(32.dp)
-            ) {
-                Text("Edit Profile", color = Color.White, fontSize = 12.sp)
-            }
-        }
         Spacer(modifier = Modifier.height(8.dp))
         Text(text = citizen.display_name, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 24.sp)
         Text(text = citizen.username, color = Color(0xFFFF5722), fontSize = 14.sp)
