@@ -35,6 +35,7 @@ import com.social.flare.features.search.presentation.SearchScreen
 import com.social.flare.core.media.CloudinaryService
 import com.social.flare.features.feed.data.repository.FeedRepositoryImpl
 import com.social.flare.features.feed.presentation.FeedViewModel
+import com.social.flare.features.feed.presentation.StoryViewModel
 import com.social.flare.features.feed.presentation.components.AddStoryScreen
 import com.social.flare.features.feed.presentation.components.CustomGalleryScreen
 import com.social.flare.features.feed.presentation.components.PostDetailScreen
@@ -66,6 +67,7 @@ fun MainScreen() {
     val sessionManager = remember { SessionManager(context) }
     val scope = rememberCoroutineScope()
     val activeCitizenId by sessionManager.activeCitizenIdFlow.collectAsState(initial = null)
+
     Scaffold(
         topBar = {
             if (currentRoute != Screen.Login.route && currentRoute != Screen.SignUp.route) {
@@ -110,7 +112,6 @@ fun MainScreen() {
                 startDestination = Screen.Feed.route
             ) {
                 composable(Screen.Feed.route) {
-                    val app = context.applicationContext as FlareApp
                     val repository = FeedRepositoryImpl(app.database.postDao())
 
                     val getFeedUseCase =
@@ -156,12 +157,14 @@ fun MainScreen() {
                         }
                     )
                 }
+
                 composable("${Screen.StoryViewer.route}/{username}") { backStackEntry ->
                     val username = backStackEntry.arguments?.getString("username") ?: ""
                     StoryViewerScreen(
                         onClose = { navController.popBackStack() }
                     )
                 }
+
                 composable(Screen.CustomGallery.route) {
                     CustomGalleryScreen(
                         onClose = { navController.popBackStack() },
@@ -173,10 +176,26 @@ fun MainScreen() {
                         }
                     )
                 }
+
                 composable("${Screen.AddStory.route}/{storyUri}") { backStackEntry ->
                     val storyUriString = backStackEntry.arguments?.getString("storyUri")
                     val storyUri = storyUriString?.let { Uri.parse(Uri.decode(it)) }
 
+                    // 1. Instanciamos las dependencias del repositorio de historias
+                    val cloudinaryService = remember { CloudinaryService(context) }
+                    val storyDao = app.database.storyDao()
+                    val storyRepository = remember {
+                        com.social.flare.features.feed.data.repository.StoryRepositoryImpl(storyDao, cloudinaryService)
+                    }
+                    val storyViewModel: StoryViewModel = viewModel(
+                        factory = object : ViewModelProvider.Factory {
+                            @Suppress("UNCHECKED_CAST")
+                            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                                return StoryViewModel(storyRepository) as T
+                            }
+                        }
+                    )
+                    val storyUiState by storyViewModel.uiState.collectAsState()
                     val profileViewModel: ProfileViewModel = viewModel(
                         factory = ProfileViewModelFactory(context)
                     )
@@ -185,22 +204,52 @@ fun MainScreen() {
                         activeCitizenId?.let { profileViewModel.loadActiveUserProfile(it) }
                     }
 
+                    LaunchedEffect(storyUiState.isSuccess, storyUiState.errorMessage) {
+                        if (storyUiState.isSuccess) {
+                            Toast.makeText(context, "Story published!", Toast.LENGTH_SHORT).show()
+                            navController.popBackStack()
+                        }
+                        if (storyUiState.errorMessage != null) {
+                            Toast.makeText(context, "Error: ${storyUiState.errorMessage}", Toast.LENGTH_LONG).show()
+                            storyViewModel.clearError()
+                        }
+                    }
+
                     var avatarUrl: String? = null
                     if (profileState is ProfileUiState.Success) {
                         val citizenFlow = (profileState as ProfileUiState.Success).citizen
                         val currentCitizen by citizenFlow.collectAsState(initial = null)
                         avatarUrl = currentCitizen?.avatar_url
                     }
-                    AddStoryScreen(
-                        selectedImageUri = storyUri,
-                        activeUserAvatarUrl = avatarUrl,
-                        onCancel = { navController.popBackStack() },
-                        onShareToStory = { uri ->
-                            Toast.makeText(context, "Subiendo historia a Flare...", Toast.LENGTH_SHORT).show()
-                            navController.popBackStack()
+
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        AddStoryScreen(
+                            selectedImageUri = storyUri,
+                            activeUserAvatarUrl = avatarUrl,
+                            onCancel = { navController.popBackStack() },
+                            onShareToStory = { uri ->
+                                activeCitizenId?.let { userId ->
+                                    storyViewModel.createStory(authorId = userId, imageUri = uri)
+                                }
+                            }
+                        )
+                        if (storyUiState.isUploading) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(Color.Black.copy(alpha = 0.8f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    CircularProgressIndicator(color = Color(0xFFFF5722))
+                                    Spacer(modifier = Modifier.height(16.dp))
+                                    Text("Uploading to Cloudinary...", color = Color.White)
+                                }
+                            }
                         }
-                    )
+                    }
                 }
+
                 composable("${Screen.PostDetail.route}/{postId}") { backStackEntry ->
                     val postId = backStackEntry.arguments?.getString("postId") ?: return@composable
                     val postDetailViewModel: PostDetailViewModel = viewModel(
@@ -353,6 +402,7 @@ fun MainScreen() {
                         }
                     )
                 }
+
                 composable(Screen.EditProfile.route) {
                     val profileRepository = remember {
                         com.social.flare.features.profile.data.repository.ProfileRepositoryImpl(app.database.citizenDao())
