@@ -5,6 +5,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -20,17 +21,19 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.social.flare.features.feed.data.local.entity.StoryWithAuthor
 import com.social.flare.features.feed.presentation.components.stories.StoryViewerScreen
 
 @Composable
 fun StoryCarousel(
     modifier: Modifier = Modifier,
     activeUserAvatarUrl: String? = null,
+    stories: List<StoryWithAuthor>,
     onAddStoryClick: () -> Unit = {},
     onStoryClick: (String) -> Unit = {}
 ) {
     val mockStories = listOf("Arthur Morgan", "Lana_queen", "Wa", "Leftsito", "Usuario5")
-
+    val groupedStories = stories.groupBy { it.authorUsername }
     LazyRow(
         modifier = modifier.padding(vertical = 12.dp),
         contentPadding = PaddingValues(horizontal = 16.dp),
@@ -43,10 +46,14 @@ fun StoryCarousel(
             )
         }
 
-        items(mockStories.size) { index ->
-            val username = mockStories[index]
+        items(groupedStories.keys.toList()) { username ->
+            val userStories = groupedStories[username] ?: emptyList()
+            val hasUnviewed = userStories.any { !it.story.is_viewed }
+
             StoryItem(
                 username = username,
+                avatarUrl = userStories.firstOrNull()?.authorAvatarUrl,
+                hasUnviewedStory = hasUnviewed,
                 onClick = { onStoryClick(username) }
             )
         }
@@ -120,7 +127,8 @@ private fun AddStoryItem(avatarUrl: String?,onClick: () -> Unit) {
 }
 
 @Composable
-private fun StoryItem(username: String, onClick: () -> Unit) {
+private fun StoryItem(username: String, avatarUrl: String? = null, hasUnviewedStory: Boolean, onClick: () -> Unit) {
+    val ringColor = if (hasUnviewedStory) Color(0xFFFF5722) else Color.Gray
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.width(72.dp)
@@ -130,14 +138,23 @@ private fun StoryItem(username: String, onClick: () -> Unit) {
                 .size(68.dp)
                 .border(
                     width = 2.dp,
-                    color = Color(0xFFFF5722),
+                    color = ringColor,
                     shape = CircleShape
                 )
                 .padding(4.dp)
                 .clip(CircleShape)
-                .background(Color.Gray)
+                .background(Color.DarkGray)
                 .clickable { onClick() }
-        )
+        ) {
+            if (avatarUrl != null) {
+                AsyncImage(
+                    model = avatarUrl,
+                    contentDescription = "$username avatar",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+        }
 
         Spacer(modifier = Modifier.height(4.dp))
 

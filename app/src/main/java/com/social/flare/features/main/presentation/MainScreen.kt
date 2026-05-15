@@ -34,6 +34,8 @@ import com.social.flare.features.search.presentation.SearchScreen
 
 import com.social.flare.core.media.CloudinaryService
 import com.social.flare.features.feed.data.repository.FeedRepositoryImpl
+import com.social.flare.features.feed.data.repository.StoryRepositoryImpl
+import com.social.flare.features.feed.domain.usecase.GetFeedUseCase
 import com.social.flare.features.feed.presentation.FeedViewModel
 import com.social.flare.features.feed.presentation.StoryViewModel
 import com.social.flare.features.feed.presentation.components.AddStoryScreen
@@ -48,6 +50,8 @@ import com.social.flare.features.post.presentation.PostDetailViewModel
 import com.social.flare.features.profile.presentation.viewmodel.ProfileViewModel
 import com.social.flare.features.main.presentation.components.FlareTopBar
 import com.social.flare.features.main.presentation.components.FlareBottomNavigation
+import com.social.flare.features.post.domain.usecase.DeletePostUseCase
+import com.social.flare.features.post.domain.usecase.UpdatePostUseCase
 import com.social.flare.features.profile.data.repository.ProfileRepositoryImpl
 import com.social.flare.features.profile.presentation.EditProfileScreen
 import com.social.flare.features.profile.presentation.ProfileViewModelFactory
@@ -88,12 +92,21 @@ fun MainScreen() {
                     isGuest = activeCitizenId == null,
                     onRequireAuth = { showAuthDialog = true },
                     onNavigate = { route ->
-                        navController.navigate(route) {
-                            popUpTo(navController.graph.findStartDestination().id) {
-                                saveState = true
+                        val privateRoutes = listOf(
+                            Screen.AddPost.route,
+                            Screen.Profile.route,
+                            Screen.Notifications.route
+                        )
+                        if (activeCitizenId == null && privateRoutes.contains(route)) {
+                            showAuthDialog = true
+                        } else {
+                            navController.navigate(route) {
+                                popUpTo(navController.graph.findStartDestination().id) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
                             }
-                            launchSingleTop = true
-                            restoreState = true
                         }
                     }
                 )
@@ -112,17 +125,22 @@ fun MainScreen() {
                 startDestination = Screen.Feed.route
             ) {
                 composable(Screen.Feed.route) {
-                    val repository = FeedRepositoryImpl(app.database.postDao())
+                    val repository = remember { FeedRepositoryImpl(app.database.postDao()) }
+                    val getFeedUseCase = remember { GetFeedUseCase(repository) }
+                    val deletePostUseCase = remember { DeletePostUseCase(repository) }
+                    val updatePostUseCase = remember { UpdatePostUseCase(repository) }
 
-                    val getFeedUseCase =
-                        com.social.flare.features.feed.domain.usecase.GetFeedUseCase(repository)
-                    val deletePostUseCase =
-                        com.social.flare.features.post.domain.usecase.DeletePostUseCase(repository)
-                    val updatePostUseCase =
-                        com.social.flare.features.post.domain.usecase.UpdatePostUseCase(repository)
                     val profileRepository = remember {
                         ProfileRepositoryImpl(app.database.citizenDao())
                     }
+                    val cloudinaryService = remember { CloudinaryService(context) }
+                    val storyRepository = remember {
+                        StoryRepositoryImpl(
+                            storyDao = app.database.storyDao(),
+                            cloudinaryService = cloudinaryService
+                        )
+                    }
+
                     val feedViewModel: FeedViewModel = viewModel(
                         factory = object : ViewModelProvider.Factory {
                             @Suppress("UNCHECKED_CAST")
@@ -132,16 +150,19 @@ fun MainScreen() {
                                     deletePostUseCase,
                                     updatePostUseCase,
                                     repository,
-                                    profileRepository
+                                    profileRepository,
+                                    storyRepository
                                 ) as T
                             }
                         }
                     )
+
                     LaunchedEffect(activeCitizenId) {
                         activeCitizenId?.let { userId ->
                             feedViewModel.loadFeed(userId)
                         }
                     }
+
                     FeedScreen(
                         activeCitizenId = activeCitizenId,
                         viewModel = feedViewModel,
@@ -160,9 +181,27 @@ fun MainScreen() {
 
                 composable("${Screen.StoryViewer.route}/{username}") { backStackEntry ->
                     val username = backStackEntry.arguments?.getString("username") ?: ""
-                    StoryViewerScreen(
-                        onClose = { navController.popBackStack() }
-                    )
+
+                    val cloudinaryService = remember { CloudinaryService(context) }
+                    val storyRepository = remember {
+                        StoryRepositoryImpl(
+                            app.database.storyDao(),
+                            cloudinaryService
+                        )
+                    }
+
+                    val activeStories by storyRepository.getActiveStories().collectAsState(initial = emptyList())
+
+                    val userStories = activeStories.filter { it.authorUsername == username }
+
+                    if (userStories.isNotEmpty()) {
+                        StoryViewerScreen(
+                            userStories = userStories,
+                            onClose = { navController.popBackStack() }
+                        )
+                    } else {
+                        Box(modifier = Modifier.fillMaxSize().background(Color.Black))
+                    }
                 }
 
                 composable(Screen.CustomGallery.route) {
@@ -181,11 +220,10 @@ fun MainScreen() {
                     val storyUriString = backStackEntry.arguments?.getString("storyUri")
                     val storyUri = storyUriString?.let { Uri.parse(Uri.decode(it)) }
 
-                    // 1. Instanciamos las dependencias del repositorio de historias
                     val cloudinaryService = remember { CloudinaryService(context) }
                     val storyDao = app.database.storyDao()
                     val storyRepository = remember {
-                        com.social.flare.features.feed.data.repository.StoryRepositoryImpl(storyDao, cloudinaryService)
+                        StoryRepositoryImpl(storyDao, cloudinaryService)
                     }
                     val storyViewModel: StoryViewModel = viewModel(
                         factory = object : ViewModelProvider.Factory {
@@ -200,6 +238,7 @@ fun MainScreen() {
                         factory = ProfileViewModelFactory(context)
                     )
                     val profileState by profileViewModel.uiState.collectAsState()
+
                     LaunchedEffect(activeCitizenId) {
                         activeCitizenId?.let { profileViewModel.loadActiveUserProfile(it) }
                     }
@@ -344,7 +383,7 @@ fun MainScreen() {
 
                 composable(Screen.Profile.route) {
                     val profileRepository = remember {
-                        com.social.flare.features.profile.data.repository.ProfileRepositoryImpl(app.database.citizenDao())
+                        ProfileRepositoryImpl(app.database.citizenDao())
                     }
                     val profileViewModel: ProfileViewModel = viewModel(
                         factory = object : ViewModelProvider.Factory {
@@ -405,7 +444,7 @@ fun MainScreen() {
 
                 composable(Screen.EditProfile.route) {
                     val profileRepository = remember {
-                        com.social.flare.features.profile.data.repository.ProfileRepositoryImpl(app.database.citizenDao())
+                        ProfileRepositoryImpl(app.database.citizenDao())
                     }
                     val cloudinaryService =
                         remember { com.social.flare.core.media.CloudinaryService(context) }

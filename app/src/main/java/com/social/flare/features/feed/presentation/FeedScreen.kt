@@ -52,17 +52,21 @@ fun FeedScreen(
                 item {
                     StoryCarousel(
                         activeUserAvatarUrl = uiState.activeUser?.avatar_url,
+                        stories = uiState.stories,
                         onAddStoryClick = {
-                            onNavigateToAddStory()
+                            requireAuth { onNavigateToAddStory() }
                         },
                         onStoryClick = { username ->
-                            onStoryClick(username)
+                            requireAuth { onStoryClick(username) }
                         }
                     )
                     HorizontalDivider(color = Color(0xFF1A1A1A), thickness = 1.dp)
                 }
 
-                items(uiState.posts) { post ->
+                items(
+                    items = uiState.posts,
+                    key = { post -> post.id }
+                ) { post ->
                     val displayPost = if (isGuest) post.copy(isLikedByMe = false) else post
                     PostCard(
                         post = displayPost,

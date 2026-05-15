@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.social.flare.features.post.domain.usecase.GetUserPostsUseCase
 import com.social.flare.features.profile.domain.repository.ProfileRepository
-import com.social.flare.features.profile.presentation.viewmodel.ProfileUiState
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -16,8 +16,13 @@ class ProfileViewModel(
 ) : ViewModel() {
     private val _uiState = MutableStateFlow<ProfileUiState>(ProfileUiState.Loading)
     val uiState: StateFlow<ProfileUiState> = _uiState.asStateFlow()
+
+    private var loadJob: Job? = null
+
     fun loadActiveUserProfile(citizenId: String) {
-        viewModelScope.launch {
+        loadJob?.cancel()
+
+        loadJob = viewModelScope.launch {
             _uiState.value = ProfileUiState.Loading
             try {
                 val citizen = repository.getCitizenProfile(citizenId)
