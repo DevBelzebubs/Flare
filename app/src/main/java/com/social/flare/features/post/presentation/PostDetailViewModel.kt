@@ -1,5 +1,6 @@
 package com.social.flare.features.post.presentation
 
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.social.flare.features.feed.domain.repository.FeedRepository
@@ -56,16 +57,17 @@ class PostDetailViewModel(
             }
         }
     }
-    fun createReply(authorId: String, content: String, parentPostId: String) {
+    fun createReply(authorId: String, content: String, parentPostId: String, mediaUris: List<Uri> = emptyList()) {
         viewModelScope.launch {
             val result = runCatching {
                 createPostUseCase(
                     authorId = authorId,
                     content = content,
-                    mediaUris = emptyList(),
+                    mediaUris = mediaUris,
                     parentPostId = parentPostId
                 )
             }
+
             if (result.isFailure) {
                 val errorMsg = result.exceptionOrNull()?.message ?: "Error al publicar respuesta"
                 _uiState.update { it.copy(errorMessage = errorMsg) }
