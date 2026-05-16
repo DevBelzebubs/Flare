@@ -2,14 +2,29 @@ package com.social.flare.features.feed.data.local.entity
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import androidx.room.ForeignKey
+import androidx.room.Index
 
-@Entity(tableName = "post_table")
+@Entity(
+    tableName = "post_table",
+    indices = [Index("author_id"), Index("parent_post_id")],
+    foreignKeys = [
+        ForeignKey(
+            entity = PostEntity::class,
+            parentColumns = ["post_id"],
+            childColumns = ["parent_post_id"],
+            onDelete = ForeignKey.CASCADE
+        )
+    ]
+)
 data class PostEntity(
     @PrimaryKey val post_id: String,
     val author_id: String,
     val content: String?,
-    val media_urls: List<String> = emptyList(),
-    val reply_to_post_id: String? = null,
+    val media_urls: String,
     val created_at: Long,
-    val sync_status: Int
+    val likes_count: Int = 0,
+    val comments_count: Int = 0,
+    val sync_status: Int = 0,
+    val parent_post_id: String? = null
 )

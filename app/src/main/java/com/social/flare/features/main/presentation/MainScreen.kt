@@ -189,14 +189,22 @@ fun MainScreen() {
                             cloudinaryService
                         )
                     }
-
-                    val activeStories by storyRepository.getActiveStories().collectAsState(initial = emptyList())
-
+                    val storyViewerViewModel: StoryViewModel = viewModel(
+                        factory = object : ViewModelProvider.Factory {
+                            @Suppress("UNCHECKED_CAST")
+                            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                                return StoryViewModel(storyRepository) as T
+                            }
+                        }
+                    )
+                    val activeStories by storyRepository.getActiveStories(activeCitizenId ?: "").collectAsState(initial = emptyList())
                     val userStories = activeStories.filter { it.authorUsername == username }
 
                     if (userStories.isNotEmpty()) {
                         StoryViewerScreen(
                             userStories = userStories,
+                            activeCitizenId = activeCitizenId,
+                            viewModel = storyViewerViewModel,
                             onClose = { navController.popBackStack() }
                         )
                     } else {
@@ -215,7 +223,6 @@ fun MainScreen() {
                         }
                     )
                 }
-
                 composable("${Screen.AddStory.route}/{storyUri}") { backStackEntry ->
                     val storyUriString = backStackEntry.arguments?.getString("storyUri")
                     val storyUri = storyUriString?.let { Uri.parse(Uri.decode(it)) }
@@ -291,11 +298,13 @@ fun MainScreen() {
 
                 composable("${Screen.PostDetail.route}/{postId}") { backStackEntry ->
                     val postId = backStackEntry.arguments?.getString("postId") ?: return@composable
+                    val cloudinaryService = remember { CloudinaryService(context) }
+                    val createPostUseCase = remember { CreatePostUseCase(feedRepository, cloudinaryService) }
                     val postDetailViewModel: PostDetailViewModel = viewModel(
                         factory = object : ViewModelProvider.Factory {
                             @Suppress("UNCHECKED_CAST")
                             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                                return PostDetailViewModel(feedRepository) as T
+                                return PostDetailViewModel(feedRepository, createPostUseCase) as T
                             }
                         }
                     )
@@ -303,7 +312,10 @@ fun MainScreen() {
                         postId = postId,
                         activeCitizenId = activeCitizenId,
                         viewModel = postDetailViewModel,
-                        onNavigateBack = { navController.popBackStack() }
+                        onNavigateBack = { navController.popBackStack() },
+                        onCommentNavigate = { commentId ->
+                            navController.navigate("${Screen.PostDetail.route}/$commentId")
+                        }
                     )
                 }
 
@@ -385,19 +397,22 @@ fun MainScreen() {
                     val profileRepository = remember {
                         ProfileRepositoryImpl(app.database.citizenDao())
                     }
+
                     val profileViewModel: ProfileViewModel = viewModel(
                         factory = object : ViewModelProvider.Factory {
                             @Suppress("UNCHECKED_CAST")
                             override fun <T : ViewModel> create(modelClass: Class<T>): T {
                                 return ProfileViewModel(
                                     repository = profileRepository,
-                                    getUserPostsUseCase = getPostsUseCase
+                                    getUserPostsUseCase = getPostsUseCase,
+                                    postDao = app.database.postDao()
                                 ) as T
                             }
                         }
                     )
                     ProfileScreen(
                         citizenId = activeCitizenId,
+                        viewModel = profileViewModel,
                         onNavigateToLogin = {
                             navController.navigate(Screen.Login.route)
                         },
@@ -434,14 +449,26 @@ fun MainScreen() {
                 }
 
                 composable(Screen.Settings.route) {
+                    val profileViewModel: ProfileViewModel = viewModel(
+                        factory = ProfileViewModelFactory(context)
+                    )
                     SettingsScreen(
+                        activeCitizenId = activeCitizenId,
+                        profileViewModel = profileViewModel,
                         onNavigateBack = { navController.popBackStack() },
                         onNavigateToEditProfile = {
                             navController.navigate(Screen.EditProfile.route)
+                        },
+                        onLogout = {
+                            scope.launch {
+                                sessionManager.clearSession()
+                                navController.navigate(Screen.Login.route) {
+                                    popUpTo(0) { inclusive = true }
+                                }
+                            }
                         }
                     )
                 }
-
                 composable(Screen.EditProfile.route) {
                     val profileRepository = remember {
                         ProfileRepositoryImpl(app.database.citizenDao())

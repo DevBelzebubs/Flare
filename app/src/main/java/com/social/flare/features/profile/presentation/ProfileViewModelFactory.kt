@@ -21,7 +21,8 @@ class ProfileViewModelFactory(private val context: Context) : ViewModelProvider.
             val getPostsUseCase = GetUserPostsUseCase(feedRepository)
             return ProfileViewModel(
                 repository = profileRepository,
-                getUserPostsUseCase = getPostsUseCase
+                getUserPostsUseCase = getPostsUseCase,
+                postDao = app.database.postDao()
             ) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")

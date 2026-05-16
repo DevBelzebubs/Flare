@@ -9,10 +9,10 @@ interface FeedRepository {
     fun getPostReplies(parentPostId: String, currentUserId: String): Flow<List<Post>>
     suspend fun createPost(
         authorId: String,
-        content: String?,
+        content: String,
         mediaUrls: List<String>,
-        replyToPostId: String?
-    ): Result<Unit>
+        parentPostId: String? = null
+    )
 
     suspend fun toggleLike(postId: String, citizenId: String, isCurrentlyLiked: Boolean): Result<Unit>
     suspend fun toggleSavePost(postId: String, citizenId: String, isCurrentlySaved: Boolean)

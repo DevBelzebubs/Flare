@@ -7,6 +7,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -17,11 +18,22 @@ import com.social.flare.features.profile.presentation.components.settings.Settin
 import com.social.flare.features.profile.presentation.components.settings.SettingsSectionTitle
 import com.social.flare.features.profile.presentation.components.settings.SettingsTextSizeSelector
 import com.social.flare.features.profile.presentation.components.settings.SettingsToggleItem
+import com.social.flare.features.profile.presentation.viewmodel.ProfileUiState
+import com.social.flare.features.profile.presentation.viewmodel.ProfileViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(onNavigateBack: () -> Unit,
-                   onNavigateToEditProfile: () -> Unit) {
+fun SettingsScreen(
+    activeCitizenId: String?,
+    profileViewModel: ProfileViewModel,
+    onNavigateBack: () -> Unit,
+    onNavigateToEditProfile: () -> Unit,
+    onLogout: () -> Unit
+) {
+    LaunchedEffect(activeCitizenId) {
+        activeCitizenId?.let { profileViewModel.loadActiveUserProfile(it) }
+    }
+    val profileState by profileViewModel.uiState.collectAsState()
     Scaffold(
         containerColor = Color.Black,
         topBar = {
@@ -42,7 +54,34 @@ fun SettingsScreen(onNavigateBack: () -> Unit,
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
         ) {
-            SettingsProfileHeader()
+            when (profileState) {
+                is ProfileUiState.Loading -> {
+                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(color = Color(0xFFFF5722))
+                    }
+                }
+
+                is ProfileUiState.Success -> {
+                    val citizenFlow = (profileState as ProfileUiState.Success).citizen
+                    val currentCitizen by citizenFlow.collectAsState(initial = null)
+
+                    SettingsProfileHeader(
+                        avatarUrl = currentCitizen?.avatar_url,
+                        displayName = currentCitizen?.display_name,
+                        username = currentCitizen?.username,
+                        onEditClick = onNavigateToEditProfile
+                    )
+                }
+
+                else -> {
+                    SettingsProfileHeader(
+                        avatarUrl = null,
+                        displayName = "Guest User",
+                        username = "guest",
+                        onEditClick = {}
+                    )
+                }
+            }
 
             SettingsSectionTitle("ACCOUNT")
             SettingsItem(Icons.Default.Person, "Edit Profile", onClick = onNavigateToEditProfile)
@@ -65,7 +104,7 @@ fun SettingsScreen(onNavigateBack: () -> Unit,
             Spacer(modifier = Modifier.height(32.dp))
 
             Button(
-                onClick = { /* TODO */ },
+                onClick = onLogout,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 24.dp)

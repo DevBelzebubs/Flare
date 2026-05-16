@@ -15,25 +15,33 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.social.flare.features.feed.data.local.entity.StoryWithAuthor
-import com.social.flare.features.feed.presentation.components.stories.StoryViewerScreen
 
 @Composable
 fun StoryCarousel(
     modifier: Modifier = Modifier,
     activeUserAvatarUrl: String? = null,
+    activeUserUsername: String? = null,
     stories: List<StoryWithAuthor>,
     onAddStoryClick: () -> Unit = {},
     onStoryClick: (String) -> Unit = {}
 ) {
-    val mockStories = listOf("Arthur Morgan", "Lana_queen", "Wa", "Leftsito", "Usuario5")
-    val groupedStories = stories.groupBy { it.authorUsername }
+    val myStories = stories.filter { it.authorUsername == activeUserUsername }
+    val otherStories = stories.filter { it.authorUsername != activeUserUsername }
+
+    val groupedStories = otherStories.groupBy { it.authorUsername }
+
+    val hasStories = myStories.isNotEmpty()
+    val hasUnviewed = myStories.any { !it.isViewedByMe }
+
     LazyRow(
         modifier = modifier.padding(vertical = 12.dp),
         contentPadding = PaddingValues(horizontal = 16.dp),
@@ -42,18 +50,21 @@ fun StoryCarousel(
         item {
             AddStoryItem(
                 avatarUrl = activeUserAvatarUrl,
-                onClick = onAddStoryClick
+                hasStories = hasStories,
+                hasUnviewed = hasUnviewed,
+                onAddClick = onAddStoryClick,
+                onViewClick = { activeUserUsername?.let { onStoryClick(it) } }
             )
         }
 
         items(groupedStories.keys.toList()) { username ->
             val userStories = groupedStories[username] ?: emptyList()
-            val hasUnviewed = userStories.any { !it.story.is_viewed }
+            val otherHasUnviewed = userStories.any { !it.isViewedByMe }
 
             StoryItem(
                 username = username,
                 avatarUrl = userStories.firstOrNull()?.authorAvatarUrl,
-                hasUnviewedStory = hasUnviewed,
+                hasUnviewedStory = otherHasUnviewed,
                 onClick = { onStoryClick(username) }
             )
         }
@@ -61,22 +72,44 @@ fun StoryCarousel(
 }
 
 @Composable
-private fun AddStoryItem(avatarUrl: String?,onClick: () -> Unit) {
+private fun AddStoryItem(
+    avatarUrl: String?,
+    hasStories: Boolean,
+    hasUnviewed: Boolean,
+    onAddClick: () -> Unit,
+    onViewClick: () -> Unit
+) {
+    val ringBrush = if (hasUnviewed) {
+        Brush.verticalGradient(colors = listOf(Color(0xFFFF5722), Color(0xFFFF9800)))
+    } else {
+        SolidColor(Color.DarkGray)
+    }
+
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.width(72.dp)
     ) {
         Box(
             contentAlignment = Alignment.BottomEnd,
-            modifier = Modifier
-                .size(68.dp)
-                .clickable { onClick() }
+            modifier = Modifier.size(68.dp)
         ) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
+                    .then(
+                        if (hasStories) {
+                            Modifier
+                                .border(width = 2.dp, brush = ringBrush, shape = CircleShape)
+                                .padding(4.dp)
+                        } else {
+                            Modifier
+                        }
+                    )
                     .clip(CircleShape)
                     .background(Color.DarkGray)
+                    .clickable {
+                        if (hasStories) onViewClick() else onAddClick()
+                    }
             ) {
                 if (avatarUrl != null) {
                     AsyncImage(
@@ -96,6 +129,7 @@ private fun AddStoryItem(avatarUrl: String?,onClick: () -> Unit) {
                     .clip(CircleShape)
                     .background(Color.Black)
                     .padding(2.dp)
+                    .clickable { onAddClick() }
             ) {
                 Box(
                     contentAlignment = Alignment.Center,
@@ -128,7 +162,12 @@ private fun AddStoryItem(avatarUrl: String?,onClick: () -> Unit) {
 
 @Composable
 private fun StoryItem(username: String, avatarUrl: String? = null, hasUnviewedStory: Boolean, onClick: () -> Unit) {
-    val ringColor = if (hasUnviewedStory) Color(0xFFFF5722) else Color.Gray
+    val ringBrush = if (hasUnviewedStory) {
+        Brush.verticalGradient(colors = listOf(Color(0xFFFF5722), Color(0xFFFF9800)))
+    } else {
+        SolidColor(Color.DarkGray)
+    }
+
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.width(72.dp)
@@ -136,11 +175,7 @@ private fun StoryItem(username: String, avatarUrl: String? = null, hasUnviewedSt
         Box(
             modifier = Modifier
                 .size(68.dp)
-                .border(
-                    width = 2.dp,
-                    color = ringColor,
-                    shape = CircleShape
-                )
+                .border(width = 2.dp, brush = ringBrush, shape = CircleShape)
                 .padding(4.dp)
                 .clip(CircleShape)
                 .background(Color.DarkGray)

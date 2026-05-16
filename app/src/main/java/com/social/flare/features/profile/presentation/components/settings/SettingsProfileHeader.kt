@@ -2,6 +2,7 @@ package com.social.flare.features.profile.presentation.components.settings
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -21,14 +22,22 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 
 @Composable
-fun SettingsProfileHeader() {
+fun SettingsProfileHeader(
+    avatarUrl: String?,
+    displayName: String?,
+    username: String?,
+    modifier: Modifier = Modifier,
+    onEditClick: () -> Unit = {}
+) {
     Row(
-        modifier = Modifier.padding(24.dp),
+        modifier = modifier.padding(24.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box {
@@ -37,25 +46,53 @@ fun SettingsProfileHeader() {
                     .size(80.dp)
                     .clip(CircleShape)
                     .background(Color.DarkGray)
+                    .clickable { onEditClick() }
             ) {
-                Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.fillMaxSize().padding(15.dp), tint = Color.Gray)
+                if (!avatarUrl.isNullOrBlank()) {
+                    AsyncImage(
+                        model = avatarUrl,
+                        contentDescription = "Profile Picture",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Default.Person,
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize().padding(15.dp),
+                        tint = Color.Gray
+                    )
+                }
             }
+
             Box(
                 modifier = Modifier
                     .size(24.dp)
                     .clip(CircleShape)
                     .background(Color(0xFFFF5722))
                     .align(Alignment.BottomEnd)
-                    .border(2.dp, Color.Black, CircleShape),
+                    .border(2.dp, Color.Black, CircleShape)
+                    .clickable { onEditClick() },
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(12.dp), tint = Color.Black)
+                Icon(Icons.Default.Edit, contentDescription = "Edit Profile", modifier = Modifier.size(12.dp), tint = Color.Black)
             }
         }
+
         Spacer(modifier = Modifier.width(16.dp))
+
         Column {
-            Text("Jordan Flare", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
-            Text("@jordan_ignite", color = Color.Gray, fontSize = 14.sp)
+            Text(
+                text = displayName ?: "User",
+                color = Color.White,
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = username?.let { "$it" } ?: "",
+                color = Color.Gray,
+                fontSize = 14.sp
+            )
         }
     }
 }

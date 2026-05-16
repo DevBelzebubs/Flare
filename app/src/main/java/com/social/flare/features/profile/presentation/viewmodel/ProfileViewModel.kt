@@ -2,6 +2,10 @@ package com.social.flare.features.profile.presentation.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.social.flare.features.feed.data.local.dao.PostDao
+import com.social.flare.features.feed.data.local.dao.PostWithDetails
+import com.social.flare.features.feed.data.mapper.toDomain
+import com.social.flare.features.feed.domain.model.Post
 import com.social.flare.features.post.domain.usecase.GetUserPostsUseCase
 import com.social.flare.features.profile.domain.repository.ProfileRepository
 import kotlinx.coroutines.Job
@@ -12,7 +16,8 @@ import kotlinx.coroutines.launch
 
 class ProfileViewModel(
     private val repository: ProfileRepository,
-    private val getUserPostsUseCase: GetUserPostsUseCase
+    private val getUserPostsUseCase: GetUserPostsUseCase,
+    private val postDao: PostDao
 ) : ViewModel() {
     private val _uiState = MutableStateFlow<ProfileUiState>(ProfileUiState.Loading)
     val uiState: StateFlow<ProfileUiState> = _uiState.asStateFlow()
@@ -27,14 +32,21 @@ class ProfileViewModel(
             try {
                 val citizen = repository.getCitizenProfile(citizenId)
                 if (citizen != null) {
-                    getUserPostsUseCase(citizenId).collect { userPosts ->
-                        _uiState.value = ProfileUiState.Success(
+                    kotlinx.coroutines.flow.combine(
+                        getUserPostsUseCase(citizenId),
+                        postDao.getSavedPosts(citizenId)
+                    ) { myPosts: List<Post>, savedPostsDetails: List<PostWithDetails> ->
+                        val savedPosts = savedPostsDetails.map { it.toDomain() }
+                        ProfileUiState.Success(
                             citizen = citizen,
-                            postsCount = userPosts.size,
+                            postsCount = myPosts.size,
                             followersCount = 0,
                             followingCount = 0,
-                            posts = userPosts
+                            myPosts = myPosts,
+                            savedPosts = savedPosts
                         )
+                    }.collect { state ->
+                        _uiState.value = state
                     }
                 } else {
                     _uiState.value = ProfileUiState.UserNotFound

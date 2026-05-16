@@ -1,10 +1,10 @@
 package com.social.flare.features.post.presentation
 
-
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -23,7 +23,6 @@ fun AddPostScreen(
     var content by remember { mutableStateOf("") }
     var selectedMedia by remember { mutableStateOf<List<Uri>>(emptyList()) }
     val isPostEnabled = content.isNotBlank() || selectedMedia.isNotEmpty()
-
     val mediaPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickMultipleVisualMedia(maxItems = 4)
     ) { uris ->
@@ -51,6 +50,7 @@ fun AddPostScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .background(Color.Black)
                 .padding(paddingValues)
                 .padding(horizontal = 16.dp, vertical = 12.dp)
         ) {

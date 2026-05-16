@@ -16,29 +16,28 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+
+// 1. IMPORTAMOS EL MODELO DE DOMINIO CORRECTO
 import com.social.flare.features.feed.domain.model.Post
-import com.social.flare.features.profile.presentation.components.profile.ProfileHeaderSection
-import com.social.flare.features.profile.presentation.components.profile.ProfileInfoSection
-import com.social.flare.features.profile.presentation.components.profile.ProfileStatsSection
-import com.social.flare.features.profile.presentation.components.profile.ProfileTabSection
-import com.social.flare.features.profile.presentation.viewmodel.ProfileUiState
 import com.social.flare.features.profile.presentation.components.ProfileGridItem
+import com.social.flare.features.profile.presentation.viewmodel.ProfileUiState
 
 @Composable
 fun ProfileContent(
     state: ProfileUiState.Success,
-    userPosts: List<Post>,
+    myPosts: List<Post>,
+    savedPosts: List<Post>,
     onPostClick: (String) -> Unit
 ) {
     val citizen by state.citizen.collectAsState(initial = null)
-    var selectedTab by remember { mutableStateOf(0) }
+    var selectedTab by remember { mutableIntStateOf(0) }
 
     val tabs = listOf(
         "Posts" to Icons.Default.ViewList,
@@ -59,15 +58,19 @@ fun ProfileContent(
         item(span = { GridItemSpan(3) }) {
             ProfileTabSection(tabs, selectedTab) { selectedTab = it }
         }
+
         if (selectedTab == 0) {
-            if (userPosts.isEmpty()) {
+            if (myPosts.isEmpty()) {
                 item(span = { GridItemSpan(3) }) {
                     Box(modifier = Modifier.height(200.dp).fillMaxWidth(), contentAlignment = Alignment.Center) {
                         Text("Aún no hay publicaciones", color = Color.Gray)
                     }
                 }
             } else {
-                items(userPosts) { post ->
+                items(
+                    items = myPosts,
+                    key = { it.id }
+                ) { post ->
                     ProfileGridItem(
                         post = post,
                         onClick = { onPostClick(post.id) }
@@ -75,9 +78,21 @@ fun ProfileContent(
                 }
             }
         } else if (selectedTab == 1) {
-            item(span = { GridItemSpan(3) }) {
-                Box(modifier = Modifier.height(200.dp).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                    Text("No hay posts guardados.", color = Color.DarkGray)
+            if (savedPosts.isEmpty()) {
+                item(span = { GridItemSpan(3) }) {
+                    Box(modifier = Modifier.height(200.dp).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        Text("No hay posts guardados.", color = Color.DarkGray)
+                    }
+                }
+            } else {
+                items(
+                    items = savedPosts,
+                    key = { it.id }
+                ) { post ->
+                    ProfileGridItem(
+                        post = post,
+                        onClick = { onPostClick(post.id) }
+                    )
                 }
             }
         } else {

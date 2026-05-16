@@ -17,15 +17,19 @@ class AddPostViewModel(
     private val _uiState = MutableStateFlow(AddPostUiState())
     val uiState: StateFlow<AddPostUiState> = _uiState.asStateFlow()
 
-    fun createPost(authorId: String, content: String, mediaUris: List<Uri>, replyToPostId: String? = null) {
+    fun createPost(authorId: String, content: String, mediaUris: List<Uri>, parentPostId: String? = null) {
         viewModelScope.launch {
             _uiState.update { it.copy(isUploading = true, errorMessage = null) }
-            val result = createPostUseCase(
-                authorId = authorId,
-                content = content,
-                localUris = mediaUris,
-                replyToPostId = replyToPostId
-            )
+
+            val result = runCatching {
+                createPostUseCase(
+                    authorId = authorId,
+                    content = content,
+                    mediaUris = mediaUris,
+                    parentPostId = parentPostId
+                )
+            }
+
             if (result.isSuccess) {
                 _uiState.update { it.copy(isUploading = false, isSuccess = true) }
             } else {
@@ -34,6 +38,7 @@ class AddPostViewModel(
             }
         }
     }
+
     fun clearError() {
         _uiState.update { it.copy(errorMessage = null) }
     }

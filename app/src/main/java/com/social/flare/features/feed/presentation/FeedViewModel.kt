@@ -51,7 +51,7 @@ class FeedViewModel(
         }
 
         storyJob = viewModelScope.launch {
-            storyRepository.getActiveStories().collect { stories ->
+            storyRepository.getActiveStories(activeUserId).collect { stories ->
                 _uiState.update { it.copy(stories = stories) }
             }
         }

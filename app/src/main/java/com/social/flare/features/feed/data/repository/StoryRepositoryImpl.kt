@@ -3,10 +3,15 @@ package com.social.flare.features.feed.data.repository
 import android.net.Uri
 import com.social.flare.core.media.CloudinaryService
 import com.social.flare.features.feed.data.local.dao.StoryDao
+import com.social.flare.features.feed.data.local.entity.StoryCommentEntity
 import com.social.flare.features.feed.data.local.entity.StoryEntity
+import com.social.flare.features.feed.data.local.entity.StoryViewEntity
 import com.social.flare.features.feed.data.local.entity.StoryWithAuthor
+import com.social.flare.features.feed.data.mapper.toDomainModel
+import com.social.flare.features.feed.domain.model.StoryComment
 import com.social.flare.features.feed.domain.repository.StoryRepository
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import java.util.UUID
 
 class StoryRepositoryImpl(
@@ -17,7 +22,6 @@ class StoryRepositoryImpl(
     override suspend fun createStory(authorId: String, imageUri: Uri): Result<Unit> {
         return try {
             val imageUrl = cloudinaryService.uploadImage(imageUri)
-
             if (imageUrl == null) {
                 return Result.failure(Exception("Error al subir la imagen a la nube"))
             }
@@ -38,13 +42,40 @@ class StoryRepositoryImpl(
         }
     }
 
-    override fun getActiveStories(): Flow<List<StoryWithAuthor>> {
-        val twentyFourHoursInMillis = 24 * 60 * 60 * 1000L
-        val twentyFourHoursAgo = System.currentTimeMillis() - twentyFourHoursInMillis
-        return storyDao.getActiveStories(twentyFourHoursAgo)
+    override fun getActiveStories(currentUserId: String): Flow<List<StoryWithAuthor>> {
+        val currentTime = System.currentTimeMillis()
+        return storyDao.getActiveStories(currentTime, currentUserId)
     }
 
-    override suspend fun markStoryAsViewed(storyId: String) {
-        storyDao.markStoryAsViewed(storyId)
+    override suspend fun markStoryAsViewed(storyId: String, citizenId: String) {
+        storyDao.insertStoryView(
+            StoryViewEntity(
+                story_id = storyId,
+                citizen_id = citizenId,
+                viewed_at = System.currentTimeMillis()
+            )
+        )
     }
+
+    override fun getStoryComments(storyId: String): Flow<List<StoryComment>> {
+        return storyDao.getCommentsForStory(storyId).map { list ->
+            list.map { it.toDomainModel() }
+        }
+    }
+
+    override suspend fun addCommentToStory(
+        storyId: String,
+        authorId: String,
+        content: String
+    ) {
+        val commentEntity = StoryCommentEntity(
+            comment_id = UUID.randomUUID().toString(),
+            story_id = storyId,
+            author_id = authorId,
+            content = content,
+            created_at = System.currentTimeMillis()
+        )
+        storyDao.insertStoryComment(commentEntity)
+    }
+
 }

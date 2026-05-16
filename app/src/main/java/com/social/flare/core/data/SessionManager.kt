@@ -1,6 +1,5 @@
 package com.social.flare.core.data
 
-import android.R
 import android.content.Context
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -23,7 +22,7 @@ class SessionManager(private val context: Context){
     }
     suspend fun clearSession() {
         context.dataStore.edit { preferences ->
-            preferences.remove(ACTIVE_CITIZEN_ID)
+            preferences.clear()
         }
     }
 }

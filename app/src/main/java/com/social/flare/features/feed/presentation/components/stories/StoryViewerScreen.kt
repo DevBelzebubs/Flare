@@ -24,12 +24,18 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.social.flare.features.feed.data.local.entity.StoryWithAuthor
+import com.social.flare.features.feed.presentation.StoryViewModel
+import kotlinx.coroutines.delay
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StoryViewerScreen(
     userStories: List<StoryWithAuthor>,
+    activeCitizenId: String?,
+    viewModel: StoryViewModel,
     onClose: () -> Unit
 ) {
     if (userStories.isEmpty()) {
@@ -45,7 +51,29 @@ fun StoryViewerScreen(
     val avatarUrl = currentStory.authorAvatarUrl
     val username = currentStory.authorUsername
     val timeAgo = getTimeAgo(currentStory.story.created_at)
+    var progress by remember { mutableFloatStateOf(0f) }
 
+    LaunchedEffect(currentIndex) {
+        val storyDuration = 5000L
+        val interval = 16L
+        val totalSteps = storyDuration / interval
+        progress = 0f
+        for (step in 1..totalSteps) {
+            delay(interval)
+            progress = step.toFloat() / totalSteps
+        }
+        if (currentIndex < userStories.size - 1) {
+            currentIndex++
+        } else {
+            onClose()
+        }
+    }
+    LaunchedEffect(currentStory.story.story_id) {
+        viewModel.loadCommentsForStory(currentStory.story.story_id)
+        activeCitizenId?.let { userId ->
+            viewModel.markStoryAsViewed(currentStory.story.story_id, userId)
+        }
+    }
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -74,7 +102,6 @@ fun StoryViewerScreen(
                     .background(Color.Black.copy(alpha = 0.4f))
             )
         } else {
-            // Fallback elegante para Androids antiguos
             Box(modifier = Modifier.fillMaxSize().background(Color(0xFF121212)))
         }
 
@@ -106,7 +133,11 @@ fun StoryViewerScreen(
                 .align(Alignment.TopCenter)
                 .padding(top = 16.dp)
         ) {
-            StoryProgressBar(storiesCount = userStories.size, currentIndex = currentIndex, progress = 1f)
+            StoryProgressBar(
+                storiesCount = userStories.size,
+                currentIndex = currentIndex,
+                progress = progress
+            )
 
             Spacer(modifier = Modifier.height(12.dp))
 

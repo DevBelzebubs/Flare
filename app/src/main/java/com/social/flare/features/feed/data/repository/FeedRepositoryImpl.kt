@@ -33,24 +33,27 @@ class FeedRepositoryImpl(
 
     override suspend fun createPost(
         authorId: String,
-        content: String?,
+        content: String,
         mediaUrls: List<String>,
-        replyToPostId: String?
-    ): Result<Unit> {
-        return try {
-            val newPost = PostEntity(
-                post_id = UUID.randomUUID().toString(),
-                author_id = authorId,
-                content = content,
-                media_urls = mediaUrls,
-                reply_to_post_id = replyToPostId,
-                created_at = System.currentTimeMillis(),
-                sync_status = 0
-            )
-            postDao.insertPost(newPost)
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Result.failure(e)
+        parentPostId: String?
+    ) {
+        val newPostId = UUID.randomUUID().toString()
+        val mediaString = mediaUrls.joinToString(",")
+
+        val newPost = PostEntity(
+            post_id = newPostId,
+            author_id = authorId,
+            content = content,
+            media_urls = mediaString,
+            created_at = System.currentTimeMillis(),
+            likes_count = 0,
+            comments_count = 0,
+            parent_post_id = parentPostId
+        )
+
+        postDao.insertPost(newPost)
+        if (parentPostId != null) {
+            postDao.incrementCommentsCount(parentPostId)
         }
     }
 

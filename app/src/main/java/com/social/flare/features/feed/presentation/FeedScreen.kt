@@ -7,11 +7,15 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.social.flare.features.feed.presentation.components.FullScreenImageDialog
 import com.social.flare.features.feed.presentation.components.PostCard
 import com.social.flare.features.feed.presentation.components.StoryCarousel
 
@@ -26,6 +30,8 @@ fun FeedScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val isGuest = activeCitizenId == null
+    var fullScreenImageUrl by remember { mutableStateOf<String?>(null) }
+
     val requireAuth: (() -> Unit) -> Unit = { action ->
         if (isGuest) {
             onRequireAuth()
@@ -46,38 +52,51 @@ fun FeedScreen(
             }
         }
         else -> {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize()
-            ) {
-                item {
-                    StoryCarousel(
-                        activeUserAvatarUrl = uiState.activeUser?.avatar_url,
-                        stories = uiState.stories,
-                        onAddStoryClick = {
-                            requireAuth { onNavigateToAddStory() }
-                        },
-                        onStoryClick = { username ->
-                            requireAuth { onStoryClick(username) }
-                        }
-                    )
-                    HorizontalDivider(color = Color(0xFF1A1A1A), thickness = 1.dp)
+            Box(modifier = Modifier.fillMaxSize()) {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    item {
+                        StoryCarousel(
+                            activeUserAvatarUrl = uiState.activeUser?.avatar_url,
+                            activeUserUsername = uiState.activeUser?.username,
+                            stories = uiState.stories,
+                            onAddStoryClick = {
+                                requireAuth { onNavigateToAddStory() }
+                            },
+                            onStoryClick = { username ->
+                                requireAuth { onStoryClick(username) }
+                            }
+                        )
+                        HorizontalDivider(color = Color(0xFF1A1A1A), thickness = 1.dp)
+                    }
+
+                    items(
+                        items = uiState.posts,
+                        key = { post -> post.id }
+                    ) { post ->
+                        val displayPost = if (isGuest) post.copy(isLikedByMe = false) else post
+                        PostCard(
+                            post = displayPost,
+                            activeCitizenId = activeCitizenId,
+                            onEvent = { event ->
+                                if (event is FeedEvent.OnPostClick) {
+                                    onPostClick(event.postId)
+                                } else {
+                                    requireAuth { viewModel.onEvent(event) }
+                                }
+                            },
+                            onImageClick = { url ->
+                                fullScreenImageUrl = url
+                            }
+                        )
+                    }
                 }
 
-                items(
-                    items = uiState.posts,
-                    key = { post -> post.id }
-                ) { post ->
-                    val displayPost = if (isGuest) post.copy(isLikedByMe = false) else post
-                    PostCard(
-                        post = displayPost,
-                        activeCitizenId = activeCitizenId,
-                        onEvent = { event ->
-                            if (event is FeedEvent.OnPostClick) {
-                                onPostClick(event.postId)
-                            } else {
-                                requireAuth { viewModel.onEvent(event) }
-                            }
-                        }
+                fullScreenImageUrl?.let { url ->
+                    FullScreenImageDialog(
+                        imageUrl = url,
+                        onDismiss = { fullScreenImageUrl = null }
                     )
                 }
             }

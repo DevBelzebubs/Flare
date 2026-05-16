@@ -44,19 +44,19 @@ fun PostCard(
     post: Post,
     activeCitizenId: String?,
     modifier: Modifier = Modifier,
-    onEvent: (FeedEvent) -> Unit = {}
+    onEvent: (FeedEvent) -> Unit = {},
+    onImageClick: (String) -> Unit = {}
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
     var showEditDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
     var editContentText by remember { mutableStateOf(post.content ?: "") }
-
     val isOwner = post.authorId == activeCitizenId
     Card(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp)
-        .clickable { onEvent(FeedEvent.OnPostClick(post.id)) },
+            .clickable { onEvent(FeedEvent.OnPostClick(post.id)) },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = Color(0xFF121212)
@@ -93,7 +93,6 @@ fun PostCard(
                 )
                 if (post.mediaUrls.isNotEmpty()) {
                     Spacer(modifier = Modifier.height(12.dp))
-
                     val mediaUrl = post.mediaUrls.first()
                     val isVideo = mediaUrl.endsWith(".mp4", ignoreCase = true) ||
                             mediaUrl.endsWith(".webm", ignoreCase = true) ||
@@ -110,6 +109,7 @@ fun PostCard(
                                 .fillMaxWidth()
                                 .height(250.dp)
                                 .clip(RoundedCornerShape(12.dp))
+                                .clickable { onImageClick(mediaUrl) }
                         )
                     }
                 }
@@ -136,7 +136,6 @@ fun PostCard(
             )
         }
     }
-
 
     if (showEditDialog) {
         AlertDialog(
