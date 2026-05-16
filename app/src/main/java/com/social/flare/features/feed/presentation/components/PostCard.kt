@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.outlined.BookmarkBorder
@@ -127,10 +128,11 @@ fun PostCard(
 
             PostActionButtons(
                 isLikedByMe = post.isLikedByMe,
+                isSavedByMe = post.isSavedByMe,
                 onLikeClick = { onEvent(FeedEvent.OnLikeClick(post.id)) },
                 onCommentClick = { onEvent(FeedEvent.OnCommentClick(post.id)) },
                 onSaveClick = { onEvent(FeedEvent.OnSaveClick(post.id)) },
-                onShareClick = { onEvent(FeedEvent.OnShareClick(post.id)) }
+                onShareClick = { onEvent(FeedEvent.OnShareClick(post.id)) },
             )
         }
     }
@@ -304,6 +306,7 @@ private fun PostStats(likesCount: Int, commentsCount: Int, isLikedByMe: Boolean)
 @Composable
 private fun PostActionButtons(
     isLikedByMe: Boolean,
+    isSavedByMe: Boolean,
     onLikeClick: () -> Unit,
     onCommentClick: () -> Unit,
     onSaveClick: () -> Unit,
@@ -315,23 +318,35 @@ private fun PostActionButtons(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-
-            // ¡AQUÍ REEMPLAZAMOS EL BOTÓN ESTÁTICO POR EL ANIMADO!
             AnimatedLikeButton(
                 isLiked = isLikedByMe,
                 onClick = onLikeClick
             )
 
             IconButton(onClick = onCommentClick) {
-                Icon(Icons.Outlined.ChatBubbleOutline, contentDescription = "Comment", tint = Color.White)
+                Icon(
+                    Icons.Outlined.ChatBubbleOutline,
+                    contentDescription = "Comment",
+                    tint = Color.White
+                )
             }
+
             IconButton(onClick = onShareClick) {
-                Icon(Icons.Outlined.Send, contentDescription = "Share", tint = Color.White)
+                Icon(
+                    Icons.Outlined.Send,
+                    contentDescription = "Share",
+                    tint = Color.White
+                )
             }
         }
-
-        IconButton(onClick = onSaveClick) {
-            Icon(Icons.Outlined.BookmarkBorder, contentDescription = "Save", tint = Color.White)
+        IconButton(
+            onClick = onSaveClick
+        ) {
+            Icon(
+                imageVector = if (isSavedByMe) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
+                contentDescription = "Save Post",
+                tint = if (isSavedByMe) Color(0xFFFF5722) else Color.White
+            )
         }
     }
 }

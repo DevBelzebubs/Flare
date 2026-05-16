@@ -148,7 +148,7 @@ fun StoryViewerScreen(
             OutlinedTextField(
                 value = replyText,
                 onValueChange = { replyText = it },
-                placeholder = { Text("Reply to $username...", color = Color.White.copy(alpha = 0.7f), fontSize = 14.sp) },
+                placeholder = { Text("Add a comment...", color = Color.White.copy(alpha = 0.7f), fontSize = 14.sp) },
                 modifier = Modifier.weight(1f).height(50.dp),
                 shape = RoundedCornerShape(24.dp),
                 colors = OutlinedTextFieldDefaults.colors(

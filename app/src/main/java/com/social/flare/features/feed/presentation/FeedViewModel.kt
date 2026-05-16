@@ -65,7 +65,7 @@ class FeedViewModel(
             is FeedEvent.OnRefresh -> { /* Flow es reactivo */ }
             is FeedEvent.OnShareClick -> { /* Lógica de compartir */ }
             is FeedEvent.OnCommentClick -> { /* Lógica de comentarios */ }
-            is FeedEvent.OnSaveClick -> { /* Lógica de guardado */ }
+            is FeedEvent.OnSaveClick -> handleSave(event.postId)
             is FeedEvent.OnPostClick -> { }
         }
     }
@@ -82,7 +82,17 @@ class FeedViewModel(
             )
         }
     }
-
+    private fun handleSave(postId: String) {
+        val userId = currentUserId ?: return
+        val post = _uiState.value.posts.find { it.id == postId } ?: return
+        viewModelScope.launch {
+            repository.toggleSavePost(
+                postId = post.id,
+                citizenId = userId,
+                isCurrentlySaved = post.isSavedByMe
+            )
+        }
+    }
     private fun deletePost(postId: String) {
         val userId = currentUserId ?: return
         viewModelScope.launch {

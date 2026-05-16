@@ -3,6 +3,7 @@ package com.social.flare.features.feed.data.repository
 import com.social.flare.features.feed.data.local.dao.PostDao
 import com.social.flare.features.feed.data.local.entity.PostEntity
 import com.social.flare.features.feed.data.local.entity.PostLikeEntity
+import com.social.flare.features.feed.data.local.entity.SavedPostEntity
 import com.social.flare.features.feed.data.mapper.toDomain
 import com.social.flare.features.feed.data.mapper.toDomainModel
 import com.social.flare.features.feed.domain.model.Post
@@ -67,6 +68,20 @@ class FeedRepositoryImpl(
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
+        }
+    }
+
+    override suspend fun toggleSavePost(postId: String, citizenId: String, isCurrentlySaved: Boolean) {
+        if (isCurrentlySaved) {
+            postDao.deleteSavedPost(citizenId, postId)
+        } else {
+            postDao.insertSavedPost(
+                SavedPostEntity(
+                    citizen_id = citizenId,
+                    post_id = postId,
+                    saved_at = System.currentTimeMillis()
+                )
+            )
         }
     }
 

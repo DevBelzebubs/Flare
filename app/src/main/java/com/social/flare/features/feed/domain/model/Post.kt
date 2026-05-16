@@ -12,5 +12,6 @@ data class Post(
     val replyToPostId: String? = null,
     val likesCount: Int = 0,
     val commentsCount: Int = 0,
-    val isLikedByMe: Boolean = false
+    val isLikedByMe: Boolean = false,
+    val isSavedByMe: Boolean = false
 )

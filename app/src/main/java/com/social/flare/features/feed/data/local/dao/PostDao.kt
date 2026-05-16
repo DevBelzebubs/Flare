@@ -9,6 +9,7 @@ import androidx.room.Query
 import androidx.room.Transaction
 import com.social.flare.features.feed.data.local.entity.PostEntity
 import com.social.flare.features.feed.data.local.entity.PostLikeEntity
+import com.social.flare.features.feed.data.local.entity.SavedPostEntity
 import kotlinx.coroutines.flow.Flow
 data class PostWithDetails(
     @Embedded val post: PostEntity,
@@ -17,7 +18,8 @@ data class PostWithDetails(
     val authorAvatarUrl: String?,
     val likesCount: Int,
     val commentsCount: Int,
-    val isLikedByMe: Boolean
+    val isLikedByMe: Boolean,
+    val isSavedByMe:Boolean
 )
 @Dao
 interface PostDao {
@@ -39,7 +41,7 @@ interface PostDao {
                c.avatar_url AS authorAvatarUrl,
                (SELECT COUNT(*) FROM post_likes WHERE post_id = p.post_id) AS likesCount,
                (SELECT COUNT(*) FROM post_table WHERE reply_to_post_id = p.post_id) AS commentsCount,
-               EXISTS(SELECT 1 FROM post_likes WHERE post_id = p.post_id AND citizen_id = :currentUserId) AS isLikedByMe
+               (SELECT COUNT(*) > 0 FROM saved_post_table WHERE post_id = p.post_id AND citizen_id = :currentUserId) AS isSavedByMe
         FROM post_table p
         INNER JOIN citizen_table c ON p.author_id = c.citizen_id
         WHERE p.reply_to_post_id IS NULL
@@ -131,4 +133,13 @@ interface PostDao {
         ORDER BY p.created_at ASC
     """)
     fun getRepliesForPost(parentId: String, currentUserId: String): Flow<List<PostWithDetails>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertSavedPost(savedPost: SavedPostEntity)
+
+    @Query("DELETE FROM saved_post_table WHERE citizen_id = :citizenId AND post_id = :postId")
+    suspend fun deleteSavedPost(citizenId: String, postId: String)
+
+
+
 }

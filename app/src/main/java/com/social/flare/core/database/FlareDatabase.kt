@@ -10,6 +10,7 @@ import com.social.flare.features.feed.data.local.entity.PostEntity
 import com.social.flare.features.feed.data.local.entity.PostLikeEntity
 // IMPORTAMOS LA NUEVA ENTIDAD Y EL DAO DE HISTORIAS
 import com.social.flare.features.feed.data.local.dao.StoryDao
+import com.social.flare.features.feed.data.local.entity.SavedPostEntity
 import com.social.flare.features.feed.data.local.entity.StoryEntity
 
 @Database(
@@ -17,9 +18,10 @@ import com.social.flare.features.feed.data.local.entity.StoryEntity
         CitizenEntity::class,
         PostEntity::class,
         PostLikeEntity::class,
-        StoryEntity::class
+        StoryEntity::class,
+        SavedPostEntity::class
     ],
-    version = 6,
+    version = 7,
     exportSchema = false
 )
 @TypeConverters(MediaConverters::class)
