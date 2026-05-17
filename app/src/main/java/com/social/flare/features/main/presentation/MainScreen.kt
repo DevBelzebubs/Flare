@@ -13,6 +13,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.compose.collectAsStateWithLifecycle // <-- NUEVO IMPORT
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
@@ -70,7 +71,8 @@ fun MainScreen() {
     val getPostsUseCase = remember { GetUserPostsUseCase(feedRepository) }
     val sessionManager = remember { SessionManager(context) }
     val scope = rememberCoroutineScope()
-    val activeCitizenId by sessionManager.activeCitizenIdFlow.collectAsState(initial = null)
+
+    val activeCitizenId by sessionManager.activeCitizenIdFlow.collectAsStateWithLifecycle(initialValue = null)
 
     Scaffold(
         topBar = {
@@ -197,7 +199,8 @@ fun MainScreen() {
                             }
                         }
                     )
-                    val activeStories by storyRepository.getActiveStories(activeCitizenId ?: "").collectAsState(initial = emptyList())
+
+                    val activeStories by storyRepository.getActiveStories(activeCitizenId ?: "").collectAsStateWithLifecycle(initialValue = emptyList())
                     val userStories = activeStories.filter { it.authorUsername == username }
 
                     if (userStories.isNotEmpty()) {
@@ -240,11 +243,11 @@ fun MainScreen() {
                             }
                         }
                     )
-                    val storyUiState by storyViewModel.uiState.collectAsState()
+                    val storyUiState by storyViewModel.uiState.collectAsStateWithLifecycle()
                     val profileViewModel: ProfileViewModel = viewModel(
                         factory = ProfileViewModelFactory(context)
                     )
-                    val profileState by profileViewModel.uiState.collectAsState()
+                    val profileState by profileViewModel.uiState.collectAsStateWithLifecycle()
 
                     LaunchedEffect(activeCitizenId) {
                         activeCitizenId?.let { profileViewModel.loadActiveUserProfile(it) }
@@ -264,7 +267,7 @@ fun MainScreen() {
                     var avatarUrl: String? = null
                     if (profileState is ProfileUiState.Success) {
                         val citizenFlow = (profileState as ProfileUiState.Success).citizen
-                        val currentCitizen by citizenFlow.collectAsState(initial = null)
+                        val currentCitizen by citizenFlow.collectAsStateWithLifecycle(initialValue = null)
                         avatarUrl = currentCitizen?.avatar_url
                     }
 
@@ -338,7 +341,7 @@ fun MainScreen() {
                         }
                     )
 
-                    val uiState by viewModel.uiState.collectAsState()
+                    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
                     LaunchedEffect(uiState.isSuccess, uiState.errorMessage) {
                         if (uiState.isSuccess) {
@@ -474,7 +477,7 @@ fun MainScreen() {
                         ProfileRepositoryImpl(app.database.citizenDao())
                     }
                     val cloudinaryService =
-                        remember { com.social.flare.core.media.CloudinaryService(context) }
+                        remember { CloudinaryService(context) }
                     val editViewModel: EditProfileViewModel = viewModel(
                         factory = object : ViewModelProvider.Factory {
                             @Suppress("UNCHECKED_CAST")
@@ -490,14 +493,14 @@ fun MainScreen() {
                         factory = ProfileViewModelFactory(context)
                     )
 
-                    val profileState by profileViewModel.uiState.collectAsState()
+                    val profileState by profileViewModel.uiState.collectAsStateWithLifecycle()
                     LaunchedEffect(activeCitizenId) {
                         activeCitizenId?.let { profileViewModel.loadActiveUserProfile(it) }
                     }
 
                     if (profileState is ProfileUiState.Success) {
                         val citizenFlow = (profileState as ProfileUiState.Success).citizen
-                        val currentCitizen by citizenFlow.collectAsState(initial = null)
+                        val currentCitizen by citizenFlow.collectAsStateWithLifecycle(initialValue = null)
 
                         if (currentCitizen != null) {
                             EditProfileScreen(

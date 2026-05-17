@@ -5,7 +5,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+// import androidx.compose.runtime.collectAsState <-- ELIMINADO
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -14,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle // <-- NUEVO IMPORT
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.social.flare.features.feed.presentation.components.FullScreenImageDialog
 import com.social.flare.features.feed.presentation.components.PostCard
@@ -28,7 +29,7 @@ fun FeedScreen(
     onStoryClick: (String) -> Unit,
     onNavigateToAddStory: () -> Unit
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isGuest = activeCitizenId == null
     var fullScreenImageUrl by remember { mutableStateOf<String?>(null) }
 

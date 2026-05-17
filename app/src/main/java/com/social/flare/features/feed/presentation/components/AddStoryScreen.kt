@@ -44,6 +44,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -79,7 +80,6 @@ fun AddStoryScreen(
     var viewWidth by remember { mutableIntStateOf(0) }
     var viewHeight by remember { mutableIntStateOf(0) }
 
-    // --- LÓGICA DE GUARDADO Y COMPARTIDO EXTRAÍDA ---
     val handleShare: () -> Unit = {
         if (!isSaving) {
             isSaving = true
@@ -117,7 +117,10 @@ fun AddStoryScreen(
                 }
         ) {
             AsyncImage(
-                model = selectedImageUri,
+                model = ImageRequest.Builder(context)
+                    .data(selectedImageUri)
+                    .allowHardware(false)
+                    .build(),
                 contentDescription = "Selected Story Image",
                 contentScale = ContentScale.Fit,
                 modifier = Modifier
@@ -125,7 +128,6 @@ fun AddStoryScreen(
                     .padding(top = 90.dp, bottom = 100.dp)
                     .clip(RoundedCornerShape(16.dp))
             )
-
             Canvas(
                 modifier = Modifier
                     .fillMaxSize()
@@ -209,7 +211,6 @@ fun AddStoryScreen(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                // --- BOTÓN 1: YOUR STORY ---
                 Row(
                     modifier = Modifier
                         .clip(RoundedCornerShape(24.dp))
@@ -225,13 +226,12 @@ fun AddStoryScreen(
                     Text(if (isSaving) "Guardando..." else "Your Story", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                 }
 
-                // --- BOTÓN 2: FLECHA BLANCA ---
                 Box(
                     modifier = Modifier
                         .size(48.dp)
                         .clip(CircleShape)
                         .background(Color.White)
-                        .clickable(onClick = handleShare), // Llamamos al MISMO handler aquí
+                        .clickable(onClick = handleShare),
                     contentAlignment = Alignment.Center
                 ) {
                     if (isSaving) {

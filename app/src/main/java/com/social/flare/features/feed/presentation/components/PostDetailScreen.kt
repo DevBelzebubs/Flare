@@ -13,7 +13,6 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -24,6 +23,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle // <-- IMPORT ACTUALIZADO
 import com.social.flare.features.feed.presentation.components.detailpost.MainPostDetail
 import com.social.flare.features.feed.presentation.components.detailpost.ParentPostItem
 import com.social.flare.features.feed.presentation.components.detailpost.ReplyInputBar
@@ -39,7 +39,7 @@ fun PostDetailScreen(
     onNavigateBack: () -> Unit,
     onCommentNavigate: (String) -> Unit
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var fullScreenImageUrl by remember { mutableStateOf<String?>(null) }
 
     var replyText by remember { mutableStateOf("") }
@@ -73,7 +73,6 @@ fun PostDetailScreen(
                     },
                     actions = { Spacer(modifier = Modifier.width(48.dp)) },
                     colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Black),
-                    // AQUÍ LA SOLUCIÓN AL ESPACIO SUPERIOR
                     windowInsets = WindowInsets(0, 0, 0, 0)
                 )
             },

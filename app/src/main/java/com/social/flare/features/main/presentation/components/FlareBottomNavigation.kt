@@ -24,6 +24,12 @@ fun FlareBottomNavigation(
     onRequireAuth: () -> Unit,
     onNavigate: (String) -> Unit
 ) {
+    val handleNavigate = { route: String ->
+        if (currentRoute != route) {
+            onNavigate(route)
+        }
+    }
+
     NavigationBar(
         containerColor = Color.Black,
         contentColor = Color.White,
@@ -31,7 +37,7 @@ fun FlareBottomNavigation(
     ) {
         NavigationBarItem(
             selected = currentRoute == Screen.Feed.route,
-            onClick = { onNavigate(Screen.Feed.route) },
+            onClick = { handleNavigate(Screen.Feed.route) },
             icon = { Icon(Icons.Default.Home, contentDescription = "Home") },
             colors = NavigationBarItemDefaults.colors(
                 selectedIconColor = Color(0xFFFF5722),
@@ -41,7 +47,7 @@ fun FlareBottomNavigation(
         )
         NavigationBarItem(
             selected = currentRoute == Screen.Search.route,
-            onClick = { onNavigate(Screen.Search.route) },
+            onClick = { handleNavigate(Screen.Search.route) },
             icon = { Icon(Icons.Default.Search, contentDescription = "Search") },
             colors = NavigationBarItemDefaults.colors(
                 selectedIconColor = Color(0xFFFF5722),
@@ -51,19 +57,20 @@ fun FlareBottomNavigation(
         )
         NavigationBarItem(
             selected = currentRoute == Screen.AddPost.route,
-            onClick = {
-                if (isGuest) {
-                    onRequireAuth()
-                } else {
-                    onNavigate(Screen.AddPost.route)
-                }
+            onClick = { handleNavigate(Screen.AddPost.route) },
+            icon = {
+                Icon(
+                    Icons.Default.AddCircle,
+                    contentDescription = "Add",
+                    tint = Color(0xFFFF5722),
+                    modifier = Modifier.size(36.dp)
+                )
             },
-            icon = { Icon(Icons.Default.AddCircle, contentDescription = "Add", tint = Color(0xFFFF5722), modifier = Modifier.size(36.dp)) },
             colors = NavigationBarItemDefaults.colors(indicatorColor = Color.Transparent)
         )
         NavigationBarItem(
             selected = currentRoute == Screen.Notifications.route,
-            onClick = { onNavigate(Screen.Notifications.route) },
+            onClick = { handleNavigate(Screen.Notifications.route) },
             icon = { Icon(Icons.Default.Notifications, contentDescription = "Activity") },
             colors = NavigationBarItemDefaults.colors(
                 selectedIconColor = Color(0xFFFF5722),
@@ -73,7 +80,7 @@ fun FlareBottomNavigation(
         )
         NavigationBarItem(
             selected = currentRoute == Screen.Profile.route,
-            onClick = { onNavigate(Screen.Profile.route) },
+            onClick = { handleNavigate(Screen.Profile.route) },
             icon = { Icon(Icons.Default.Person, contentDescription = "Profile") },
             colors = NavigationBarItemDefaults.colors(
                 selectedIconColor = Color(0xFFFF5722),

@@ -21,17 +21,18 @@ fun VideoPlayer(
     videoUrl: String,
     modifier: Modifier = Modifier
 ) {
-    val context = LocalContext.current
-    val exoPlayer = remember {
+    val context = LocalContext.current.applicationContext
+
+    val exoPlayer = remember(videoUrl) {
         ExoPlayer.Builder(context).build().apply {
             val mediaItem = MediaItem.fromUri(Uri.parse(videoUrl))
             setMediaItem(mediaItem)
             prepare()
-            playWhenReady = true
+            playWhenReady = false
         }
     }
 
-    DisposableEffect(Unit) {
+    DisposableEffect(exoPlayer) {
         onDispose {
             exoPlayer.release()
         }
@@ -42,6 +43,7 @@ fun VideoPlayer(
             PlayerView(context).apply {
                 player = exoPlayer
                 useController = true
+                keepScreenOn = false
             }
         },
         modifier = modifier
