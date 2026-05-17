@@ -9,6 +9,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Send
 import androidx.compose.material3.*
@@ -24,7 +25,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.social.flare.features.feed.data.local.entity.StoryWithAuthor
 import com.social.flare.features.feed.presentation.StoryViewModel
@@ -46,11 +46,16 @@ fun StoryViewerScreen(
     var currentIndex by remember { mutableIntStateOf(0) }
     var replyText by remember { mutableStateOf("") }
 
+    var showMenu by remember { mutableStateOf(false) }
+
     val currentStory = userStories[currentIndex]
     val storyUrl = currentStory.story.media_url
     val avatarUrl = currentStory.authorAvatarUrl
     val username = currentStory.authorUsername
     val timeAgo = getTimeAgo(currentStory.story.created_at)
+
+    val isOwner = currentStory.story.author_id == activeCitizenId
+
     var progress by remember { mutableFloatStateOf(0f) }
 
     LaunchedEffect(currentIndex) {
@@ -68,12 +73,14 @@ fun StoryViewerScreen(
             onClose()
         }
     }
+
     LaunchedEffect(currentStory.story.story_id) {
         viewModel.loadCommentsForStory(currentStory.story.story_id)
         activeCitizenId?.let { userId ->
             viewModel.markStoryAsViewed(currentStory.story.story_id, userId)
         }
     }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -81,6 +88,8 @@ fun StoryViewerScreen(
             .pointerInput(Unit) {
                 detectTapGestures(
                     onTap = { offset ->
+                        if (showMenu) return@detectTapGestures
+
                         if (offset.x < size.width / 2) {
                             if (currentIndex > 0) currentIndex--
                         } else {
@@ -163,12 +172,36 @@ fun StoryViewerScreen(
 
                 Spacer(modifier = Modifier.weight(1f))
 
+                if (isOwner) {
+                    Box {
+                        IconButton(onClick = { showMenu = true }, modifier = Modifier.size(32.dp)) {
+                            Icon(Icons.Default.MoreVert, contentDescription = "Opciones", tint = Color.White)
+                        }
+                        DropdownMenu(
+                            expanded = showMenu,
+                            onDismissRequest = { showMenu = false },
+                            modifier = Modifier.background(Color(0xFF1E1E1E))
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Eliminar historia", color = Color.Red) },
+                                leadingIcon = { Icon(Icons.Outlined.Delete, contentDescription = null, tint = Color.Red) },
+                                onClick = {
+                                    showMenu = false
+                                    viewModel.deleteStory(currentStory.story.story_id)
+                                    onClose()
+                                }
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                }
+
+                // Botón Cerrar
                 IconButton(onClick = onClose, modifier = Modifier.size(32.dp)) {
                     Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White)
                 }
             }
         }
-
         Row(
             modifier = Modifier
                 .fillMaxWidth()

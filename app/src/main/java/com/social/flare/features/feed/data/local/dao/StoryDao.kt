@@ -48,4 +48,6 @@ interface StoryDao {
         ORDER BY sc.created_at ASC
     """)
     fun getCommentsForStory(storyId: String): Flow<List<StoryCommentWithAuthor>>
+    @Query("DELETE FROM story_table WHERE story_id = :storyId")
+    suspend fun deleteStory(storyId: String)
 }

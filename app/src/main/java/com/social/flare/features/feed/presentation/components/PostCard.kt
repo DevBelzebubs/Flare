@@ -52,6 +52,7 @@ fun PostCard(
     var showDeleteDialog by remember { mutableStateOf(false) }
     var editContentText by remember { mutableStateOf(post.content ?: "") }
     val isOwner = post.authorId == activeCitizenId
+
     Card(
         modifier = modifier
             .fillMaxWidth()
@@ -66,8 +67,10 @@ fun PostCard(
             modifier = Modifier.padding(16.dp)
         ) {
             PostHeader(
+                avatarUrl = post.authorAvatarUrl,
                 displayName = post.authorDisplayName,
                 username = post.authorUsername,
+                createdAt = post.createdAt,
                 isOwner = isOwner,
                 menuExpanded = menuExpanded,
                 onMenuExpandedChange = { menuExpanded = it },
@@ -101,16 +104,22 @@ fun PostCard(
                     if (isVideo) {
                         VideoPlayer(videoUrl = mediaUrl)
                     } else {
-                        AsyncImage(
-                            model = mediaUrl,
-                            contentDescription = "Post image",
-                            contentScale = ContentScale.Crop,
+                        Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(250.dp)
+                                .heightIn(max = 450.dp)
                                 .clip(RoundedCornerShape(12.dp))
                                 .clickable { onImageClick(mediaUrl) }
-                        )
+                        ) {
+                            AsyncImage(
+                                model = mediaUrl,
+                                contentDescription = "Post image",
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .wrapContentHeight()
+                            )
+                        }
                     }
                 }
                 Spacer(modifier = Modifier.height(16.dp))
@@ -200,8 +209,10 @@ fun PostCard(
 
 @Composable
 private fun PostHeader(
+    avatarUrl: String?,
     displayName: String,
     username: String,
+    createdAt: Long,
     isOwner: Boolean,
     menuExpanded: Boolean,
     onMenuExpandedChange: (Boolean) -> Unit,
@@ -212,11 +223,14 @@ private fun PostHeader(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(
+        AsyncImage(
+            model = avatarUrl,
+            contentDescription = "Avatar de $username",
+            contentScale = ContentScale.Crop,
             modifier = Modifier
                 .size(44.dp)
                 .clip(CircleShape)
-                .background(Color(0xFFFF5722))
+                .background(Color.DarkGray)
         )
 
         Spacer(modifier = Modifier.width(12.dp))

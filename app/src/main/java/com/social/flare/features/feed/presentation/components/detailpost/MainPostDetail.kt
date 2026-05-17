@@ -9,9 +9,11 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
@@ -32,6 +34,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.social.flare.core.utils.formatRelativeTime
 import com.social.flare.features.feed.domain.model.Post
 
 @Composable
@@ -65,8 +68,12 @@ public fun MainPostDetail(
             Spacer(modifier = Modifier.width(12.dp))
 
             Column(modifier = Modifier.padding(top = if (hasParent) 12.dp else 16.dp)) {
-                Text(post.authorUsername, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                Text("6h ago", color = Color.Gray, fontSize = 12.sp)
+                Text(post.authorDisplayName, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(post.authorUsername, color = Color.Gray, fontSize = 13.sp)
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("• ${formatRelativeTime(post.createdAt)}", color = Color.Gray, fontSize = 13.sp) // <-- TIEMPO DINÁMICO
+                }
             }
         }
 
@@ -92,7 +99,8 @@ public fun MainPostDetail(
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(250.dp)
+                    .wrapContentHeight()
+                    .heightIn(max = 450.dp)
                     .clickable { onImageClick(mediaUrl) }
             )
         }

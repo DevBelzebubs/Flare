@@ -78,4 +78,7 @@ class StoryRepositoryImpl(
         storyDao.insertStoryComment(commentEntity)
     }
 
+    override suspend fun deleteStory(storyId: String) {
+        storyDao.deleteStory(storyId)
+    }
 }

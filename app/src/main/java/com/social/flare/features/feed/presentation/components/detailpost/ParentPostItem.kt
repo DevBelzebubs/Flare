@@ -10,9 +10,11 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
@@ -26,6 +28,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.social.flare.core.utils.formatRelativeTime
 import com.social.flare.features.feed.domain.model.Post
 
 @Composable
@@ -70,7 +73,7 @@ fun ParentPostItem(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(post.authorUsername, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 15.sp)
                 Spacer(modifier = Modifier.width(6.dp))
-                Text("• 6h ago", color = Color.Gray, fontSize = 12.sp)
+                Text("• ${formatRelativeTime(post.createdAt)}", color = Color.Gray, fontSize = 13.sp) // <-- TIEMPO DINÁMICO
             }
 
             Spacer(modifier = Modifier.height(4.dp))
@@ -85,7 +88,8 @@ fun ParentPostItem(
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(180.dp)
+                        .wrapContentHeight()
+                        .heightIn(max = 350.dp)
                         .clip(RoundedCornerShape(12.dp))
                         .clickable { onImageClick(post.mediaUrls.first()) }
                 )

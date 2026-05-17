@@ -64,4 +64,9 @@ class StoryViewModel(
             storyRepository.markStoryAsViewed(storyId, citizenId)
         }
     }
+    fun deleteStory(storyId: String) {
+        viewModelScope.launch {
+            storyRepository.deleteStory(storyId)
+        }
+    }
 }

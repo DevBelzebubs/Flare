@@ -2,17 +2,7 @@ package com.social.flare.features.feed.presentation.components.detailpost
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -25,16 +15,19 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.social.flare.core.utils.formatRelativeTime
 import com.social.flare.features.feed.domain.model.Post
 
 @Composable
-public fun CommentItem(
+fun CommentItem(
     post: Post,
     isNestedReply: Boolean,
     onLikeClick: () -> Unit,
@@ -45,25 +38,28 @@ public fun CommentItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(IntrinsicSize.Min)
+            .drawBehind {
+                if (isNestedReply) {
+                    val lineX = 56.dp.toPx() + 1.dp.toPx()
+                    val lineTop = 12.dp.toPx()
+                    val lineBottom = size.height - 12.dp.toPx()
+
+                    drawLine(
+                        color = Color(0xFF2A2A2A),
+                        start = Offset(x = lineX, y = lineTop),
+                        end = Offset(x = lineX, y = lineBottom),
+                        strokeWidth = 2.dp.toPx()
+                    )
+                }
+            }
             .clickable { onBodyClick() }
             .padding(
-                start = if (isNestedReply) 56.dp else 16.dp,
+                start = if (isNestedReply) 70.dp else 16.dp,
                 end = 16.dp,
                 top = 8.dp,
                 bottom = 8.dp
             )
     ) {
-        if (isNestedReply) {
-            Box(
-                modifier = Modifier
-                    .width(2.dp)
-                    .fillMaxHeight()
-                    .padding(vertical = 4.dp)
-                    .background(Color(0xFF2A2A2A))
-            )
-            Spacer(modifier = Modifier.width(12.dp))
-        }
 
         AsyncImage(
             model = post.authorAvatarUrl,
@@ -76,13 +72,12 @@ public fun CommentItem(
 
         Column(modifier = Modifier.weight(1f)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(post.authorUsername, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                Text(post.authorDisplayName, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                 Spacer(modifier = Modifier.width(6.dp))
-                Text("• 30 min ago", color = Color.Gray, fontSize = 12.sp)
+                Text("• ${formatRelativeTime(post.createdAt)}", color = Color.Gray, fontSize = 13.sp)
             }
-
-            Spacer(modifier = Modifier.height(2.dp))
-
+            Text(post.authorUsername, color = Color.Gray, fontSize = 12.sp)
+            Spacer(modifier = Modifier.height(4.dp))
             Text(post.content ?: "", color = Color.White, fontSize = 14.sp, lineHeight = 18.sp)
 
             if (post.mediaUrls.isNotEmpty()) {
@@ -93,7 +88,7 @@ public fun CommentItem(
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(150.dp)
+                        .heightIn(max = 350.dp)
                         .clip(RoundedCornerShape(12.dp))
                         .clickable { onImageClick(post.mediaUrls.first()) }
                 )

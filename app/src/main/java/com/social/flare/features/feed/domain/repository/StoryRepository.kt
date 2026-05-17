@@ -11,4 +11,5 @@ interface StoryRepository {
     suspend fun markStoryAsViewed(storyId: String, citizenId: String)
     fun getStoryComments(storyId: String): Flow<List<StoryComment>>
     suspend fun addCommentToStory(storyId: String, authorId: String, content: String)
+    suspend fun deleteStory(storyId:String);
 }
