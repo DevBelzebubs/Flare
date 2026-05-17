@@ -67,6 +67,7 @@ class FeedViewModel(
             is FeedEvent.OnCommentClick -> { /* Lógica de comentarios */ }
             is FeedEvent.OnSaveClick -> handleSave(event.postId)
             is FeedEvent.OnPostClick -> { }
+            is FeedEvent.OnAuthorClick -> {}
         }
     }
 

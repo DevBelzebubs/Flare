@@ -5,7 +5,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-// import androidx.compose.runtime.collectAsState <-- ELIMINADO
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -14,7 +13,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle // <-- NUEVO IMPORT
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.social.flare.features.feed.presentation.components.FullScreenImageDialog
 import com.social.flare.features.feed.presentation.components.PostCard
@@ -27,7 +26,8 @@ fun FeedScreen(
     onRequireAuth: () -> Unit,
     onPostClick: (String) -> Unit,
     onStoryClick: (String) -> Unit,
-    onNavigateToAddStory: () -> Unit
+    onNavigateToAddStory: () -> Unit,
+    onAuthorClick: (String) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val isGuest = activeCitizenId == null
@@ -81,10 +81,11 @@ fun FeedScreen(
                             post = displayPost,
                             activeCitizenId = activeCitizenId,
                             onEvent = { event ->
-                                if (event is FeedEvent.OnPostClick) {
-                                    onPostClick(event.postId)
-                                } else {
-                                    requireAuth { viewModel.onEvent(event) }
+                                // --- NUEVO MANEJO DE EVENTOS ---
+                                when (event) {
+                                    is FeedEvent.OnPostClick -> onPostClick(event.postId)
+                                    is FeedEvent.OnAuthorClick -> requireAuth { onAuthorClick(event.authorId) }
+                                    else -> requireAuth { viewModel.onEvent(event) }
                                 }
                             },
                             onImageClick = { url ->

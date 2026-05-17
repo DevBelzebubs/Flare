@@ -8,6 +8,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.social.flare.features.profile.presentation.components.profile.GuestProfileView
 import com.social.flare.features.profile.presentation.components.profile.ProfileContent
@@ -17,15 +20,17 @@ import com.social.flare.features.profile.presentation.viewmodel.ProfileViewModel
 @Composable
 fun ProfileScreen(
     citizenId: String?,
+    activeCitizenId: String?,
     viewModel: ProfileViewModel = viewModel(factory = ProfileViewModelFactory(LocalContext.current)),
     onNavigateToLogin: () -> Unit = {},
     onPostClick: (String) -> Unit = {}
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val followStats by viewModel.followStats.collectAsStateWithLifecycle() // <-- ESTADO REACTIVO DE SEGUIMIENTO
 
-    LaunchedEffect(citizenId) {
+    LaunchedEffect(citizenId, activeCitizenId) {
         if (citizenId != null) {
-            viewModel.loadActiveUserProfile(citizenId)
+            viewModel.loadProfileData(citizenId, activeCitizenId)
         }
     }
 
@@ -45,12 +50,35 @@ fun ProfileScreen(
                     )
                 }
                 is ProfileUiState.Success -> {
-                    ProfileContent(
-                        state = state,
-                        myPosts = state.myPosts,
-                        savedPosts = state.savedPosts,
-                        onPostClick = onPostClick
-                    )
+                    Column(modifier = Modifier.fillMaxSize()) {
+
+                        Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.TopEnd) {
+                            if (citizenId == activeCitizenId) {
+                                // Es mi perfil -> Botón ficticio de Editar (o el que ya tengas en ProfileHeaderSection)
+                                /* Button(...) { Text("Edit Profile") } */
+                            } else if (activeCitizenId != null) {
+                                Button(
+                                    onClick = { viewModel.toggleFollow(followerId = activeCitizenId, followedId = citizenId) },
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = if (followStats.isFollowingByMe) Color.DarkGray else Color(0xFFFF5722)
+                                    )
+                                ) {
+                                    Text(
+                                        text = if (followStats.isFollowingByMe) "Following" else "Follow",
+                                        color = Color.White,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                        }
+
+                        ProfileContent(
+                            state = state,
+                            myPosts = state.myPosts,
+                            savedPosts = state.savedPosts,
+                            onPostClick = onPostClick
+                        )
+                    }
                 }
                 is ProfileUiState.UserNotFound -> {
                     GuestProfileView(onNavigateToLogin)

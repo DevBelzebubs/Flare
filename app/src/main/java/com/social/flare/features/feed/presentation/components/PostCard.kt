@@ -284,7 +284,7 @@ private fun PostStats(likesCount: Int, commentsCount: Int, isLikedByMe: Boolean)
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = 8.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(

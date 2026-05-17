@@ -21,13 +21,16 @@ interface StoryDao {
     suspend fun insertStoryView(storyView: StoryViewEntity)
     @Transaction
     @Query("""
-        SELECT s.*, c.avatar_url AS authorAvatarUrl, c.username AS authorUsername
+        SELECT s.*, 
+               c.avatar_url AS authorAvatarUrl, 
+               c.username AS authorUsername,
+               EXISTS(
+                   SELECT 1 FROM story_view_table 
+                   WHERE story_id = s.story_id AND citizen_id = :currentUserId
+               ) AS isViewedByMe
         FROM story_table s
         INNER JOIN citizen_table c ON s.author_id = c.citizen_id
-        WHERE s.expires_at > :currentTime
-        AND s.story_id NOT IN (
-            SELECT story_id FROM story_view_table WHERE citizen_id = :currentUserId
-        )
+        WHERE s.expires_at > :currentTime 
         AND (
             s.author_id = :currentUserId 
             OR 
@@ -35,7 +38,7 @@ interface StoryDao {
                 SELECT followedId FROM follow_table WHERE followerId = :currentUserId
             )
         )
-        ORDER BY s.created_at DESC
+        ORDER BY isViewedByMe ASC, s.created_at DESC
     """)
     fun getActiveStories(currentUserId: String, currentTime: Long): Flow<List<StoryWithAuthor>>
 

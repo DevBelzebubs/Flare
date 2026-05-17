@@ -14,6 +14,7 @@ import com.social.flare.features.feed.data.local.entity.StoryEntity
 import com.social.flare.features.feed.data.local.entity.StoryCommentEntity
 import com.social.flare.features.feed.data.local.entity.StoryViewEntity
 import com.social.flare.features.feed.data.local.entity.PostMediaEntity
+import com.social.flare.features.profile.data.local.dao.FollowDao
 import com.social.flare.features.profile.data.local.entity.FollowEntity
 
 @Database(
@@ -37,4 +38,5 @@ abstract class FlareDatabase : RoomDatabase() {
     abstract fun postDao(): PostDao
 
     abstract fun storyDao(): StoryDao
+    abstract fun followDao(): FollowDao
 }

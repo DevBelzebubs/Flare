@@ -25,11 +25,14 @@ class StoryRepositoryImpl(
             if (imageUrl == null) {
                 return Result.failure(Exception("Error al subir la imagen a la nube"))
             }
+            val currentTime = System.currentTimeMillis()
+            val expiresIn24Hours = currentTime + (24 * 60 * 60 * 1000L)
             val newStory = StoryEntity(
                 story_id = UUID.randomUUID().toString(),
                 author_id = authorId,
                 media_url = imageUrl,
                 created_at = System.currentTimeMillis(),
+                expires_at = expiresIn24Hours,
                 is_viewed = false
             )
 
@@ -44,7 +47,7 @@ class StoryRepositoryImpl(
 
     override fun getActiveStories(currentUserId: String): Flow<List<StoryWithAuthor>> {
         val currentTime = System.currentTimeMillis()
-        return storyDao.getActiveStories(currentTime, currentUserId)
+        return storyDao.getActiveStories(currentUserId = currentUserId, currentTime = currentTime)
     }
 
     override suspend fun markStoryAsViewed(storyId: String, citizenId: String) {

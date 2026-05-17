@@ -23,7 +23,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle // <-- IMPORT ACTUALIZADO
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.social.flare.features.feed.presentation.components.detailpost.MainPostDetail
 import com.social.flare.features.feed.presentation.components.detailpost.ParentPostItem
 import com.social.flare.features.feed.presentation.components.detailpost.ReplyInputBar
@@ -37,7 +37,8 @@ fun PostDetailScreen(
     activeCitizenId: String?,
     viewModel: PostDetailViewModel,
     onNavigateBack: () -> Unit,
-    onCommentNavigate: (String) -> Unit
+    onCommentNavigate: (String) -> Unit,
+    onAuthorClick: (String) -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var fullScreenImageUrl by remember { mutableStateOf<String?>(null) }
@@ -129,7 +130,8 @@ fun PostDetailScreen(
                                 ParentPostItem(
                                     post = detail.parentPost,
                                     onImageClick = { url -> fullScreenImageUrl = url },
-                                    onBodyClick = { onCommentNavigate(detail.parentPost.id) }
+                                    onBodyClick = { onCommentNavigate(detail.parentPost.id) },
+                                    // onAuthorClick = onAuthorClick
                                 )
                             }
                         }
@@ -144,7 +146,8 @@ fun PostDetailScreen(
                                 onCommentClick = {
                                     replyingToPostId = detail.mainPost.id
                                     replyingToUsername = detail.mainPost.authorUsername
-                                }
+                                },
+                                // onAuthorClick = onAuthorClick <-- DESCOMENTAR CUANDO ACTUALICES MainPostDetail
                             )
                         }
                         item {
@@ -168,7 +171,8 @@ fun PostDetailScreen(
                                     replyingToUsername = reply.authorUsername
                                 },
                                 onImageClick = { url -> fullScreenImageUrl = url },
-                                onBodyClick = { onCommentNavigate(reply.id) }
+                                onBodyClick = { onCommentNavigate(reply.id) },
+                                // onAuthorClick = onAuthorClick
                             )
 
                             if (!isNestedReply) {
