@@ -53,7 +53,7 @@ import java.io.FileOutputStream
 import kotlin.math.roundToInt
 
 data class DrawnStroke(val points: List<Offset>, val color: Color = Color(0xFFFF5722), val strokeWidth: Float = 12f)
-data class StoryText(val id: Int, val text: String, var offset: Offset = Offset(200f, 500f))
+data class StoryText(val id: Int, val text: String, val offset: Offset = Offset(200f, 500f))
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -70,6 +70,12 @@ fun AddStoryScreen(
     var showTextInput by remember { mutableStateOf(false) }
     var inputText by remember { mutableStateOf("") }
     var isSaving by remember { mutableStateOf(false) }
+
+    // --- ESTADO QUE AVISA QUE LA IMAGEN CARGÓ ---
+    var isImageLoaded by remember { mutableStateOf(false) }
+
+    // --- ESTADO CONTADOR PARA FORZAR EL REFRESCO VISUAL AL ARRASTRAR ---
+    var dragUpdateCounter by remember { mutableIntStateOf(0) }
 
     var strokes by remember { mutableStateOf(listOf<DrawnStroke>()) }
     var currentPoints by remember { mutableStateOf(listOf<Offset>()) }
@@ -99,6 +105,14 @@ fun AddStoryScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .drawWithCache {
+                    // --- AQUÍ OBLIGAMOS A drawWithCache A LEER ESTOS ESTADOS ---
+                    // Si cualquiera de estos cambia, se vuelve a ejecutar la grabación del bloque
+                    val triggerTextUpdate = textElements.toList()
+                    val triggerStrokeUpdate = strokes.toList()
+                    val triggerDrawUpdate = currentPoints.toList()
+                    val triggerImageLoad = isImageLoaded
+                    val triggerDragUpdate = dragUpdateCounter // Cambia 60 veces por segundo al arrastrar
+
                     val width = this.size.width.toInt()
                     val height = this.size.height.toInt()
                     viewWidth = width
@@ -123,11 +137,14 @@ fun AddStoryScreen(
                     .build(),
                 contentDescription = "Selected Story Image",
                 contentScale = ContentScale.Fit,
+                // --- MARCAMOS COMO CARGADA PARA QUE SE REFLEJE DE INMEDIATO ---
+                onSuccess = { isImageLoaded = true },
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(top = 90.dp, bottom = 100.dp)
                     .clip(RoundedCornerShape(16.dp))
             )
+
             Canvas(
                 modifier = Modifier
                     .fillMaxSize()
@@ -172,10 +189,16 @@ fun AddStoryScreen(
             }
             textElements.forEach { storyText ->
                 DraggableTextItem(
-                    text = storyText.text,
-                    initialOffset = storyText.offset,
-                    onOffsetChange = { newOffset ->
-                        textElements = textElements.map { if (it.id == storyText.id) it.copy(offset = newOffset) else it }
+                    text = storyText,
+                    onDrag = { dragAmount ->
+                        textElements = textElements.map {
+                            if (it.id == storyText.id) {
+                                it.copy(offset = it.offset + dragAmount)
+                            } else {
+                                it
+                            }
+                        }
+                        dragUpdateCounter++
                     }
                 )
             }
@@ -215,7 +238,7 @@ fun AddStoryScreen(
                     modifier = Modifier
                         .clip(RoundedCornerShape(24.dp))
                         .background(Color.White.copy(alpha = 0.2f))
-                        .clickable(onClick = handleShare) // Llamamos al handler
+                        .clickable(onClick = handleShare)
                         .padding(horizontal = 12.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -271,6 +294,7 @@ fun AddStoryScreen(
         }
     }
 }
+
 suspend fun createBitmapFromPicture(context: Context, picture: Picture, width: Int, height: Int): Uri? {
     if (width == 0 || height == 0) return null
 
@@ -295,19 +319,16 @@ suspend fun createBitmapFromPicture(context: Context, picture: Picture, width: I
     }
 }
 
-
 @Composable
-fun DraggableTextItem(text: String, initialOffset: Offset, onOffsetChange: (Offset) -> Unit) {
-    var offset by remember { mutableStateOf(initialOffset) }
+fun DraggableTextItem(text: StoryText, onDrag: (Offset) -> Unit) {
     Text(
-        text = text, color = Color.White, fontSize = 36.sp, fontWeight = FontWeight.Bold,
+        text = text.text, color = Color.White, fontSize = 36.sp, fontWeight = FontWeight.Bold,
         modifier = Modifier
-            .offset { IntOffset(offset.x.roundToInt(), offset.y.roundToInt()) }
+            .offset { IntOffset(text.offset.x.roundToInt(), text.offset.y.roundToInt()) }
             .pointerInput(Unit) {
                 detectDragGestures { change, dragAmount ->
                     change.consume()
-                    offset += dragAmount
-                    onOffsetChange(offset)
+                    onDrag(dragAmount)
                 }
             }
     )

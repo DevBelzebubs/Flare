@@ -13,7 +13,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.compose.collectAsStateWithLifecycle // <-- NUEVO IMPORT
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
@@ -66,14 +66,22 @@ fun MainScreen() {
     val currentRoute = navBackStackEntry?.destination?.route
     val context = LocalContext.current
     var showAuthDialog by remember { mutableStateOf(false) }
+
     val app = context.applicationContext as FlareApp
-    val feedRepository = remember { FeedRepositoryImpl(app.database.postDao()) }
-    val getPostsUseCase = remember { GetUserPostsUseCase(feedRepository) }
     val sessionManager = remember { SessionManager(context) }
     val scope = rememberCoroutineScope()
-
     val activeCitizenId by sessionManager.activeCitizenIdFlow.collectAsStateWithLifecycle(initialValue = null)
+    val cloudinaryService = remember { CloudinaryService(context) }
 
+    val feedRepository = remember { FeedRepositoryImpl(app.database.postDao()) }
+    val profileRepository = remember { ProfileRepositoryImpl(app.database.citizenDao()) }
+    val storyRepository = remember { StoryRepositoryImpl(app.database.storyDao(), cloudinaryService) }
+
+    val getPostsUseCase = remember { GetUserPostsUseCase(feedRepository) }
+    val getFeedUseCase = remember { GetFeedUseCase(feedRepository) }
+    val deletePostUseCase = remember { DeletePostUseCase(feedRepository) }
+    val updatePostUseCase = remember { UpdatePostUseCase(feedRepository) }
+    val createPostUseCase = remember { CreatePostUseCase(feedRepository, cloudinaryService) }
     Scaffold(
         topBar = {
             if (currentRoute != Screen.Login.route && currentRoute != Screen.SignUp.route) {
@@ -327,22 +335,15 @@ fun MainScreen() {
                 }
 
                 composable(Screen.AddPost.route) {
-                    val app = context.applicationContext as FlareApp
-                    val repository = FeedRepositoryImpl(app.database.postDao())
-                    val cloudinaryService = CloudinaryService(context)
-                    val useCase = CreatePostUseCase(repository, cloudinaryService)
-
                     val viewModel: AddPostViewModel = viewModel(
                         factory = object : ViewModelProvider.Factory {
                             @Suppress("UNCHECKED_CAST")
                             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                                return AddPostViewModel(useCase) as T
+                                return AddPostViewModel(createPostUseCase) as T
                             }
                         }
                     )
-
                     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-
                     LaunchedEffect(uiState.isSuccess, uiState.errorMessage) {
                         if (uiState.isSuccess) {
                             navController.navigate(Screen.Feed.route) {

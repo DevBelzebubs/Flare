@@ -2,9 +2,13 @@ package com.social.flare
 
 import android.app.Application
 import androidx.room.Room
+import coil.ImageLoader
+import coil.ImageLoaderFactory
+import coil.disk.DiskCache
+import coil.memory.MemoryCache
 import com.cloudinary.android.MediaManager
 import com.social.flare.core.database.FlareDatabase
-class FlareApp : Application() {
+class FlareApp : Application(), ImageLoaderFactory {
 
     lateinit var database: FlareDatabase
         private set
@@ -19,6 +23,7 @@ class FlareApp : Application() {
         )
             .fallbackToDestructiveMigration(false)
             .build()
+
         val config = mapOf(
             "cloud_name" to BuildConfig.CLOUDINARY_CLOUD_NAME,
             "api_key" to BuildConfig.CLOUDINARY_API_KEY,
@@ -29,5 +34,21 @@ class FlareApp : Application() {
         } catch (e: Exception) {
             e.printStackTrace()
         }
+    }
+    override fun newImageLoader(): ImageLoader {
+        return ImageLoader.Builder(this)
+            .memoryCache {
+                MemoryCache.Builder(this)
+                    .maxSizePercent(0.20)
+                    .build()
+            }
+            .diskCache {
+                DiskCache.Builder()
+                    .directory(this.cacheDir.resolve("flare_image_cache"))
+                    .maxSizePercent(0.05)
+                    .build()
+            }
+            .crossfade(true)
+            .build()
     }
 }

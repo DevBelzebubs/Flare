@@ -1,6 +1,9 @@
 package com.social.flare.features.feed.presentation.components.stories
 
 import android.os.Build
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
@@ -30,7 +33,6 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.social.flare.features.feed.data.local.entity.StoryWithAuthor
 import com.social.flare.features.feed.presentation.StoryViewModel
-import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -44,13 +46,15 @@ fun StoryViewerScreen(
         onClose()
         return
     }
+
     var currentIndex by remember { mutableIntStateOf(0) }
     var replyText by remember { mutableStateOf("") }
     var showMenu by remember { mutableStateOf(false) }
 
-    // --- NUEVO: ESTADOS DE PAUSA Y PROGRESO ---
     var isPaused by remember { mutableStateOf(false) }
-    var progress by remember { mutableFloatStateOf(0f) }
+
+    // --- SOLUCIÓN A LA PANTALLA NEGRA: Animatable de Compose ---
+    val progressAnim = remember { Animatable(0f) }
 
     val currentStory = userStories[currentIndex]
     val storyUrl = currentStory.story.media_url
@@ -59,27 +63,37 @@ fun StoryViewerScreen(
     val timeAgo = getTimeAgo(currentStory.story.created_at)
     val isOwner = currentStory.story.author_id == activeCitizenId
 
+    // Resetea la animación al cambiar de historia
     LaunchedEffect(currentIndex) {
-        progress = 0f
+        progressAnim.snapTo(0f)
     }
 
+    // Animador fluido que respeta la pausa sin ahogar el hilo de Coil
     LaunchedEffect(currentIndex, isPaused) {
-        if (isPaused) return@LaunchedEffect
-
-        val storyDuration = 5000f
-        val interval = 16L
-        var currentTime = progress * storyDuration
-
-        while (currentTime < storyDuration) {
-            delay(interval)
-            currentTime += interval
-            progress = currentTime / storyDuration
-        }
-
-        if (currentIndex < userStories.size - 1) {
-            currentIndex++
+        if (isPaused) {
+            progressAnim.stop()
         } else {
-            onClose()
+            val totalDuration = 5000f
+            val remainingTime = (1f - progressAnim.value) * totalDuration
+
+            if (remainingTime > 0) {
+                progressAnim.animateTo(
+                    targetValue = 1f,
+                    animationSpec = tween(
+                        durationMillis = remainingTime.toInt(),
+                        easing = LinearEasing
+                    )
+                )
+            }
+
+            // Cuando la animación termina por sí sola
+            if (progressAnim.value >= 1f) {
+                if (currentIndex < userStories.size - 1) {
+                    currentIndex++
+                } else {
+                    onClose()
+                }
+            }
         }
     }
 
@@ -131,7 +145,7 @@ fun StoryViewerScreen(
         Column(
             modifier = Modifier.fillMaxWidth().align(Alignment.TopCenter).padding(top = 16.dp)
         ) {
-            StoryProgressBar(storiesCount = userStories.size, currentIndex = currentIndex, progress = progress)
+            StoryProgressBar(storiesCount = userStories.size, currentIndex = currentIndex, progress = progressAnim.value)
             Spacer(modifier = Modifier.height(12.dp))
 
             Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -154,12 +168,12 @@ fun StoryViewerScreen(
 
                 if (isOwner) {
                     Box {
-                        IconButton(onClick = { showMenu = true; isPaused = true }, modifier = Modifier.size(32.dp)) { // Pausa al abrir menú
+                        IconButton(onClick = { showMenu = true; isPaused = true }, modifier = Modifier.size(32.dp)) {
                             Icon(Icons.Default.MoreVert, contentDescription = "Opciones", tint = Color.White)
                         }
                         DropdownMenu(
                             expanded = showMenu,
-                            onDismissRequest = { showMenu = false; isPaused = false }, // Reanuda al cerrar menú
+                            onDismissRequest = { showMenu = false; isPaused = false },
                             modifier = Modifier.background(Color(0xFF1E1E1E))
                         ) {
                             DropdownMenuItem(
