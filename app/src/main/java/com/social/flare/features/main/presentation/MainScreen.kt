@@ -10,7 +10,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -74,16 +73,15 @@ fun MainScreen() {
     val sessionManager = remember { SessionManager(context) }
     val scope = rememberCoroutineScope()
     val activeCitizenId by sessionManager.activeCitizenIdFlow.collectAsStateWithLifecycle(initialValue = null)
+
     val cloudinaryService = remember { CloudinaryService(context) }
     val feedRepository = remember { FeedRepositoryImpl(app.database.postDao()) }
     val profileRepository = remember { ProfileRepositoryImpl(app.database.citizenDao()) }
     val storyRepository = remember { StoryRepositoryImpl(app.database.storyDao(), cloudinaryService) }
-
-    // <-- DESCOMENTADOS Y ACTIVOS
     val followRepository = remember { FollowRepositoryImpl(app.database.followDao()) }
+
     val toggleFollowUseCase = remember { ToggleFollowUseCase(followRepository) }
     val getFollowStatsUseCase = remember { GetFollowStatsUseCase(followRepository) }
-
     val getPostsUseCase = remember { GetUserPostsUseCase(feedRepository) }
     val getFeedUseCase = remember { GetFeedUseCase(feedRepository) }
     val deletePostUseCase = remember { DeletePostUseCase(feedRepository) }
@@ -93,16 +91,13 @@ fun MainScreen() {
     Scaffold(
         topBar = {
             if (currentRoute != Screen.Login.route && currentRoute != Screen.SignUp.route) {
-                FlareTopBar(onSettingsClick = {
-                    navController.navigate(Screen.Settings.route)
-                })
+                FlareTopBar(onSettingsClick = { navController.navigate(Screen.Settings.route) })
             }
         },
         bottomBar = {
             val isMainTab = listOf(
-                Screen.Feed.route, Screen.Search.route, Screen.AddPost.route,
-                Screen.Notifications.route, "${Screen.Profile.route}/{citizenId}"
-            ).any { currentRoute?.startsWith(Screen.Profile.route) == true || currentRoute == it }
+                Screen.Feed.route, Screen.Search.route, Screen.AddPost.route, Screen.Notifications.route
+            ).contains(currentRoute) || currentRoute?.startsWith(Screen.Profile.route) == true
 
             if (isMainTab) {
                 FlareBottomNavigation(
@@ -110,24 +105,15 @@ fun MainScreen() {
                     isGuest = activeCitizenId == null,
                     onRequireAuth = { showAuthDialog = true },
                     onNavigate = { route ->
-                        val privateRoutes = listOf(
-                            Screen.AddPost.route,
-                            Screen.Profile.route,
-                            Screen.Notifications.route
-                        )
+                        val privateRoutes = listOf(Screen.AddPost.route, Screen.Profile.route, Screen.Notifications.route)
 
-                        // Si presionan el botón de perfil, los redirigimos explícitamente a SU propio id
-                        val targetRoute = if (route == Screen.Profile.route) {
-                            "${Screen.Profile.route}/$activeCitizenId"
-                        } else route
+                        val targetRoute = if (route == Screen.Profile.route) "${Screen.Profile.route}/$activeCitizenId" else route
 
                         if (activeCitizenId == null && privateRoutes.contains(route)) {
                             showAuthDialog = true
                         } else {
                             navController.navigate(targetRoute) {
-                                popUpTo(navController.graph.findStartDestination().id) {
-                                    saveState = true
-                                }
+                                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
                                 launchSingleTop = true
                                 restoreState = true
                             }
@@ -139,60 +125,32 @@ fun MainScreen() {
         containerColor = Color.Black
     ) { paddingValues ->
 
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
-            NavHost(
-                navController = navController,
-                startDestination = Screen.Feed.route
-            ) {
+        Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
+            NavHost(navController = navController, startDestination = Screen.Feed.route) {
+
                 composable(Screen.Feed.route) {
                     val feedViewModel: FeedViewModel = viewModel(
                         factory = object : ViewModelProvider.Factory {
                             @Suppress("UNCHECKED_CAST")
                             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                                return FeedViewModel(
-                                    getFeedUseCase,
-                                    deletePostUseCase,
-                                    updatePostUseCase,
-                                    feedRepository,
-                                    profileRepository,
-                                    storyRepository
-                                ) as T
+                                return FeedViewModel(getFeedUseCase, deletePostUseCase, updatePostUseCase, feedRepository, profileRepository, storyRepository) as T
                             }
                         }
                     )
-
-                    LaunchedEffect(activeCitizenId) {
-                        activeCitizenId?.let { userId ->
-                            feedViewModel.loadFeed(userId)
-                        }
-                    }
+                    LaunchedEffect(activeCitizenId) { activeCitizenId?.let { feedViewModel.loadFeed(it) } }
 
                     FeedScreen(
-                        activeCitizenId = activeCitizenId,
-                        viewModel = feedViewModel,
+                        activeCitizenId = activeCitizenId, viewModel = feedViewModel,
                         onRequireAuth = { showAuthDialog = true },
-                        onPostClick = { postId ->
-                            navController.navigate("${Screen.PostDetail.route}/$postId")
-                        },
-                        onStoryClick = { username ->
-                            navController.navigate("${Screen.StoryViewer.route}/$username")
-                        },
-                        onNavigateToAddStory = {
-                            navController.navigate(Screen.CustomGallery.route)
-                        },
-                        onAuthorClick = { authorId ->
-                            navController.navigate("${Screen.Profile.route}/$authorId") // <-- Navegación dinámica
-                        }
+                        onPostClick = { postId -> navController.navigate("${Screen.PostDetail.route}/$postId") },
+                        onStoryClick = { username -> navController.navigate("${Screen.StoryViewer.route}/$username") },
+                        onNavigateToAddStory = { navController.navigate(Screen.CustomGallery.route) },
+                        onAuthorClick = { authorId -> navController.navigate("${Screen.Profile.route}/$authorId") }
                     )
                 }
 
                 composable("${Screen.StoryViewer.route}/{username}") { backStackEntry ->
                     val username = backStackEntry.arguments?.getString("username") ?: ""
-
                     val storyViewerViewModel: StoryViewModel = viewModel(
                         factory = object : ViewModelProvider.Factory {
                             @Suppress("UNCHECKED_CAST")
@@ -206,12 +164,7 @@ fun MainScreen() {
                     val userStories = activeStories.filter { it.authorUsername == username }
 
                     if (userStories.isNotEmpty()) {
-                        StoryViewerScreen(
-                            userStories = userStories,
-                            activeCitizenId = activeCitizenId,
-                            viewModel = storyViewerViewModel,
-                            onClose = { navController.popBackStack() }
-                        )
+                        StoryViewerScreen(userStories = userStories, activeCitizenId = activeCitizenId, viewModel = storyViewerViewModel, onClose = { navController.popBackStack() })
                     } else {
                         Box(modifier = Modifier.fillMaxSize().background(Color.Black))
                     }
@@ -236,20 +189,14 @@ fun MainScreen() {
                     val storyViewModel: StoryViewModel = viewModel(
                         factory = object : ViewModelProvider.Factory {
                             @Suppress("UNCHECKED_CAST")
-                            override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                                return StoryViewModel(storyRepository) as T
-                            }
+                            override fun <T : ViewModel> create(modelClass: Class<T>): T { return StoryViewModel(storyRepository) as T }
                         }
                     )
+                    val profileViewModel: ProfileViewModel = viewModel(factory = ProfileViewModelFactory(context))
                     val storyUiState by storyViewModel.uiState.collectAsStateWithLifecycle()
-                    val profileViewModel: ProfileViewModel = viewModel(
-                        factory = ProfileViewModelFactory(context)
-                    )
                     val profileState by profileViewModel.uiState.collectAsStateWithLifecycle()
 
-                    LaunchedEffect(activeCitizenId) {
-                        activeCitizenId?.let { profileViewModel.loadActiveUserProfile(it) }
-                    }
+                    LaunchedEffect(activeCitizenId) { activeCitizenId?.let { profileViewModel.loadActiveUserProfile(it) } }
 
                     LaunchedEffect(storyUiState.isSuccess, storyUiState.errorMessage) {
                         if (storyUiState.isSuccess) {
@@ -271,29 +218,10 @@ fun MainScreen() {
 
                     Box(modifier = Modifier.fillMaxSize()) {
                         AddStoryScreen(
-                            selectedImageUri = storyUri,
-                            activeUserAvatarUrl = avatarUrl,
+                            selectedImageUri = storyUri, activeUserAvatarUrl = avatarUrl,
                             onCancel = { navController.popBackStack() },
-                            onShareToStory = { uri ->
-                                activeCitizenId?.let { userId ->
-                                    storyViewModel.createStory(authorId = userId, imageUri = uri)
-                                }
-                            }
+                            onShareToStory = { uri -> activeCitizenId?.let { userId -> storyViewModel.createStory(authorId = userId, imageUri = uri) } }
                         )
-                        if (storyUiState.isUploading) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .background(Color.Black.copy(alpha = 0.8f)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    CircularProgressIndicator(color = Color(0xFFFF5722))
-                                    Spacer(modifier = Modifier.height(16.dp))
-                                    Text("Uploading to Cloudinary...", color = Color.White)
-                                }
-                            }
-                        }
                     }
                 }
 
@@ -302,93 +230,42 @@ fun MainScreen() {
                     val postDetailViewModel: PostDetailViewModel = viewModel(
                         factory = object : ViewModelProvider.Factory {
                             @Suppress("UNCHECKED_CAST")
-                            override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                                return PostDetailViewModel(feedRepository, createPostUseCase) as T
-                            }
+                            override fun <T : ViewModel> create(modelClass: Class<T>): T { return PostDetailViewModel(feedRepository, createPostUseCase) as T }
                         }
                     )
                     PostDetailScreen(
-                        postId = postId,
-                        activeCitizenId = activeCitizenId,
-                        viewModel = postDetailViewModel,
+                        postId = postId, activeCitizenId = activeCitizenId, viewModel = postDetailViewModel,
                         onNavigateBack = { navController.popBackStack() },
-                        onCommentNavigate = { commentId ->
-                            navController.navigate("${Screen.PostDetail.route}/$commentId")
-                        },
-                        onAuthorClick = { authorId ->
-                            navController.navigate("${Screen.Profile.route}/$authorId") // <-- Navegación dinámica
-                        }
+                        onCommentNavigate = { commentId -> navController.navigate("${Screen.PostDetail.route}/$commentId") },
+                        onAuthorClick = { authorId -> navController.navigate("${Screen.Profile.route}/$authorId") }
                     )
                 }
-
-                composable(Screen.Search.route) {
-                    SearchScreen()
-                }
+                composable(Screen.Search.route) { SearchScreen() }
 
                 composable(Screen.AddPost.route) {
                     val viewModel: AddPostViewModel = viewModel(
                         factory = object : ViewModelProvider.Factory {
                             @Suppress("UNCHECKED_CAST")
-                            override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                                return AddPostViewModel(createPostUseCase) as T
-                            }
+                            override fun <T : ViewModel> create(modelClass: Class<T>): T { return AddPostViewModel(createPostUseCase) as T }
                         }
                     )
                     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
                     LaunchedEffect(uiState.isSuccess, uiState.errorMessage) {
-                        if (uiState.isSuccess) {
-                            navController.navigate(Screen.Feed.route) {
-                                popUpTo(navController.graph.findStartDestination().id)
-                            }
-                        }
-                        if (uiState.errorMessage != null) {
-                            Toast.makeText(
-                                context,
-                                "Error: ${uiState.errorMessage}",
-                                Toast.LENGTH_LONG
-                            ).show()
-                            viewModel.clearError()
-                        }
+                        if (uiState.isSuccess) navController.navigate(Screen.Feed.route) { popUpTo(navController.graph.findStartDestination().id) }
                     }
 
                     Box(modifier = Modifier.fillMaxSize()) {
                         AddPostScreen(
                             onNavigateBack = { navController.popBackStack() },
-                            onPostClick = { content, uris ->
-                                activeCitizenId?.let { userId ->
-                                    viewModel.createPost(
-                                        authorId = userId,
-                                        content = content,
-                                        mediaUris = uris
-                                    )
-                                }
-                            }
+                            onPostClick = { content, uris -> activeCitizenId?.let { userId -> viewModel.createPost(userId, content, uris) } }
                         )
-
-                        if (uiState.isUploading) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .background(Color.Black.copy(alpha = 0.8f)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    CircularProgressIndicator(color = Color(0xFFFF5722))
-                                    Spacer(modifier = Modifier.height(16.dp))
-                                    Text("Uploading to Flare...", color = Color.White)
-                                }
-                            }
-                        }
                     }
                 }
 
                 composable(Screen.Notifications.route) {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Text("Notifications Screen", color = Color.White)
-                    }
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("Notifications Screen", color = Color.White) }
                 }
 
-                // --- RUTA DINÁMICA DE PERFIL CON SOPORTE DE FOLLOW EN FACTORY ---
                 composable("${Screen.Profile.route}/{citizenId}") { backStackEntry ->
                     val targetCitizenId = backStackEntry.arguments?.getString("citizenId") ?: activeCitizenId
 
@@ -408,21 +285,13 @@ fun MainScreen() {
                     )
 
                     LaunchedEffect(targetCitizenId, activeCitizenId) {
-                        targetCitizenId?.let { id ->
-                            profileViewModel.loadProfileData(id, activeCitizenId)
-                        }
+                        targetCitizenId?.let { id -> profileViewModel.loadProfileData(id, activeCitizenId) }
                     }
 
                     ProfileScreen(
-                        citizenId = targetCitizenId,
-                        activeCitizenId = activeCitizenId,
-                        viewModel = profileViewModel,
-                        onNavigateToLogin = {
-                            navController.navigate(Screen.Login.route)
-                        },
-                        onPostClick = { postId ->
-                            navController.navigate("${Screen.PostDetail.route}/$postId")
-                        }
+                        citizenId = targetCitizenId, activeCitizenId = activeCitizenId, viewModel = profileViewModel,
+                        onNavigateToLogin = { navController.navigate(Screen.Login.route) },
+                        onPostClick = { postId -> navController.navigate("${Screen.PostDetail.route}/$postId") }
                     )
                 }
 
@@ -430,12 +299,7 @@ fun MainScreen() {
                     LoginScreen(
                         onNavigateBack = { navController.popBackStack() },
                         onNavigateToSignUp = { navController.navigate(Screen.SignUp.route) },
-                        onLoginSuccess = { tokenOrId ->
-                            scope.launch {
-                                sessionManager.saveSession(tokenOrId)
-                                navController.navigate(Screen.Feed.route) { popUpTo(0) }
-                            }
-                        }
+                        onLoginSuccess = { tokenOrId -> scope.launch { sessionManager.saveSession(tokenOrId); navController.navigate(Screen.Feed.route) { popUpTo(0) } } }
                     )
                 }
 
@@ -443,34 +307,17 @@ fun MainScreen() {
                     SignUpScreen(
                         onNavigateBack = { navController.popBackStack() },
                         onNavigateToLogin = { navController.navigate(Screen.Login.route) },
-                        onSignUpSuccess = { tokenOrId ->
-                            scope.launch {
-                                sessionManager.saveSession(tokenOrId)
-                                navController.navigate(Screen.Feed.route) { popUpTo(0) }
-                            }
-                        }
+                        onSignUpSuccess = { tokenOrId -> scope.launch { sessionManager.saveSession(tokenOrId); navController.navigate(Screen.Feed.route) { popUpTo(0) } } }
                     )
                 }
 
                 composable(Screen.Settings.route) {
-                    val profileViewModel: ProfileViewModel = viewModel(
-                        factory = ProfileViewModelFactory(context)
-                    )
+                    val profileViewModel: ProfileViewModel = viewModel(factory = ProfileViewModelFactory(context))
                     SettingsScreen(
-                        activeCitizenId = activeCitizenId,
-                        profileViewModel = profileViewModel,
+                        activeCitizenId = activeCitizenId, profileViewModel = profileViewModel,
                         onNavigateBack = { navController.popBackStack() },
-                        onNavigateToEditProfile = {
-                            navController.navigate(Screen.EditProfile.route)
-                        },
-                        onLogout = {
-                            scope.launch {
-                                sessionManager.clearSession()
-                                navController.navigate(Screen.Login.route) {
-                                    popUpTo(0) { inclusive = true }
-                                }
-                            }
-                        }
+                        onNavigateToEditProfile = { navController.navigate(Screen.EditProfile.route) },
+                        onLogout = { scope.launch { sessionManager.clearSession(); navController.navigate(Screen.Login.route) { popUpTo(0) { inclusive = true } } } }
                     )
                 }
 
@@ -478,59 +325,28 @@ fun MainScreen() {
                     val editViewModel: EditProfileViewModel = viewModel(
                         factory = object : ViewModelProvider.Factory {
                             @Suppress("UNCHECKED_CAST")
-                            override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                                return EditProfileViewModel(
-                                    profileRepository,
-                                    cloudinaryService
-                                ) as T
-                            }
+                            override fun <T : ViewModel> create(modelClass: Class<T>): T { return EditProfileViewModel(profileRepository, cloudinaryService) as T }
                         }
                     )
-                    val profileViewModel: ProfileViewModel = viewModel(
-                        factory = ProfileViewModelFactory(context)
-                    )
-
+                    val profileViewModel: ProfileViewModel = viewModel(factory = ProfileViewModelFactory(context))
                     val profileState by profileViewModel.uiState.collectAsStateWithLifecycle()
-                    LaunchedEffect(activeCitizenId) {
-                        activeCitizenId?.let { profileViewModel.loadActiveUserProfile(it) }
-                    }
+
+                    LaunchedEffect(activeCitizenId) { activeCitizenId?.let { profileViewModel.loadActiveUserProfile(it) } }
 
                     if (profileState is ProfileUiState.Success) {
-                        val citizenFlow = (profileState as ProfileUiState.Success).citizen
-                        val currentCitizen by citizenFlow.collectAsStateWithLifecycle(initialValue = null)
-
+                        val currentCitizen by (profileState as ProfileUiState.Success).citizen.collectAsStateWithLifecycle(initialValue = null)
                         if (currentCitizen != null) {
-                            EditProfileScreen(
-                                citizen = currentCitizen!!,
-                                viewModel = editViewModel,
-                                onNavigateBack = { navController.popBackStack() }
-                            )
-                        } else {
-                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                CircularProgressIndicator(color = Color(0xFFFF5722))
-                            }
-                        }
-                    } else {
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            CircularProgressIndicator(color = Color(0xFFFF5722))
+                            EditProfileScreen(citizen = currentCitizen!!, viewModel = editViewModel, onNavigateBack = { navController.popBackStack() })
                         }
                     }
                 }
             }
 
-            if (showAuthDialog) {
-                AuthDialog(
-                    onDismiss = { showAuthDialog = false },
-                    onLoginClick = {
-                        showAuthDialog = false
-                        navController.navigate(Screen.Login.route)
-                    },
-                    onSignUpClick = {
-                        showAuthDialog = false
-                        navController.navigate(Screen.SignUp.route)
-                    }
-                )
-            }
+            if (showAuthDialog) AuthDialog(
+                onDismiss = { showAuthDialog = false },
+                onLoginClick = { showAuthDialog = false; navController.navigate(Screen.Login.route) },
+                onSignUpClick = { showAuthDialog = false; navController.navigate(Screen.SignUp.route) }
+            )
         }
     }
 }

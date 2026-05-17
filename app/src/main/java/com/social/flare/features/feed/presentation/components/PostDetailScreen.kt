@@ -131,7 +131,7 @@ fun PostDetailScreen(
                                     post = detail.parentPost,
                                     onImageClick = { url -> fullScreenImageUrl = url },
                                     onBodyClick = { onCommentNavigate(detail.parentPost.id) },
-                                    // onAuthorClick = onAuthorClick
+                                    onAuthorClick = onAuthorClick
                                 )
                             }
                         }
@@ -147,7 +147,7 @@ fun PostDetailScreen(
                                     replyingToPostId = detail.mainPost.id
                                     replyingToUsername = detail.mainPost.authorUsername
                                 },
-                                // onAuthorClick = onAuthorClick <-- DESCOMENTAR CUANDO ACTUALICES MainPostDetail
+                                onAuthorClick = onAuthorClick
                             )
                         }
                         item {
@@ -172,7 +172,7 @@ fun PostDetailScreen(
                                 },
                                 onImageClick = { url -> fullScreenImageUrl = url },
                                 onBodyClick = { onCommentNavigate(reply.id) },
-                                // onAuthorClick = onAuthorClick
+                                onAuthorClick = onAuthorClick
                             )
 
                             if (!isNestedReply) {

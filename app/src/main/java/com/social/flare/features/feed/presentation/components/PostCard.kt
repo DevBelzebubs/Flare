@@ -67,10 +67,7 @@ fun PostCard(
             modifier = Modifier.padding(16.dp)
         ) {
             PostHeader(
-                avatarUrl = post.authorAvatarUrl,
-                displayName = post.authorDisplayName,
-                username = post.authorUsername,
-                createdAt = post.createdAt,
+                post = post, // <-- Pasamos el post entero al Header
                 isOwner = isOwner,
                 menuExpanded = menuExpanded,
                 onMenuExpandedChange = { menuExpanded = it },
@@ -82,6 +79,9 @@ fun PostCard(
                 onDeleteClick = {
                     menuExpanded = false
                     showDeleteDialog = true
+                },
+                onAuthorClick = {
+                    onEvent(FeedEvent.OnAuthorClick(post.authorId)) // <-- Propagamos el evento hacia arriba
                 }
             )
 
@@ -209,41 +209,44 @@ fun PostCard(
 
 @Composable
 private fun PostHeader(
-    avatarUrl: String?,
-    displayName: String,
-    username: String,
-    createdAt: Long,
+    post: Post, // Recibimos el post completo para acceder a sus datos
     isOwner: Boolean,
     menuExpanded: Boolean,
     onMenuExpandedChange: (Boolean) -> Unit,
     onEditClick: () -> Unit,
-    onDeleteClick: () -> Unit
+    onDeleteClick: () -> Unit,
+    onAuthorClick: () -> Unit
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
         AsyncImage(
-            model = avatarUrl,
-            contentDescription = "Avatar de $username",
+            model = post.authorAvatarUrl,
+            contentDescription = "Avatar de ${post.authorUsername}",
             contentScale = ContentScale.Crop,
             modifier = Modifier
                 .size(44.dp)
                 .clip(CircleShape)
                 .background(Color.DarkGray)
+                .clickable { onAuthorClick() }
         )
 
         Spacer(modifier = Modifier.width(12.dp))
 
-        Column(modifier = Modifier.weight(1f)) {
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .clickable { onAuthorClick() }
+        ) {
             Text(
-                text = displayName,
+                text = post.authorDisplayName,
                 color = Color.White,
                 fontWeight = FontWeight.Bold,
                 fontSize = 16.sp
             )
             Text(
-                text = username,
+                text = post.authorUsername,
                 color = Color.Gray,
                 fontSize = 12.sp
             )

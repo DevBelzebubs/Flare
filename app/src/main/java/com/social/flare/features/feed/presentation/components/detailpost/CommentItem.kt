@@ -33,7 +33,8 @@ fun CommentItem(
     onLikeClick: () -> Unit,
     onReplyClick: () -> Unit,
     onImageClick: (String) -> Unit,
-    onBodyClick: () -> Unit = {}
+    onBodyClick: () -> Unit = {},
+    onAuthorClick: (String) -> Unit
 ) {
     Row(
         modifier = Modifier
@@ -65,13 +66,19 @@ fun CommentItem(
             model = post.authorAvatarUrl,
             contentDescription = "Avatar",
             contentScale = ContentScale.Crop,
-            modifier = Modifier.size(if (isNestedReply) 28.dp else 36.dp).clip(CircleShape).background(Color.DarkGray)
+            modifier = Modifier
+                .size(if (isNestedReply) 32.dp else 40.dp)
+                .clip(CircleShape)
+                .background(Color.DarkGray)
+                .clickable { onAuthorClick(post.authorId) }
         )
-
         Spacer(modifier = Modifier.width(12.dp))
 
         Column(modifier = Modifier.weight(1f)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.clickable { onAuthorClick(post.authorId) }
+            ) {
                 Text(post.authorDisplayName, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
                 Spacer(modifier = Modifier.width(6.dp))
                 Text("• ${formatRelativeTime(post.createdAt)}", color = Color.Gray, fontSize = 13.sp)

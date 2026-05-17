@@ -43,7 +43,8 @@ public fun MainPostDetail(
     hasParent: Boolean,
     onImageClick: (String) -> Unit,
     onLikeClick: () -> Unit,
-    onCommentClick: () -> Unit
+    onCommentClick: () -> Unit,
+    onAuthorClick: (String) -> Unit
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(

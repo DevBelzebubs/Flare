@@ -26,7 +26,7 @@ fun ProfileScreen(
     onPostClick: (String) -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val followStats by viewModel.followStats.collectAsStateWithLifecycle() // <-- ESTADO REACTIVO DE SEGUIMIENTO
+    val followStats by viewModel.followStats.collectAsStateWithLifecycle()
 
     LaunchedEffect(citizenId, activeCitizenId) {
         if (citizenId != null) {
@@ -50,39 +50,35 @@ fun ProfileScreen(
                     )
                 }
                 is ProfileUiState.Success -> {
-                    Column(modifier = Modifier.fillMaxSize()) {
-
-                        Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.TopEnd) {
-                            if (citizenId == activeCitizenId) {
-                                // Es mi perfil -> Botón ficticio de Editar (o el que ya tengas en ProfileHeaderSection)
-                                /* Button(...) { Text("Edit Profile") } */
-                            } else if (activeCitizenId != null) {
-                                Button(
-                                    onClick = { viewModel.toggleFollow(followerId = activeCitizenId, followedId = citizenId) },
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = if (followStats.isFollowingByMe) Color.DarkGray else Color(0xFFFF5722)
-                                    )
-                                ) {
-                                    Text(
-                                        text = if (followStats.isFollowingByMe) "Following" else "Follow",
-                                        color = Color.White,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                }
+                    ProfileContent(
+                        state = state,
+                        myPosts = state.myPosts,
+                        savedPosts = state.savedPosts,
+                        onPostClick = onPostClick
+                    )
+                    if (citizenId != activeCitizenId && activeCitizenId != null) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 16.dp, end = 16.dp),
+                            contentAlignment = Alignment.TopEnd
+                        ) {
+                            Button(
+                                onClick = { viewModel.toggleFollow(followerId = activeCitizenId, followedId = citizenId) },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = if (followStats.isFollowingByMe) Color.DarkGray else Color(0xFFFF5722)
+                                )
+                            ) {
+                                Text(
+                                    text = if (followStats.isFollowingByMe) "Siguiendo" else "Seguir",
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold
+                                )
                             }
                         }
-
-                        ProfileContent(
-                            state = state,
-                            myPosts = state.myPosts,
-                            savedPosts = state.savedPosts,
-                            onPostClick = onPostClick
-                        )
                     }
                 }
-                is ProfileUiState.UserNotFound -> {
-                    GuestProfileView(onNavigateToLogin)
-                }
+                is ProfileUiState.UserNotFound -> GuestProfileView(onNavigateToLogin)
                 is ProfileUiState.Error -> {
                     Text(
                         text = "Error: ${state.message}",

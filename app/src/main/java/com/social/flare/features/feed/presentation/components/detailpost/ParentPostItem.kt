@@ -35,7 +35,8 @@ import com.social.flare.features.feed.domain.model.Post
 fun ParentPostItem(
     post: Post,
     onImageClick: (String) -> Unit,
-    onBodyClick: () -> Unit
+    onBodyClick: () -> Unit,
+    onAuthorClick: (String) -> Unit
 ) {
     Row(
         modifier = Modifier
@@ -53,7 +54,11 @@ fun ParentPostItem(
                 model = post.authorAvatarUrl,
                 contentDescription = "Avatar",
                 contentScale = ContentScale.Crop,
-                modifier = Modifier.size(42.dp).clip(CircleShape).background(Color.DarkGray)
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(Color.DarkGray)
+                    .clickable { onAuthorClick(post.authorId) }
             )
             Spacer(modifier = Modifier.height(8.dp))
             Box(
@@ -68,6 +73,7 @@ fun ParentPostItem(
         Column(
             modifier = Modifier
                 .weight(1f)
+                .clickable { onAuthorClick(post.authorId) }
                 .padding(top = 16.dp, bottom = 12.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
