@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import com.social.flare.features.feed.data.local.entity.StoryCommentEntity
 import com.social.flare.features.feed.data.local.entity.StoryEntity
 import com.social.flare.features.feed.data.local.entity.StoryViewEntity
@@ -13,24 +14,30 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface StoryDao {
-
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertStory(story: StoryEntity)
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertStoryView(storyView: StoryViewEntity)
+    @Transaction
     @Query("""
-        SELECT 
-            s.*,
-            c.username AS authorUsername,
-            c.avatar_url AS authorAvatarUrl,
-            EXISTS(SELECT 1 FROM story_view_table WHERE story_id = s.story_id AND citizen_id = :currentUserId) AS isViewedByMe
+        SELECT s.*, c.avatar_url AS authorAvatarUrl, c.username AS authorUsername
         FROM story_table s
         INNER JOIN citizen_table c ON s.author_id = c.citizen_id
-        WHERE (s.created_at + 86400000) > :currentTime 
+        WHERE s.expires_at > :currentTime
+        AND s.story_id NOT IN (
+            SELECT story_id FROM story_view_table WHERE citizen_id = :currentUserId
+        )
+        AND (
+            s.author_id = :currentUserId 
+            OR 
+            s.author_id IN (
+                SELECT followedId FROM follow_table WHERE followerId = :currentUserId
+            )
+        )
         ORDER BY s.created_at DESC
     """)
-    fun getActiveStories(currentTime: Long, currentUserId: String): Flow<List<StoryWithAuthor>>
+    fun getActiveStories(currentUserId: String, currentTime: Long): Flow<List<StoryWithAuthor>>
 
     @Query("UPDATE story_table SET is_viewed = 1 WHERE story_id = :storyId")
     suspend fun markStoryAsViewed(storyId: String)

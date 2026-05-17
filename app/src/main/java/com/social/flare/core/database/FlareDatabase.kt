@@ -13,18 +13,22 @@ import com.social.flare.features.feed.data.local.entity.SavedPostEntity
 import com.social.flare.features.feed.data.local.entity.StoryEntity
 import com.social.flare.features.feed.data.local.entity.StoryCommentEntity
 import com.social.flare.features.feed.data.local.entity.StoryViewEntity
+import com.social.flare.features.feed.data.local.entity.PostMediaEntity
+import com.social.flare.features.profile.data.local.entity.FollowEntity
 
 @Database(
     entities = [
         CitizenEntity::class,
         PostEntity::class,
+        PostMediaEntity::class,
         PostLikeEntity::class,
-        StoryEntity::class,
         SavedPostEntity::class,
+        StoryEntity::class,
+        StoryViewEntity::class,
         StoryCommentEntity::class,
-        StoryViewEntity::class
+        FollowEntity::class
     ],
-    version = 10,
+    version = 11,
     exportSchema = false
 )
 @TypeConverters(MediaConverters::class)

@@ -53,7 +53,10 @@ import com.social.flare.features.main.presentation.components.FlareTopBar
 import com.social.flare.features.main.presentation.components.FlareBottomNavigation
 import com.social.flare.features.post.domain.usecase.DeletePostUseCase
 import com.social.flare.features.post.domain.usecase.UpdatePostUseCase
+import com.social.flare.features.profile.data.repository.FollowRepositoryImpl
 import com.social.flare.features.profile.data.repository.ProfileRepositoryImpl
+import com.social.flare.features.profile.domain.usecase.GetFollowStatsUseCase
+import com.social.flare.features.profile.domain.usecase.ToggleFollowUseCase
 import com.social.flare.features.profile.presentation.EditProfileScreen
 import com.social.flare.features.profile.presentation.ProfileViewModelFactory
 import com.social.flare.features.profile.presentation.viewmodel.EditProfileViewModel
@@ -76,6 +79,10 @@ fun MainScreen() {
     val feedRepository = remember { FeedRepositoryImpl(app.database.postDao()) }
     val profileRepository = remember { ProfileRepositoryImpl(app.database.citizenDao()) }
     val storyRepository = remember { StoryRepositoryImpl(app.database.storyDao(), cloudinaryService) }
+
+    /*val followRepository = remember { FollowRepositoryImpl(app.database.followDao()) }
+    val toggleFollowUseCase = remember { ToggleFollowUseCase(followRepository) }
+    val getFollowStatsUseCase = remember { GetFollowStatsUseCase(followRepository) }*/
 
     val getPostsUseCase = remember { GetUserPostsUseCase(feedRepository) }
     val getFeedUseCase = remember { GetFeedUseCase(feedRepository) }

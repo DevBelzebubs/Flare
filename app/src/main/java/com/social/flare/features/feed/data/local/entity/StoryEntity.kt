@@ -22,5 +22,6 @@ data class StoryEntity(
     val author_id: String,
     val media_url: String,
     val created_at: Long,
+    val expires_at: Long,
     val is_viewed: Boolean = false
 )

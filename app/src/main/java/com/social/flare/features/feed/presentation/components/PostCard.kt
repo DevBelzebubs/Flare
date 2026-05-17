@@ -258,7 +258,6 @@ private fun PostHeader(
                         tint = Color.Gray
                     )
                 }
-
                 DropdownMenu(
                     expanded = menuExpanded,
                     onDismissRequest = { onMenuExpandedChange(false) },
@@ -283,8 +282,10 @@ private fun PostHeader(
 @Composable
 private fun PostStats(likesCount: Int, commentsCount: Int, isLikedByMe: Boolean) {
     Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
             imageVector = Icons.Filled.Favorite,
