@@ -176,4 +176,20 @@ interface PostDao {
         ORDER BY sp.saved_at DESC
     """)
     fun getSavedPosts(currentUserId: String): Flow<List<PostWithDetails>>
+    @Transaction
+    @Query("""
+        SELECT 
+            p.*, 
+            c.display_name AS authorDisplayName, 
+            c.username AS authorUsername, 
+            c.avatar_url AS authorAvatarUrl,
+            (SELECT COUNT(*) FROM post_likes WHERE post_id = p.post_id) AS likesCount,
+            (SELECT COUNT(*) FROM post_table WHERE parent_post_id = p.post_id) AS commentsCount,
+            0 AS isLikedByMe, -- No es relevante para borrar
+            0 AS isSavedByMe -- No es relevante para borrar
+        FROM post_table p
+        INNER JOIN citizen_table c ON p.author_id = c.citizen_id
+        WHERE p.post_id = :postId
+    """)
+    suspend fun getPostById(postId: String): PostWithDetails?
 }

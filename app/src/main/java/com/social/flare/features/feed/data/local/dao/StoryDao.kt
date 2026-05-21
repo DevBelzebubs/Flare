@@ -60,4 +60,6 @@ interface StoryDao {
     fun getCommentsForStory(storyId: String): Flow<List<StoryCommentWithAuthor>>
     @Query("DELETE FROM story_table WHERE story_id = :storyId")
     suspend fun deleteStory(storyId: String)
+    @Query("SELECT * FROM story_table WHERE story_id = :storyId")
+    suspend fun getStoryByIdSync(storyId: String): StoryEntity?
 }

@@ -138,4 +138,9 @@ class FeedRepositoryImpl(
             )
         }
     }
+
+    override suspend fun getPostById(postId: String): Post? {
+        val postWithDetails = postDao.getPostById(postId)
+        return postWithDetails?.toDomain()
+    }
 }

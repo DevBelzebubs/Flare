@@ -4,12 +4,15 @@ import android.content.Context
 import android.net.Uri
 import android.util.Log
 import android.webkit.MimeTypeMap
+import com.cloudinary.Url
 import com.cloudinary.android.MediaManager
+import com.cloudinary.utils.ObjectUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
 
 class CloudinaryService(private val context: Context) {
+    private val cloudinary get() = MediaManager.get().cloudinary
     suspend fun uploadImage(uri: Uri): String = withContext(Dispatchers.IO) {
         val mimeType = context.contentResolver.getType(uri)
         val extension = MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType) ?: "bin"
@@ -44,7 +47,36 @@ class CloudinaryService(private val context: Context) {
             if (tempFile.exists()) tempFile.delete()
         }
     }
-
+    private fun extractPublicId(mediaUrl: String): String? {
+        return try {
+            val lastSlashIndex = mediaUrl.lastIndexOf('/')
+            val lastDotIndex = mediaUrl.lastIndexOf('.')
+            if (lastSlashIndex != -1 && lastDotIndex != -1 && lastDotIndex > lastSlashIndex){
+                mediaUrl.substring(lastSlashIndex + 1, lastDotIndex)
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+    suspend fun deleteImage(mediaUrl: String): Boolean{
+        return withContext(Dispatchers.IO){
+            try {
+                val publicId = extractPublicId(mediaUrl)
+                if (publicId != null){
+                    val result = cloudinary.uploader().destroy(publicId, ObjectUtils.emptyMap())
+                    result["result"] == "ok"
+                }else {
+                    false
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                false
+            }
+        }
+    }
     suspend fun uploadMultipleImages(uris: List<Uri>): List<String> {
         return uris.map { uploadImage(it) }
     }

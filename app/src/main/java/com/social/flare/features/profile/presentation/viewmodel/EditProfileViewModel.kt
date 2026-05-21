@@ -31,13 +31,22 @@ class EditProfileViewModel(
             _isLoading.value = true
             try {
                 val finalAvatarUrl = if (newAvatarUri != null && newAvatarUri.toString().startsWith("content://")) {
-                    cloudinaryService.uploadImage(newAvatarUri)
+                    val uploadedUrl = cloudinaryService.uploadImage(newAvatarUri)
+
+                    if (uploadedUrl.isNotBlank() && citizen.avatar_url != null && !citizen.avatar_url.contains("default")) {
+                        cloudinaryService.deleteImage(citizen.avatar_url)
+                    }
+                    uploadedUrl
                 } else {
                     citizen.avatar_url
                 }
-
                 val finalBannerUrl = if (newBannerUri != null && newBannerUri.toString().startsWith("content://")) {
-                    cloudinaryService.uploadImage(newBannerUri)
+                    val uploadedUrl = cloudinaryService.uploadImage(newBannerUri)
+
+                    if (uploadedUrl.isNotBlank() && citizen.banner_url != null && !citizen.banner_url.contains("default")) {
+                        cloudinaryService.deleteImage(citizen.banner_url)
+                    }
+                    uploadedUrl
                 } else {
                     citizen.banner_url
                 }

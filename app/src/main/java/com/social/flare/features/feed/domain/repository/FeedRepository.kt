@@ -20,4 +20,5 @@ interface FeedRepository {
     suspend fun deletePost(postId: String, currentUserId: String): Result<Unit>
     fun getUserPosts(userId: String): Flow<List<Post>>
     fun getPostDetail(postId: String, currentUserId: String): Flow<PostDetail>
+    suspend fun getPostById(PostId: String) : Post?
 }

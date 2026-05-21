@@ -82,6 +82,17 @@ class StoryRepositoryImpl(
     }
 
     override suspend fun deleteStory(storyId: String) {
+        try {
+            val story = storyDao.getStoryByIdSync(storyId)
+            if (story != null){
+                if (story.media_url.isNotBlank()) {
+                    cloudinaryService.deleteImage(story.media_url)
+                }
+                storyDao.deleteStory(storyId);
+            }
+        } catch (e: Exception) {
+            e.printStackTrace();
+        }
         storyDao.deleteStory(storyId)
     }
 }
