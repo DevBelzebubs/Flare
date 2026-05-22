@@ -57,6 +57,38 @@ class PostDetailViewModel(
             }
         }
     }
+    fun toggleSave(postId: String, activeUserId: String) {
+        viewModelScope.launch {
+            val currentDetail = _uiState.value.postDetail ?: return@launch
+            val isCurrentlySaved = currentDetail.mainPost.isSavedByMe
+            repository.toggleSavePost(postId, activeUserId, isCurrentlySaved)
+        }
+    }
+
+    fun sharePost(authorId: String, originalPostId: String) {
+        viewModelScope.launch {
+            repository.sharePost(authorId, originalPostId)
+        }
+    }
+
+    fun updatePost(postId: String, currentUserId: String, newContent: String) {
+        viewModelScope.launch {
+            val result = repository.updatePost(postId, currentUserId, newContent)
+            if (result.isFailure) {
+                _uiState.update { it.copy(errorMessage = result.exceptionOrNull()?.message) }
+            }
+        }
+    }
+
+    fun deletePost(postId: String, currentUserId: String) {
+        viewModelScope.launch {
+            val result = repository.deletePost(postId, currentUserId)
+            if (result.isFailure) {
+                _uiState.update { it.copy(errorMessage = result.exceptionOrNull()?.message) }
+            }
+        }
+    }
+
     fun createReply(authorId: String, content: String, parentPostId: String, mediaUris: List<Uri> = emptyList()) {
         viewModelScope.launch {
             val result = runCatching {

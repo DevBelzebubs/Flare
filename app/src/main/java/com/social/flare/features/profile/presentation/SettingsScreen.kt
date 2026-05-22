@@ -28,7 +28,8 @@ fun SettingsScreen(
     profileViewModel: ProfileViewModel,
     onNavigateBack: () -> Unit,
     onNavigateToEditProfile: () -> Unit,
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    onNavigateToAdmin: () -> Unit = {}
 ) {
     LaunchedEffect(activeCitizenId) {
         activeCitizenId?.let { profileViewModel.loadActiveUserProfile(it) }
@@ -71,6 +72,15 @@ fun SettingsScreen(
                         username = currentCitizen?.username,
                         onEditClick = onNavigateToEditProfile
                     )
+
+                    if (currentCitizen?.is_admin == true) {
+                        SettingsSectionTitle("ADMIN")
+                        SettingsItem(
+                            icon = Icons.Default.AdminPanelSettings,
+                            title = "Admin Panel",
+                            onClick = onNavigateToAdmin
+                        )
+                    }
                 }
 
                 else -> {

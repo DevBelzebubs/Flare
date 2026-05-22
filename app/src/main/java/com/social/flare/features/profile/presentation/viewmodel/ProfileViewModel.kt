@@ -6,6 +6,7 @@ import com.social.flare.features.feed.data.local.dao.PostDao
 import com.social.flare.features.feed.data.local.dao.PostWithDetails
 import com.social.flare.features.feed.data.mapper.toDomain
 import com.social.flare.features.feed.domain.model.Post
+
 import com.social.flare.features.post.domain.usecase.GetUserPostsUseCase
 import com.social.flare.features.profile.domain.model.FollowStats
 import com.social.flare.features.profile.domain.repository.ProfileRepository
@@ -22,7 +23,6 @@ class ProfileViewModel(
     private val repository: ProfileRepository,
     private val getUserPostsUseCase: GetUserPostsUseCase,
     private val postDao: PostDao,
-    // --- NUEVAS INYECCIONES DE DOMINIO ---
     private val toggleFollowUseCase: ToggleFollowUseCase,
     private val getFollowStatsUseCase: GetFollowStatsUseCase
 ) : ViewModel() {
@@ -60,15 +60,15 @@ class ProfileViewModel(
                     combine(
                         getUserPostsUseCase(targetCitizenId),
                         postDao.getSavedPosts(targetCitizenId),
-                        _followStats // <-- Inyectamos el flujo de seguidores aquí
+                        _followStats
                     ) { myPosts: List<Post>, savedPostsDetails: List<PostWithDetails>, stats: FollowStats ->
                         val savedPosts = savedPostsDetails.map { it.toDomain() }
 
                         ProfileUiState.Success(
                             citizen = citizen,
                             postsCount = myPosts.size,
-                            followersCount = stats.followersCount, // <-- Contador reactivo
-                            followingCount = stats.followingCount, // <-- Contador reactivo
+                            followersCount = stats.followersCount,
+                            followingCount = stats.followingCount,
                             myPosts = myPosts,
                             savedPosts = savedPosts
                         )

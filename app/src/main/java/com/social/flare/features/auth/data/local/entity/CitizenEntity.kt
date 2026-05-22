@@ -12,5 +12,7 @@ data class CitizenEntity(
     val password: String,
     val avatar_url: String?,
     val banner_url: String? = null,
-    val bio: String?
+    val bio: String?,
+    val is_admin: Boolean = false,
+    val status: String = "active"
 )

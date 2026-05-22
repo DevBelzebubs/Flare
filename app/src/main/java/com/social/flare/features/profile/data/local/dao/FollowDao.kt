@@ -23,4 +23,7 @@ interface FollowDao {
 
     @Query("SELECT COUNT(*) FROM follow_table WHERE followerId = :userId")
     fun getFollowingCount(userId: String): Flow<Int>
+
+    @Query("SELECT followedId FROM follow_table WHERE followerId = :userId")
+    suspend fun getFollowedIds(userId: String): List<String>
 }

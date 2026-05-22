@@ -14,12 +14,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.FavoriteBorder
-import androidx.compose.material.icons.outlined.Send
+import androidx.compose.material.icons.outlined.Repeat
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -209,7 +210,7 @@ fun PostCard(
 
 @Composable
 private fun PostHeader(
-    post: Post, // Recibimos el post completo para acceder a sus datos
+    post: Post,
     isOwner: Boolean,
     menuExpanded: Boolean,
     onMenuExpandedChange: (Boolean) -> Unit,
@@ -350,8 +351,8 @@ private fun PostActionButtons(
 
             IconButton(onClick = onShareClick) {
                 Icon(
-                    Icons.Outlined.Send,
-                    contentDescription = "Share",
+                    Icons.Outlined.Repeat,
+                    contentDescription = "Repost",
                     tint = Color.White
                 )
             }

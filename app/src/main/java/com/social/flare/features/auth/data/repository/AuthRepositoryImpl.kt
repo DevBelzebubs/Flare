@@ -28,12 +28,16 @@ class AuthRepositoryImpl(
                 return Result.failure(Exception("El nombre de usuario ya está en uso"))
             }
             val newCitizenId = UUID.randomUUID().toString()
-            val newCitizen = CitizenEntity(citizen_id = newCitizenId,
+            val isFirstUser = citizenDao.getCitizenCount() == 0
+            val newCitizen = CitizenEntity(
+                citizen_id = newCitizenId,
                 username = username,
                 display_name = displayName,
                 password = pass.toSHA256(),
                 avatar_url = null,
-                bio = "I am new to Flare!"
+                bio = "I am new to Flare!",
+                is_admin = isFirstUser,
+                status = "active"
             )
             citizenDao.insertCitizen(newCitizen)
             Result.success(newCitizenId)

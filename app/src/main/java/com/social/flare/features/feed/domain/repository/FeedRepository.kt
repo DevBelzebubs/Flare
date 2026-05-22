@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.Flow
 
 interface FeedRepository {
     fun getFeedPosts(currentUserId: String): Flow<List<Post>>
+    fun getFeedPostsGuest(): Flow<List<Post>>
     fun getPostReplies(parentPostId: String, currentUserId: String): Flow<List<Post>>
     suspend fun createPost(
         authorId: String,
@@ -21,4 +22,6 @@ interface FeedRepository {
     fun getUserPosts(userId: String): Flow<List<Post>>
     fun getPostDetail(postId: String, currentUserId: String): Flow<PostDetail>
     suspend fun getPostById(PostId: String) : Post?
+    suspend fun sharePost(authorId: String, originalPostId: String)
+    fun getSharedPosts(userId: String): Flow<List<Post>>
 }

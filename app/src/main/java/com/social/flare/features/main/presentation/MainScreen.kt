@@ -31,6 +31,7 @@ import com.social.flare.features.feed.presentation.FeedScreen
 import com.social.flare.features.profile.presentation.ProfileScreen
 import com.social.flare.features.profile.presentation.SettingsScreen
 import com.social.flare.features.search.presentation.SearchScreen
+import com.social.flare.features.search.presentation.SearchViewModel
 
 import com.social.flare.core.media.CloudinaryService
 import com.social.flare.features.feed.data.repository.FeedRepositoryImpl
@@ -50,6 +51,12 @@ import com.social.flare.features.post.presentation.PostDetailViewModel
 import com.social.flare.features.profile.presentation.viewmodel.ProfileViewModel
 import com.social.flare.features.main.presentation.components.FlareTopBar
 import com.social.flare.features.main.presentation.components.FlareBottomNavigation
+import com.social.flare.features.notifications.data.repository.NotificationRepositoryImpl
+import com.social.flare.features.notifications.domain.usecase.GetNotificationsUseCase
+import com.social.flare.features.notifications.domain.usecase.ManageRealtimeNotificationsUseCase
+import com.social.flare.features.notifications.domain.usecase.MarkNotificationReadUseCase
+import com.social.flare.features.notifications.presentation.NotificationScreen
+import com.social.flare.features.notifications.presentation.viewmodel.NotificationViewModel
 import com.social.flare.features.post.domain.usecase.DeletePostUseCase
 import com.social.flare.features.post.domain.usecase.UpdatePostUseCase
 import com.social.flare.features.profile.data.repository.FollowRepositoryImpl
@@ -60,6 +67,12 @@ import com.social.flare.features.profile.presentation.EditProfileScreen
 import com.social.flare.features.profile.presentation.ProfileViewModelFactory
 import com.social.flare.features.profile.presentation.viewmodel.EditProfileViewModel
 import com.social.flare.features.profile.presentation.viewmodel.ProfileUiState
+import com.social.flare.features.admin.data.repository.AdminRepositoryImpl
+import com.social.flare.features.admin.presentation.AdminDashboardScreen
+import com.social.flare.features.admin.presentation.AdminUsersScreen
+import com.social.flare.features.admin.presentation.AdminPostsScreen
+import com.social.flare.features.admin.presentation.AdminNewsScreen
+import com.social.flare.features.admin.presentation.viewmodel.AdminViewModel
 
 @Composable
 fun MainScreen() {
@@ -75,29 +88,53 @@ fun MainScreen() {
     val activeCitizenId by sessionManager.activeCitizenIdFlow.collectAsStateWithLifecycle(initialValue = null)
 
     val cloudinaryService = remember { CloudinaryService(context) }
-    val feedRepository = remember { FeedRepositoryImpl(app.database.postDao()) }
+    val followDao = remember { app.database.followDao() }
+    val feedRepository = remember { FeedRepositoryImpl(app.database.postDao(), followDao) }
     val profileRepository = remember { ProfileRepositoryImpl(app.database.citizenDao()) }
     val storyRepository = remember { StoryRepositoryImpl(app.database.storyDao(), cloudinaryService) }
-    val followRepository = remember { FollowRepositoryImpl(app.database.followDao()) }
+    val followRepository = remember { FollowRepositoryImpl(followDao) }
 
+    val okHttpClient = remember { okhttp3.OkHttpClient() }
+    val notificationRepository = remember {
+        NotificationRepositoryImpl(app.database.notificationDao(), okHttpClient)
+    }
     val toggleFollowUseCase = remember { ToggleFollowUseCase(followRepository) }
     val getFollowStatsUseCase = remember { GetFollowStatsUseCase(followRepository) }
     val getPostsUseCase = remember { GetUserPostsUseCase(feedRepository) }
     val getFeedUseCase = remember { GetFeedUseCase(feedRepository) }
-    val deletePostUseCase = remember { DeletePostUseCase(feedRepository) }
+    val deletePostUseCase = remember { DeletePostUseCase(feedRepository, cloudinaryService) }
     val updatePostUseCase = remember { UpdatePostUseCase(feedRepository) }
     val createPostUseCase = remember { CreatePostUseCase(feedRepository, cloudinaryService) }
+    val getNotificationsUseCase = remember { GetNotificationsUseCase(notificationRepository) }
+    val manageRealtimeNotificationsUseCase = remember {
+        ManageRealtimeNotificationsUseCase(
+            notificationRepository
+        )
+    }
+    val markNotificationReadUseCase = remember { MarkNotificationReadUseCase(notificationRepository) }
+    val adminRepository = remember { AdminRepositoryImpl(app.database.citizenDao(), app.database.postDao(), app.database.newsDao()) }
 
     Scaffold(
         topBar = {
-            if (currentRoute != Screen.Login.route && currentRoute != Screen.SignUp.route) {
+            val hideTopBarRoutes = listOf(
+                Screen.Login.route, Screen.SignUp.route,
+                Screen.AdminDashboard.route, Screen.AdminUsers.route,
+                Screen.AdminPosts.route, Screen.AdminNews.route
+            )
+            if (currentRoute !in hideTopBarRoutes) {
                 FlareTopBar(onSettingsClick = { navController.navigate(Screen.Settings.route) })
             }
         },
         bottomBar = {
-            val isMainTab = listOf(
-                Screen.Feed.route, Screen.Search.route, Screen.AddPost.route, Screen.Notifications.route
-            ).contains(currentRoute) || currentRoute?.startsWith(Screen.Profile.route) == true
+            val adminRoutes = listOf(
+                Screen.AdminDashboard.route, Screen.AdminUsers.route,
+                Screen.AdminPosts.route, Screen.AdminNews.route
+            )
+            val isMainTab = !adminRoutes.contains(currentRoute) && (
+                listOf(
+                    Screen.Feed.route, Screen.Search.route, Screen.AddPost.route, Screen.Notifications.route
+                ).contains(currentRoute) || currentRoute?.startsWith(Screen.Profile.route) == true
+            )
 
             if (isMainTab) {
                 FlareBottomNavigation(
@@ -137,7 +174,13 @@ fun MainScreen() {
                             }
                         }
                     )
-                    LaunchedEffect(activeCitizenId) { activeCitizenId?.let { feedViewModel.loadFeed(it) } }
+                    LaunchedEffect(activeCitizenId) {
+                        if (activeCitizenId != null) {
+                            feedViewModel.loadFeed(activeCitizenId!!)
+                        } else {
+                            feedViewModel.loadFeedGuest()
+                        }
+                    }
 
                     FeedScreen(
                         activeCitizenId = activeCitizenId, viewModel = feedViewModel,
@@ -240,7 +283,17 @@ fun MainScreen() {
                         onAuthorClick = { authorId -> navController.navigate("${Screen.Profile.route}/$authorId") }
                     )
                 }
-                composable(Screen.Search.route) { SearchScreen() }
+                composable(Screen.Search.route) {
+                    val searchViewModel: SearchViewModel = viewModel(
+                        factory = object : ViewModelProvider.Factory {
+                            @Suppress("UNCHECKED_CAST")
+                            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                                return SearchViewModel(adminRepository) as T
+                            }
+                        }
+                    )
+                    SearchScreen(viewModel = searchViewModel)
+                }
 
                 composable(Screen.AddPost.route) {
                     val viewModel: AddPostViewModel = viewModel(
@@ -250,20 +303,43 @@ fun MainScreen() {
                         }
                     )
                     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-                    LaunchedEffect(uiState.isSuccess, uiState.errorMessage) {
-                        if (uiState.isSuccess) navController.navigate(Screen.Feed.route) { popUpTo(navController.graph.findStartDestination().id) }
-                    }
 
                     Box(modifier = Modifier.fillMaxSize()) {
                         AddPostScreen(
                             onNavigateBack = { navController.popBackStack() },
-                            onPostClick = { content, uris -> activeCitizenId?.let { userId -> viewModel.createPost(userId, content, uris) } }
+                            onPostClick = { content, uris -> activeCitizenId?.let { userId -> viewModel.createPost(userId, content, uris) } },
+                            isSuccess = uiState.isSuccess,
+                            onSuccessHandled = {
+                                viewModel.clearState()
+                                navController.navigate(Screen.Feed.route) { popUpTo(navController.graph.findStartDestination().id) }
+                            }
                         )
                     }
                 }
-
                 composable(Screen.Notifications.route) {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("Notifications Screen", color = Color.White) }
+                    val notificationViewModel: NotificationViewModel = viewModel(
+                        factory = object : ViewModelProvider.Factory {
+                            @Suppress("UNCHECKED_CAST")
+                            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                                return NotificationViewModel(
+                                    getNotificationsUseCase = getNotificationsUseCase,
+                                    manageRealtimeNotificationsUseCase = manageRealtimeNotificationsUseCase,
+                                    markNotificationReadUseCase = markNotificationReadUseCase,
+                                    toggleFollowUseCase = toggleFollowUseCase
+                                ) as T
+                            }
+                        }
+                    )
+                    NotificationScreen(
+                        activeCitizenId = activeCitizenId,
+                        viewModel = notificationViewModel,
+                        onNavigateToProfile = { citizenId ->
+                            navController.navigate("${Screen.Profile.route}/$citizenId")
+                        },
+                        onNavigateToPost = { postId ->
+                            navController.navigate("${Screen.PostDetail.route}/$postId")
+                        }
+                    )
                 }
 
                 composable("${Screen.Profile.route}/{citizenId}") { backStackEntry ->
@@ -317,7 +393,8 @@ fun MainScreen() {
                         activeCitizenId = activeCitizenId, profileViewModel = profileViewModel,
                         onNavigateBack = { navController.popBackStack() },
                         onNavigateToEditProfile = { navController.navigate(Screen.EditProfile.route) },
-                        onLogout = { scope.launch { sessionManager.clearSession(); navController.navigate(Screen.Login.route) { popUpTo(0) { inclusive = true } } } }
+                        onLogout = { scope.launch { sessionManager.clearSession(); navController.navigate(Screen.Login.route) { popUpTo(0) { inclusive = true } } } },
+                        onNavigateToAdmin = { navController.navigate(Screen.AdminDashboard.route) }
                     )
                 }
 
@@ -339,6 +416,69 @@ fun MainScreen() {
                             EditProfileScreen(citizen = currentCitizen!!, viewModel = editViewModel, onNavigateBack = { navController.popBackStack() })
                         }
                     }
+                }
+
+                composable(Screen.AdminDashboard.route) {
+                    val adminViewModel: AdminViewModel = viewModel(
+                        factory = object : ViewModelProvider.Factory {
+                            @Suppress("UNCHECKED_CAST")
+                            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                                return AdminViewModel(adminRepository) as T
+                            }
+                        }
+                    )
+                    AdminDashboardScreen(
+                        viewModel = adminViewModel,
+                        onNavigateToUsers = { navController.navigate(Screen.AdminUsers.route) },
+                        onNavigateToPosts = { navController.navigate(Screen.AdminPosts.route) },
+                        onNavigateToNews = { navController.navigate(Screen.AdminNews.route) },
+                        onNavigateBack = { navController.popBackStack() }
+                    )
+                }
+
+                composable(Screen.AdminUsers.route) {
+                    val adminViewModel: AdminViewModel = viewModel(
+                        factory = object : ViewModelProvider.Factory {
+                            @Suppress("UNCHECKED_CAST")
+                            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                                return AdminViewModel(adminRepository) as T
+                            }
+                        }
+                    )
+                    AdminUsersScreen(
+                        viewModel = adminViewModel,
+                        onNavigateBack = { navController.popBackStack() }
+                    )
+                }
+
+                composable(Screen.AdminPosts.route) {
+                    val adminViewModel: AdminViewModel = viewModel(
+                        factory = object : ViewModelProvider.Factory {
+                            @Suppress("UNCHECKED_CAST")
+                            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                                return AdminViewModel(adminRepository) as T
+                            }
+                        }
+                    )
+                    AdminPostsScreen(
+                        viewModel = adminViewModel,
+                        onNavigateBack = { navController.popBackStack() }
+                    )
+                }
+
+                composable(Screen.AdminNews.route) {
+                    val adminViewModel: AdminViewModel = viewModel(
+                        factory = object : ViewModelProvider.Factory {
+                            @Suppress("UNCHECKED_CAST")
+                            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                                return AdminViewModel(adminRepository) as T
+                            }
+                        }
+                    )
+                    AdminNewsScreen(
+                        viewModel = adminViewModel,
+                        onNavigateBack = { navController.popBackStack() }
+                    )
                 }
             }
 

@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.catch
 
 class FeedViewModel(
     private val getFeedUseCase: GetFeedUseCase,
@@ -34,9 +35,7 @@ class FeedViewModel(
 
     fun loadFeed(activeUserId: String) {
         currentUserId = activeUserId
-        userJob?.cancel()
-        feedJob?.cancel()
-        storyJob?.cancel()
+        cancelJobs()
 
         userJob = viewModelScope.launch {
             profileRepository.getCitizenProfile(activeUserId).collect { user ->
@@ -45,9 +44,11 @@ class FeedViewModel(
         }
 
         feedJob = viewModelScope.launch {
-            getFeedUseCase(activeUserId).collect { posts ->
-                _uiState.update { it.copy(posts = posts, isLoading = false) }
-            }
+            getFeedUseCase(activeUserId)
+                .catch { e -> _uiState.update { it.copy(error = e.message, isLoading = false) } }
+                .collect { posts ->
+                    _uiState.update { it.copy(posts = posts, isLoading = false) }
+                }
         }
 
         storyJob = viewModelScope.launch {
@@ -57,17 +58,46 @@ class FeedViewModel(
         }
     }
 
+    fun loadFeedGuest() {
+        currentUserId = null
+        cancelJobs()
+
+        _uiState.update { it.copy(activeUser = null) }
+
+        feedJob = viewModelScope.launch {
+            repository.getFeedPostsGuest()
+                .catch { e -> _uiState.update { it.copy(error = e.message, isLoading = false) } }
+                .collect { posts ->
+                    _uiState.update { it.copy(posts = posts, isLoading = false) }
+                }
+        }
+    }
+
+    private fun cancelJobs() {
+        userJob?.cancel()
+        feedJob?.cancel()
+        storyJob?.cancel()
+    }
+
     fun onEvent(event: FeedEvent) {
         when (event) {
             is FeedEvent.OnLikeClick -> handleLike(event.postId)
             is FeedEvent.OnDeletePost -> deletePost(event.postId)
             is FeedEvent.OnEditPost -> editPost(event.postId, event.newContent)
-            is FeedEvent.OnRefresh -> { /* Flow es reactivo */ }
-            is FeedEvent.OnShareClick -> { /* Lógica de compartir */ }
-            is FeedEvent.OnCommentClick -> { /* Lógica de comentarios */ }
+            is FeedEvent.OnRefresh -> { }
+            is FeedEvent.OnShareClick -> handleShare(event.postId)
+            is FeedEvent.OnCommentClick -> { }
             is FeedEvent.OnSaveClick -> handleSave(event.postId)
             is FeedEvent.OnPostClick -> { }
             is FeedEvent.OnAuthorClick -> {}
+        }
+    }
+
+    private fun handleShare(postId: String) {
+        val userId = currentUserId ?: return
+        viewModelScope.launch {
+            repository.sharePost(authorId = userId, originalPostId = postId)
+            _uiState.update { it.copy(error = null) }
         }
     }
 

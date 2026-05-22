@@ -24,7 +24,8 @@ fun PostWithDetails.toDomain(): Post {
         likesCount = this.likesCount,
         commentsCount = this.commentsCount,
         isLikedByMe = this.isLikedByMe,
-        isSavedByMe = this.isSavedByMe
+        isSavedByMe = this.isSavedByMe,
+        sharedPostId = this.post.shared_post_id
     )
 }
 
@@ -48,6 +49,7 @@ fun PostEntity.toDomainModel(activeUserId: String): Post {
         likesCount = 0,
         commentsCount = 0,
         isLikedByMe = false,
-        isSavedByMe = false
+        isSavedByMe = false,
+        sharedPostId = this.shared_post_id
     )
 }

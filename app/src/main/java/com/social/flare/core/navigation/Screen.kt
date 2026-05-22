@@ -14,4 +14,9 @@ sealed class Screen(val route: String) {
     object StoryViewer : Screen("story_viewer")
     object AddStory : Screen("add_story")
     object CustomGallery : Screen("custom_gallery")
+
+    object AdminDashboard : Screen("admin_dashboard")
+    object AdminUsers : Screen("admin_users")
+    object AdminPosts : Screen("admin_posts")
+    object AdminNews : Screen("admin_news")
 }

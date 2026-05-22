@@ -63,6 +63,23 @@ interface PostDao {
     """)
     fun getFeedPosts(currentUserId: String): Flow<List<PostWithDetails>>
 
+    @Transaction
+    @Query("""
+        SELECT 
+            p.*, 
+            c.display_name AS authorDisplayName, 
+            c.username AS authorUsername, 
+            c.avatar_url AS authorAvatarUrl,
+            (SELECT COUNT(*) FROM post_likes WHERE post_id = p.post_id) AS likesCount,
+            (SELECT COUNT(*) FROM post_table WHERE parent_post_id = p.post_id) AS commentsCount,
+            0 AS isLikedByMe,
+            0 AS isSavedByMe
+        FROM post_table p
+        INNER JOIN citizen_table c ON p.author_id = c.citizen_id
+        WHERE p.parent_post_id IS NULL
+    """)
+    fun getFeedPostsGuest(): Flow<List<PostWithDetails>>
+
     @Query("""
         SELECT 
             p.*, 
@@ -185,11 +202,57 @@ interface PostDao {
             c.avatar_url AS authorAvatarUrl,
             (SELECT COUNT(*) FROM post_likes WHERE post_id = p.post_id) AS likesCount,
             (SELECT COUNT(*) FROM post_table WHERE parent_post_id = p.post_id) AS commentsCount,
-            0 AS isLikedByMe, -- No es relevante para borrar
-            0 AS isSavedByMe -- No es relevante para borrar
+            0 AS isLikedByMe,
+            0 AS isSavedByMe
         FROM post_table p
         INNER JOIN citizen_table c ON p.author_id = c.citizen_id
         WHERE p.post_id = :postId
     """)
     suspend fun getPostById(postId: String): PostWithDetails?
+
+    @Transaction
+    @Query("""
+        SELECT 
+            p.*, 
+            c.display_name AS authorDisplayName, 
+            c.username AS authorUsername, 
+            c.avatar_url AS authorAvatarUrl,
+            (SELECT COUNT(*) FROM post_likes WHERE post_id = p.post_id) AS likesCount,
+            (SELECT COUNT(*) FROM post_table WHERE parent_post_id = p.post_id) AS commentsCount,
+            0 AS isLikedByMe,
+            0 AS isSavedByMe
+        FROM post_table p
+        INNER JOIN citizen_table c ON p.author_id = c.citizen_id
+        WHERE p.parent_post_id IS NULL
+        ORDER BY p.created_at DESC
+    """)
+    suspend fun getAllPostsAdmin(): List<PostWithDetails>
+
+    @Transaction
+    suspend fun deletePostAdmin(postId: String) {
+        deleteAdjacentLikes(postId)
+        deleteAdjacentReplies(postId)
+        deleteTargetPost(postId)
+    }
+
+    @Query("SELECT COUNT(*) FROM post_table WHERE author_id = :userId AND parent_post_id IS NULL")
+    suspend fun countPostsByAuthor(userId: String): Int
+
+    @Transaction
+    @Query("""
+        SELECT 
+            p.*, 
+            c.display_name AS authorDisplayName, 
+            c.username AS authorUsername, 
+            c.avatar_url AS authorAvatarUrl,
+            (SELECT COUNT(*) FROM post_likes WHERE post_id = p.post_id) AS likesCount,
+            (SELECT COUNT(*) FROM post_table WHERE parent_post_id = p.post_id) AS commentsCount,
+            0 AS isLikedByMe,
+            0 AS isSavedByMe
+        FROM post_table p
+        INNER JOIN citizen_table c ON p.author_id = c.citizen_id
+        WHERE p.author_id = :userId AND p.shared_post_id IS NOT NULL
+        ORDER BY p.created_at DESC
+    """)
+    fun getSharedPosts(userId: String): Flow<List<PostWithDetails>>
 }

@@ -12,7 +12,7 @@ class DeletePostUseCase(private val repository: FeedRepository,
                 post.mediaUrls.forEach { url ->
                     cloudinaryService.deleteImage(url)
                 }
-                repository.deletePost(postId)
+                repository.deletePost(postId,currentUserId)
                 Result.success(Unit)
             } else {
                 Result.failure(Exception("No tienes permiso para borrar este post o no existe."))

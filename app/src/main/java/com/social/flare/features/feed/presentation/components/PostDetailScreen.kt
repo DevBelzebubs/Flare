@@ -147,7 +147,20 @@ fun PostDetailScreen(
                                     replyingToPostId = detail.mainPost.id
                                     replyingToUsername = detail.mainPost.authorUsername
                                 },
-                                onAuthorClick = onAuthorClick
+                                onSaveClick = {
+                                    activeCitizenId?.let { viewModel.toggleSave(detail.mainPost.id, it) }
+                                },
+                                onShareClick = {
+                                    activeCitizenId?.let { viewModel.sharePost(it, detail.mainPost.id) }
+                                },
+                                onEditClick = { newContent ->
+                                    activeCitizenId?.let { viewModel.updatePost(detail.mainPost.id, it, newContent) }
+                                },
+                                onDeleteClick = {
+                                    activeCitizenId?.let { viewModel.deletePost(detail.mainPost.id, it) }
+                                },
+                                onAuthorClick = onAuthorClick,
+                                activeUserId = activeCitizenId
                             )
                         }
                         item {
