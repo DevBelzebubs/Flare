@@ -88,5 +88,11 @@ dependencies {
     implementation("androidx.media3:media3-ui:1.3.0")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.7.0")
     implementation("androidx.datastore:datastore-preferences:1.1.1")
+    implementation(libs.supabase.postgrest)
+    implementation(libs.supabase.auth)
+    implementation(libs.supabase.realtime)
+
+    implementation(libs.ktor.client.android)
+    implementation(libs.kotlinx.serialization.json)
     ksp("androidx.room:room-compiler:$room_version")
 }
