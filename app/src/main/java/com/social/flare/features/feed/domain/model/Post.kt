@@ -14,5 +14,6 @@ data class Post(
     val commentsCount: Int = 0,
     val isLikedByMe: Boolean = false,
     val isSavedByMe: Boolean = false,
-    val parentPostId: String? = null
+    val parentPostId: String? = null,
+    val sharedPostId: String? = null
 )

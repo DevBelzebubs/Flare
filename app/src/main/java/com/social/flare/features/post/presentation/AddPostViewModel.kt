@@ -42,4 +42,8 @@ class AddPostViewModel(
     fun clearError() {
         _uiState.update { it.copy(errorMessage = null) }
     }
+
+    fun clearState() {
+        _uiState.update { AddPostUiState() }
+    }
 }

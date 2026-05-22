@@ -26,5 +26,6 @@ data class PostEntity(
     val likes_count: Int = 0,
     val comments_count: Int = 0,
     val sync_status: Int = 0,
-    val parent_post_id: String? = null
+    val parent_post_id: String? = null,
+    val shared_post_id: String? = null
 )

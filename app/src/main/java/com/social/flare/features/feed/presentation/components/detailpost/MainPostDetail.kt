@@ -16,15 +16,18 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.ChatBubbleOutline
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.FavoriteBorder
-import androidx.compose.material.icons.outlined.Send
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.material.icons.outlined.Repeat
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -34,7 +37,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import com.social.flare.core.utils.formatRelativeTime
+import com.social.flare.core.utils.TimeUtils.formatRelativeTime
 import com.social.flare.features.feed.domain.model.Post
 
 @Composable
@@ -44,8 +47,19 @@ public fun MainPostDetail(
     onImageClick: (String) -> Unit,
     onLikeClick: () -> Unit,
     onCommentClick: () -> Unit,
-    onAuthorClick: (String) -> Unit
+    onSaveClick: () -> Unit,
+    onShareClick: () -> Unit,
+    onEditClick: (String) -> Unit,
+    onDeleteClick: () -> Unit,
+    onAuthorClick: (String) -> Unit,
+    activeUserId: String? = null
 ) {
+    var menuExpanded by remember { mutableStateOf(false) }
+    var showEditDialog by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    var editContentText by remember { mutableStateOf(post.content ?: "") }
+    val isOwner = post.authorId == activeUserId
+
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier.padding(horizontal = 16.dp),
@@ -68,12 +82,36 @@ public fun MainPostDetail(
 
             Spacer(modifier = Modifier.width(12.dp))
 
-            Column(modifier = Modifier.padding(top = if (hasParent) 12.dp else 16.dp)) {
+            Column(modifier = Modifier.weight(1f).padding(top = if (hasParent) 12.dp else 16.dp)) {
                 Text(post.authorDisplayName, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 15.sp)
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(post.authorUsername, color = Color.Gray, fontSize = 13.sp)
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("• ${formatRelativeTime(post.createdAt)}", color = Color.Gray, fontSize = 13.sp) // <-- TIEMPO DINÁMICO
+                    Text("• ${formatRelativeTime(post.createdAt)}", color = Color.Gray, fontSize = 13.sp)
+                }
+            }
+
+            if (isOwner) {
+                Box {
+                    IconButton(onClick = { menuExpanded = true }) {
+                        Icon(Icons.Default.MoreVert, contentDescription = "Opciones", tint = Color.Gray)
+                    }
+                    DropdownMenu(
+                        expanded = menuExpanded,
+                        onDismissRequest = { menuExpanded = false },
+                        modifier = Modifier.background(Color(0xFF1E1E1E))
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Editar", color = Color.White) },
+                            leadingIcon = { Icon(Icons.Outlined.Edit, contentDescription = null, tint = Color.White) },
+                            onClick = { menuExpanded = false; showEditDialog = true }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Eliminar", color = Color.Red) },
+                            leadingIcon = { Icon(Icons.Outlined.Delete, contentDescription = null, tint = Color.Red) },
+                            onClick = { menuExpanded = false; showDeleteDialog = true }
+                        )
+                    }
                 }
             }
         }
@@ -135,13 +173,62 @@ public fun MainPostDetail(
                     onClick = onCommentClick
                 )
                 IconTextButton(
-                    icon = Icons.Outlined.Send,
-                    text = "Share",
+                    icon = Icons.Outlined.Repeat,
+                    text = "Repost",
                     tint = Color.White,
-                    onClick = {}
+                    onClick = onShareClick
                 )
             }
-            Icon(Icons.Outlined.BookmarkBorder, contentDescription = "Save", tint = Color.White, modifier = Modifier.size(24.dp))
+            IconButton(onClick = onSaveClick) {
+                Icon(
+                    imageVector = if (post.isSavedByMe) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
+                    contentDescription = "Save",
+                    tint = if (post.isSavedByMe) Color(0xFFFF5722) else Color.White,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
         }
+    }
+
+    if (showEditDialog) {
+        AlertDialog(
+            onDismissRequest = { showEditDialog = false },
+            title = { Text("Editar Publicación") },
+            text = {
+                OutlinedTextField(
+                    value = editContentText,
+                    onValueChange = { if (it.length <= 500) editContentText = it },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    onEditClick(editContentText)
+                    showEditDialog = false
+                }) { Text("Guardar") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showEditDialog = false }) { Text("Cancelar") }
+            }
+        )
+    }
+
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("Eliminar Publicación") },
+            text = {
+                Text("¿Estás seguro de que deseas eliminar esta publicación? Esta acción no se puede deshacer.")
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    onDeleteClick()
+                    showDeleteDialog = false
+                }) { Text("Eliminar") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) { Text("Cancelar") }
+            }
+        )
     }
 }

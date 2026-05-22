@@ -34,4 +34,19 @@ interface CitizenDao {
         avatarUrl: String?,
         bannerUrl: String?
     )
+
+    @Query("SELECT * FROM citizen_table ORDER BY username ASC")
+    suspend fun getAllCitizens(): List<CitizenEntity>
+
+    @Query("SELECT COUNT(*) FROM citizen_table")
+    suspend fun getCitizenCount(): Int
+
+    @Query("UPDATE citizen_table SET status = :status WHERE citizen_id = :citizenId")
+    suspend fun updateUserStatus(citizenId: String, status: String)
+
+    @Query("DELETE FROM citizen_table WHERE citizen_id = :citizenId")
+    suspend fun deleteCitizen(citizenId: String)
+
+    @Query("SELECT * FROM citizen_table WHERE is_admin = 1 LIMIT 1")
+    suspend fun getAdminCitizen(): CitizenEntity?
 }

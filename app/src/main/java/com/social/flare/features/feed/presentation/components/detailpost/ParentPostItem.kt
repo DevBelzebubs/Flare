@@ -28,7 +28,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import com.social.flare.core.utils.formatRelativeTime
+import com.social.flare.core.utils.TimeUtils.formatRelativeTime
 import com.social.flare.features.feed.domain.model.Post
 
 @Composable
@@ -79,7 +79,7 @@ fun ParentPostItem(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(post.authorUsername, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 15.sp)
                 Spacer(modifier = Modifier.width(6.dp))
-                Text("• ${formatRelativeTime(post.createdAt)}", color = Color.Gray, fontSize = 13.sp) // <-- TIEMPO DINÁMICO
+                Text("• ${formatRelativeTime(post.createdAt)}", color = Color.Gray, fontSize = 13.sp)
             }
 
             Spacer(modifier = Modifier.height(4.dp))

@@ -21,7 +21,7 @@ class FlareApp : Application(), ImageLoaderFactory {
             FlareDatabase::class.java,
             "flare_offline_database"
         )
-            .fallbackToDestructiveMigration(false)
+            .fallbackToDestructiveMigration()
             .build()
 
         val config = mapOf(

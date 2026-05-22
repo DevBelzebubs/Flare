@@ -6,9 +6,11 @@ import com.social.flare.features.feed.data.local.entity.PostLikeEntity
 import com.social.flare.features.feed.data.local.entity.SavedPostEntity
 import com.social.flare.features.feed.data.mapper.toDomain
 import com.social.flare.features.feed.data.mapper.toDomainModel
+import com.social.flare.features.feed.domain.FeedRanking
 import com.social.flare.features.feed.domain.model.Post
 import com.social.flare.features.feed.domain.repository.FeedRepository
 import com.social.flare.features.post.domain.model.PostDetail
+import com.social.flare.features.profile.data.local.dao.FollowDao
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
@@ -16,12 +18,39 @@ import kotlinx.coroutines.flow.map
 import java.util.UUID
 
 class FeedRepositoryImpl(
-    private val postDao: PostDao
+    private val postDao: PostDao,
+    private val followDao: FollowDao? = null
 ) : FeedRepository {
 
     override fun getFeedPosts(currentUserId: String): Flow<List<Post>> {
         return postDao.getFeedPosts(currentUserId).map { entities ->
+            val followedIds = followDao?.getFollowedIds(currentUserId) ?: emptyList()
+            val now = System.currentTimeMillis()
             entities.map { it.toDomain() }
+                .sortedByDescending { post ->
+                    FeedRanking.score(
+                        likesCount = post.likesCount,
+                        commentsCount = post.commentsCount,
+                        createdAt = post.createdAt,
+                        currentTime = now,
+                        isFollowed = followedIds.contains(post.authorId)
+                    )
+                }
+        }
+    }
+
+    override fun getFeedPostsGuest(): Flow<List<Post>> {
+        return postDao.getFeedPostsGuest().map { entities ->
+            val now = System.currentTimeMillis()
+            entities.map { it.toDomain() }
+                .sortedByDescending { post ->
+                    FeedRanking.score(
+                        likesCount = post.likesCount,
+                        commentsCount = post.commentsCount,
+                        createdAt = post.createdAt,
+                        currentTime = now
+                    )
+                }
         }
     }
 
@@ -142,5 +171,26 @@ class FeedRepositoryImpl(
     override suspend fun getPostById(postId: String): Post? {
         val postWithDetails = postDao.getPostById(postId)
         return postWithDetails?.toDomain()
+    }
+
+    override suspend fun sharePost(authorId: String, originalPostId: String) {
+        val newPostId = UUID.randomUUID().toString()
+        val sharedPost = PostEntity(
+            post_id = newPostId,
+            author_id = authorId,
+            content = null,
+            media_urls = "",
+            created_at = System.currentTimeMillis(),
+            likes_count = 0,
+            comments_count = 0,
+            shared_post_id = originalPostId
+        )
+        postDao.insertPost(sharedPost)
+    }
+
+    override fun getSharedPosts(userId: String): Flow<List<Post>> {
+        return postDao.getSharedPosts(userId).map { entities ->
+            entities.map { it.toDomain() }
+        }
     }
 }
