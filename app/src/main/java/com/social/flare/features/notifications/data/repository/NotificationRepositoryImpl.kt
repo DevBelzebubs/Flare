@@ -1,5 +1,6 @@
 package com.social.flare.features.notifications.data.repository
 
+import android.util.Log
 import com.social.flare.features.notifications.data.local.dao.NotificationDao
 import com.social.flare.features.notifications.data.local.entity.NotificationEntity
 import com.social.flare.features.notifications.data.mapper.toDomain
@@ -15,6 +16,7 @@ import okhttp3.OkHttpClient
 
 class NotificationRepositoryImpl(
     private val notificationDao: NotificationDao,
+    private val supabase: SupabaseClient
     okHttpClient: OkHttpClient
 ) : NotificationRepository {
     private val coroutineScope = CoroutineScope(Dispatchers.IO)
@@ -50,21 +52,21 @@ class NotificationRepositoryImpl(
     private fun handleIncomingNotification(json: org.json.JSONObject) {
         coroutineScope.launch {
             try {
-                val entity = NotificationEntity(
-                    id = json.getString("id"),
-                    recipientId = json.getString("recipientId"),
-                    actorId = json.getString("actorId"),
-                    actorUsername = json.getString("actorUsername"),
-                    actorAvatarUrl = json.optString("actorAvatarUrl").takeIf { it.isNotEmpty() },
-                    type = json.getString("type"), // LIKE, COMMENT, FOLLOW
-                    referencedPostId = json.optString("referencedPostId").takeIf { it.isNotEmpty() },
-                    referencedPostMediaUrl = json.optString("referencedPostMediaUrl").takeIf { it.isNotEmpty() },
-                    extraText = json.optString("extraText").takeIf { it.isNotEmpty() },
-                    createdAt = json.optLong("createdAt", System.currentTimeMillis()),
-                    isRead = false
-                )
-                notificationDao.insertNotification(entity)
+                supabase.realtime.connect()
+                realtimeChannel = supabase.channel("notifications-user-$userId")
 
+                realtimeChannel!!.postgresChangeFlow<PostgresAction.Insert>(schema = "public") {
+                    table = "notification_table"
+                    filter = "recipientId=eq.$userId"
+                }.onEach { action ->
+                    val newNotification = action.decodeRecord<NotificationEntity>()
+
+                    Log.d("FLARE_SYNC", "Notificación recibida: ${newNotification.type}")
+
+                    notificationDao.insertNotification(newNotification)
+                }.launchIn(coroutineScope)
+
+                realtimeChannel!!.subscribe()
             } catch (e: Exception) {
                 e.printStackTrace()
             }

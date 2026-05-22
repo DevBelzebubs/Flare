@@ -2,7 +2,9 @@ package com.social.flare.features.notifications.data.local.entity
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import kotlinx.serialization.Serializable
 
+@Serializable
 @Entity(tableName = "notification_table")
 data class NotificationEntity(
     @PrimaryKey val id: String,
