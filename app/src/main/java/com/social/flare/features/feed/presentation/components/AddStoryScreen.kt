@@ -306,10 +306,10 @@ suspend fun createBitmapFromPicture(context: Context, picture: Picture, width: I
             canvas.drawPicture(picture)
 
             val file = File(context.cacheDir, "story_export_${System.currentTimeMillis()}.jpg")
-            val outputStream = FileOutputStream(file)
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 90, outputStream)
-            outputStream.flush()
-            outputStream.close()
+            FileOutputStream(file).use { outputStream ->
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 90, outputStream)
+                outputStream.flush()
+            }
 
             Uri.fromFile(file)
         } catch (e: Exception) {

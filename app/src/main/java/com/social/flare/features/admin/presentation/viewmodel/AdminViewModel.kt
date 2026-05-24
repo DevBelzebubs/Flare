@@ -7,6 +7,7 @@ import com.social.flare.features.admin.domain.model.AdminPost
 import com.social.flare.features.admin.domain.model.AdminUser
 import com.social.flare.features.admin.domain.model.NewsItem
 import com.social.flare.features.admin.domain.repository.AdminRepository
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -29,9 +30,11 @@ class AdminViewModel(
 
     private val _uiState = MutableStateFlow(AdminUiState())
     val uiState: StateFlow<AdminUiState> = _uiState.asStateFlow()
+    private var loadJob: Job? = null
 
     fun loadDashboard() {
-        viewModelScope.launch {
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             try {
                 val data = adminRepository.getDashboardData()
@@ -43,7 +46,8 @@ class AdminViewModel(
     }
 
     fun loadUsers() {
-        viewModelScope.launch {
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             try {
                 val users = adminRepository.getAllUsers()
@@ -79,7 +83,8 @@ class AdminViewModel(
     }
 
     fun loadPosts() {
-        viewModelScope.launch {
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             try {
                 val posts = adminRepository.getAllPosts()
@@ -103,7 +108,8 @@ class AdminViewModel(
     }
 
     fun loadNews() {
-        viewModelScope.launch {
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             try {
                 adminRepository.getAllNews().collect { newsList ->

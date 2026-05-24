@@ -4,7 +4,9 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import com.social.flare.features.auth.data.local.entity.CitizenEntity
+import kotlinx.serialization.Serializable
 
+@Serializable
 @Entity(
     tableName = "saved_post_table",
     primaryKeys = ["citizen_id", "post_id"],

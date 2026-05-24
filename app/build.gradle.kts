@@ -30,10 +30,16 @@ android {
         val cloudName = localProperties.getProperty("CLOUD_NAME", "")
         val apiKey = localProperties.getProperty("CLOUD_API_KEY", "")
         val apiSecret = localProperties.getProperty("CLOUD_PRIVATE_API_KEY", "")
+        val supabaseUrl = localProperties.getProperty("SUPABASE_URL", "")
+        val supabaseAnonKey = localProperties.getProperty("SUPABASE_ANON_KEY", "")
+        val supabaseServiceRoleKey = localProperties.getProperty("SUPABASE_SERVICE_ROLE_KEY", "")
 
         buildConfigField("String", "CLOUDINARY_CLOUD_NAME", "\"$cloudName\"")
         buildConfigField("String", "CLOUDINARY_API_KEY", "\"$apiKey\"")
         buildConfigField("String", "CLOUDINARY_API_SECRET", "\"$apiSecret\"")
+        buildConfigField("String", "SUPABASE_URL", "\"$supabaseUrl\"")
+        buildConfigField("String", "SUPABASE_ANON_KEY", "\"$supabaseAnonKey\"")
+        buildConfigField("String", "SUPABASE_SERVICE_ROLE_KEY", "\"$supabaseServiceRoleKey\"")
     }
 
     buildTypes {
@@ -86,7 +92,6 @@ dependencies {
     implementation("com.cloudinary:cloudinary-android:3.1.2")
     implementation("io.coil-kt.coil3:coil-compose:3.3.0")
     implementation("io.coil-kt.coil3:coil-network-okhttp:3.3.0")
-    implementation(platform("io.github.jan-tennert.supabase:bom:2.4.4"))
     implementation("androidx.media3:media3-exoplayer:1.3.0")
     implementation("androidx.media3:media3-ui:1.3.0")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.7.0")

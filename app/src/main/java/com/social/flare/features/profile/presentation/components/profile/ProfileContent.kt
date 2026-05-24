@@ -49,8 +49,7 @@ fun ProfileContent(
         columns = GridCells.Fixed(3),
         modifier = Modifier.fillMaxSize()
     ) {
-        if (citizen != null) {
-            val safeCitizen = citizen!!
+        citizen?.let { safeCitizen ->
             item(span = { GridItemSpan(3) }) { ProfileHeaderSection(safeCitizen) }
             item(span = { GridItemSpan(3) }) { ProfileInfoSection(safeCitizen) }
         }

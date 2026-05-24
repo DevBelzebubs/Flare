@@ -83,20 +83,37 @@ fun MainScreen() {
     var showAuthDialog by remember { mutableStateOf(false) }
 
     val app = context.applicationContext as FlareApp
-    val sessionManager = remember { SessionManager(context) }
+    val sessionManager = remember { SessionManager(context.applicationContext) }
     val scope = rememberCoroutineScope()
     val activeCitizenId by sessionManager.activeCitizenIdFlow.collectAsStateWithLifecycle(initialValue = null)
 
-    val cloudinaryService = remember { CloudinaryService(context) }
+    val cloudinaryService = remember { CloudinaryService(context.applicationContext) }
     val followDao = remember { app.database.followDao() }
-    val feedRepository = remember { FeedRepositoryImpl(app.database.postDao(), followDao) }
-    val profileRepository = remember { ProfileRepositoryImpl(app.database.citizenDao()) }
-    val storyRepository = remember { StoryRepositoryImpl(app.database.storyDao(), cloudinaryService) }
-    val followRepository = remember { FollowRepositoryImpl(followDao) }
+    val citizenDao = remember { app.database.citizenDao() }
+    val feedRepository = remember {
+        FeedRepositoryImpl(
+            postDao = app.database.postDao(),
+            citizenDao = citizenDao,
+            followDao = followDao,
+            supabase = app.supabase
+        )
+    }
+    val profileRepository = remember { ProfileRepositoryImpl(app.database.citizenDao(), app.supabase) }
+    val storyRepository = remember {
+        StoryRepositoryImpl(
+            storyDao = app.database.storyDao(),
+            citizenDao = citizenDao,
+            cloudinaryService = cloudinaryService,
+            supabase = app.supabase
+        )
+    }
+    val followRepository = remember { FollowRepositoryImpl(followDao, app.supabase) }
 
-    val okHttpClient = remember { okhttp3.OkHttpClient() }
     val notificationRepository = remember {
-        NotificationRepositoryImpl(app.database.notificationDao(), okHttpClient)
+        NotificationRepositoryImpl(
+            notificationDao = app.database.notificationDao(),
+            supabase = app.supabase
+        )
     }
     val toggleFollowUseCase = remember { ToggleFollowUseCase(followRepository) }
     val getFollowStatsUseCase = remember { GetFollowStatsUseCase(followRepository) }
@@ -112,7 +129,14 @@ fun MainScreen() {
         )
     }
     val markNotificationReadUseCase = remember { MarkNotificationReadUseCase(notificationRepository) }
-    val adminRepository = remember { AdminRepositoryImpl(app.database.citizenDao(), app.database.postDao(), app.database.newsDao()) }
+    val adminRepository = remember {
+        AdminRepositoryImpl(
+            citizenDao = citizenDao,
+            postDao = app.database.postDao(),
+            newsDao = app.database.newsDao(),
+            supabase = app.supabase
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -175,8 +199,9 @@ fun MainScreen() {
                         }
                     )
                     LaunchedEffect(activeCitizenId) {
-                        if (activeCitizenId != null) {
-                            feedViewModel.loadFeed(activeCitizenId!!)
+                        val id = activeCitizenId
+                        if (id != null) {
+                            feedViewModel.loadFeed(id)
                         } else {
                             feedViewModel.loadFeedGuest()
                         }
@@ -235,7 +260,7 @@ fun MainScreen() {
                             override fun <T : ViewModel> create(modelClass: Class<T>): T { return StoryViewModel(storyRepository) as T }
                         }
                     )
-                    val profileViewModel: ProfileViewModel = viewModel(factory = ProfileViewModelFactory(context))
+                    val profileViewModel: ProfileViewModel = viewModel(factory = ProfileViewModelFactory(context.applicationContext))
                     val storyUiState by storyViewModel.uiState.collectAsStateWithLifecycle()
                     val profileState by profileViewModel.uiState.collectAsStateWithLifecycle()
 
@@ -388,7 +413,7 @@ fun MainScreen() {
                 }
 
                 composable(Screen.Settings.route) {
-                    val profileViewModel: ProfileViewModel = viewModel(factory = ProfileViewModelFactory(context))
+                    val profileViewModel: ProfileViewModel = viewModel(factory = ProfileViewModelFactory(context.applicationContext))
                     SettingsScreen(
                         activeCitizenId = activeCitizenId, profileViewModel = profileViewModel,
                         onNavigateBack = { navController.popBackStack() },
@@ -405,15 +430,16 @@ fun MainScreen() {
                             override fun <T : ViewModel> create(modelClass: Class<T>): T { return EditProfileViewModel(profileRepository, cloudinaryService) as T }
                         }
                     )
-                    val profileViewModel: ProfileViewModel = viewModel(factory = ProfileViewModelFactory(context))
+                    val profileViewModel: ProfileViewModel = viewModel(factory = ProfileViewModelFactory(context.applicationContext))
                     val profileState by profileViewModel.uiState.collectAsStateWithLifecycle()
 
                     LaunchedEffect(activeCitizenId) { activeCitizenId?.let { profileViewModel.loadActiveUserProfile(it) } }
 
                     if (profileState is ProfileUiState.Success) {
                         val currentCitizen by (profileState as ProfileUiState.Success).citizen.collectAsStateWithLifecycle(initialValue = null)
-                        if (currentCitizen != null) {
-                            EditProfileScreen(citizen = currentCitizen!!, viewModel = editViewModel, onNavigateBack = { navController.popBackStack() })
+                        val citizen = currentCitizen
+                        if (citizen != null) {
+                            EditProfileScreen(citizen = citizen, viewModel = editViewModel, onNavigateBack = { navController.popBackStack() })
                         }
                     }
                 }

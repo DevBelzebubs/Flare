@@ -2,7 +2,9 @@ package com.social.flare.features.admin.data.local.entity
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import kotlinx.serialization.Serializable
 
+@Serializable
 @Entity(tableName = "news_table")
 data class NewsItemEntity(
     @PrimaryKey

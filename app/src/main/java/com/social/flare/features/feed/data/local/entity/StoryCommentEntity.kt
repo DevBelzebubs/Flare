@@ -5,6 +5,9 @@ import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.social.flare.features.auth.data.local.entity.CitizenEntity
+import kotlinx.serialization.Serializable
+
+@Serializable
 @Entity(
     tableName = "story_comment_table",
     foreignKeys = [

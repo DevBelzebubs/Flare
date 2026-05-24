@@ -8,18 +8,31 @@ import com.social.flare.features.admin.domain.model.AdminUser
 import com.social.flare.features.admin.domain.model.NewsItem
 import com.social.flare.features.admin.domain.repository.AdminRepository
 import com.social.flare.features.auth.data.local.dao.CitizenDao
+import com.social.flare.features.auth.data.local.entity.CitizenEntity
 import com.social.flare.features.feed.data.local.dao.PostDao
+import com.social.flare.features.feed.data.local.entity.PostEntity
+import io.github.jan.supabase.SupabaseClient
+import io.github.jan.supabase.postgrest.postgrest
+
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import java.util.UUID
 
 class AdminRepositoryImpl(
     private val citizenDao: CitizenDao,
     private val postDao: PostDao,
-    private val newsDao: NewsDao
+    private val newsDao: NewsDao,
+    private val supabase: SupabaseClient
 ) : AdminRepository {
 
+    private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+
     override suspend fun getDashboardData(): AdminDashboardData {
+        syncAllData()
         val allUsers = citizenDao.getAllCitizens()
         val totalPosts = postDao.getAllPostsAdmin()
         val totalNews = newsDao.countNews()
@@ -34,6 +47,7 @@ class AdminRepositoryImpl(
     }
 
     override suspend fun getAllUsers(): List<AdminUser> {
+        syncAllUsers()
         val citizens = citizenDao.getAllCitizens()
         val result = mutableListOf<AdminUser>()
         for (citizen in citizens) {
@@ -55,14 +69,25 @@ class AdminRepositoryImpl(
     }
 
     override suspend fun updateUserStatus(citizenId: String, status: String) {
+        try {
+            supabase.postgrest["citizens"].update({
+                set("status", status)
+            }) {
+                filter { eq("citizen_id", citizenId) }
+            }
+        } catch (e: Throwable) { e.printStackTrace() }
         citizenDao.updateUserStatus(citizenId, status)
     }
 
     override suspend fun deleteUser(citizenId: String) {
+        try {
+            supabase.postgrest["citizens"].delete { filter { eq("citizen_id", citizenId) } }
+        } catch (e: Throwable) { e.printStackTrace() }
         citizenDao.deleteCitizen(citizenId)
     }
 
     override suspend fun getAllPosts(): List<AdminPost> {
+        syncAllPosts()
         return postDao.getAllPostsAdmin().map { pwd ->
             val mediaList = if (pwd.post.media_urls.isNotBlank()) {
                 pwd.post.media_urls.split(",")
@@ -84,16 +109,21 @@ class AdminRepositoryImpl(
     }
 
     override suspend fun deletePost(postId: String) {
+        try {
+            supabase.postgrest["posts"].delete { filter { eq("post_id", postId) } }
+        } catch (e: Throwable) { e.printStackTrace() }
         postDao.deletePostAdmin(postId)
     }
 
     override fun getActiveNews(): Flow<List<NewsItem>> {
+        scope.launch { syncAllNews() }
         return newsDao.getActiveNews().map { entities ->
             entities.map { it.toDomain() }
         }
     }
 
     override fun getAllNews(): Flow<List<NewsItem>> {
+        scope.launch { syncAllNews() }
         return newsDao.getAllNews().map { entities ->
             entities.map { it.toDomain() }
         }
@@ -108,20 +138,77 @@ class AdminRepositoryImpl(
             created_at = System.currentTimeMillis(),
             is_active = true
         )
+        try {
+            supabase.postgrest["news"].insert(news)
+        } catch (e: Throwable) { e.printStackTrace() }
         newsDao.insertNews(news)
     }
 
     override suspend fun updateNews(newsId: String, title: String, description: String, imageUrl: String?) {
+        try {
+            supabase.postgrest["news"].update({
+                set("title", title)
+                set("description", description)
+                set("image_url", imageUrl ?: "")
+            }) {
+                filter { eq("news_id", newsId) }
+            }
+        } catch (e: Throwable) { e.printStackTrace() }
         newsDao.updateNews(newsId, title, description, imageUrl)
     }
 
     override suspend fun toggleNewsActive(newsId: String, isActive: Boolean) {
+        try {
+            supabase.postgrest["news"].update({
+                set("is_active", isActive)
+            }) {
+                filter { eq("news_id", newsId) }
+            }
+        } catch (e: Throwable) { e.printStackTrace() }
         newsDao.toggleNewsActive(newsId, isActive)
     }
 
     override suspend fun deleteNews(newsId: String) {
+        try {
+            supabase.postgrest["news"].delete { filter { eq("news_id", newsId) } }
+        } catch (e: Throwable) { e.printStackTrace() }
         newsDao.deleteNews(newsId)
     }
+
+    private suspend fun syncAllData() {
+        try {
+            syncAllUsers()
+            syncAllPosts()
+            syncAllNews()
+        } catch (e: Throwable) { e.printStackTrace() }
+    }
+
+    private suspend fun syncAllUsers() {
+        try {
+            val users = supabase.postgrest["citizens"].select().decodeList<CitizenEntity>()
+            users.forEach { citizenDao.insertCitizen(it) }
+        } catch (e: Throwable) { e.printStackTrace() }
+    }
+
+    private suspend fun syncAllPosts() {
+        try {
+            val posts = supabase.postgrest["posts"].select().decodeList<PostEntity>()
+            val authorIds = posts.map { it.author_id }.distinct()
+            val authors = supabase.postgrest["citizens"]
+                .select { filter { isIn("citizen_id", authorIds) } }
+                .decodeList<CitizenEntity>()
+            authors.forEach { citizenDao.insertCitizen(it) }
+            posts.forEach { postDao.insertPost(it) }
+        } catch (e: Throwable) { e.printStackTrace() }
+    }
+
+    private suspend fun syncAllNews() {
+        try {
+            val news = supabase.postgrest["news"].select().decodeList<NewsItemEntity>()
+            news.forEach { newsDao.insertNews(it) }
+        } catch (e: Throwable) { e.printStackTrace() }
+    }
+
 }
 
 private fun NewsItemEntity.toDomain(): NewsItem {

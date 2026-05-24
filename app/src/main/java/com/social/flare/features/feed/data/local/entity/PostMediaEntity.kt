@@ -2,7 +2,9 @@ package com.social.flare.features.feed.data.local.entity
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import kotlinx.serialization.Serializable
 
+@Serializable
 @Entity(tableName = "post_media_table")
 data class PostMediaEntity(
     @PrimaryKey val media_id: String,

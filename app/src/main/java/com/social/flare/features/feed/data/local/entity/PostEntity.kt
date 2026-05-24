@@ -4,7 +4,9 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 import androidx.room.ForeignKey
 import androidx.room.Index
+import kotlinx.serialization.Serializable
 
+@Serializable
 @Entity(
     tableName = "post_table",
     indices = [Index("author_id"), Index("parent_post_id")],
@@ -20,8 +22,8 @@ import androidx.room.Index
 data class PostEntity(
     @PrimaryKey val post_id: String,
     val author_id: String,
-    val content: String?,
-    val media_urls: String,
+    val content: String? = null,
+    val media_urls: String = "",
     val created_at: Long,
     val likes_count: Int = 0,
     val comments_count: Int = 0,

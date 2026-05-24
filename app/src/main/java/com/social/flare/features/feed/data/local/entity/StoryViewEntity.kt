@@ -3,7 +3,9 @@ package com.social.flare.features.feed.data.local.entity
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
+import kotlinx.serialization.Serializable
 
+@Serializable
 @Entity(
     tableName = "story_view_table",
     primaryKeys = ["story_id", "citizen_id"],

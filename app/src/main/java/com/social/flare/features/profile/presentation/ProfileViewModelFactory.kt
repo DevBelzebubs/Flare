@@ -18,10 +18,16 @@ class ProfileViewModelFactory(private val context: Context) : ViewModelProvider.
         if (modelClass.isAssignableFrom(ProfileViewModel::class.java)) {
             val app = context.applicationContext as FlareApp
             val database = app.database
+            val supabase = app.supabase
 
-            val profileRepository = ProfileRepositoryImpl(database.citizenDao())
-            val feedRepository = FeedRepositoryImpl(database.postDao())
-            val followRepository = FollowRepositoryImpl(database.followDao())
+            val profileRepository = ProfileRepositoryImpl(database.citizenDao(), supabase)
+            val feedRepository = FeedRepositoryImpl(
+                postDao = database.postDao(),
+                citizenDao = database.citizenDao(),
+                followDao = database.followDao(),
+                supabase = supabase
+            )
+            val followRepository = FollowRepositoryImpl(database.followDao(), supabase)
 
             val getPostsUseCase = GetUserPostsUseCase(feedRepository)
             val toggleFollowUseCase = ToggleFollowUseCase(followRepository)

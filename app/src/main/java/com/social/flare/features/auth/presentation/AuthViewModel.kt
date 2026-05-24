@@ -53,8 +53,8 @@ class AuthViewModel(
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             if (modelClass.isAssignableFrom(AuthViewModel::class.java)) {
-                val database = (context.applicationContext as FlareApp).database
-                val repository = AuthRepositoryImpl(database.citizenDao())
+                val app = context.applicationContext as FlareApp
+                val repository = AuthRepositoryImpl(app.database.citizenDao(), app.supabase)
                 return AuthViewModel(
                     loginUseCase = LoginUseCase(repository),
                     registerUseCase = RegisterUseCase(repository)

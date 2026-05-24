@@ -2,7 +2,6 @@ package com.social.flare.core.database
 
 import androidx.room.Database
 import androidx.room.RoomDatabase
-import androidx.room.TypeConverters
 import com.social.flare.features.admin.data.local.dao.NewsDao
 import com.social.flare.features.admin.data.local.entity.NewsItemEntity
 import com.social.flare.features.auth.data.local.dao.CitizenDao
@@ -35,10 +34,9 @@ import com.social.flare.features.profile.data.local.entity.FollowEntity
         NotificationEntity::class,
         NewsItemEntity::class
     ],
-    version = 14,
+    version = 15,
     exportSchema = false
 )
-@TypeConverters(MediaConverters::class)
 abstract class FlareDatabase : RoomDatabase() {
     abstract fun citizenDao(): CitizenDao
     abstract fun postDao(): PostDao
