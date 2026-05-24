@@ -89,11 +89,7 @@ class AdminRepositoryImpl(
     override suspend fun getAllPosts(): List<AdminPost> {
         syncAllPosts()
         return postDao.getAllPostsAdmin().map { pwd ->
-            val mediaList = if (pwd.post.media_urls.isNotBlank()) {
-                pwd.post.media_urls.split(",")
-            } else {
-                emptyList()
-            }
+            val mediaList = pwd.post.media_urls?.takeIf { it.isNotBlank() }?.split(",") ?: emptyList()
             AdminPost(
                 postId = pwd.post.post_id,
                 authorId = pwd.post.author_id,

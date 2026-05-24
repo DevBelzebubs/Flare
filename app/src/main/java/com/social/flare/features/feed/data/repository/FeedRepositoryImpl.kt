@@ -22,6 +22,8 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import java.util.UUID
@@ -35,66 +37,78 @@ class FeedRepositoryImpl(
 
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
-    override fun getFeedPosts(currentUserId: String): Flow<List<Post>> {
+    override fun getFeedPosts(currentUserId: String): Flow<List<Post>> = flow {
         syncPostsFromSupabase(currentUserId, isGuest = false)
-        return postDao.getFeedPosts(currentUserId).map { entities ->
-            val followedIds = followDao?.getFollowedIds(currentUserId) ?: emptyList()
-            val now = System.currentTimeMillis()
-            entities.map { it.toDomain() }
-                .sortedByDescending { post ->
-                    FeedRanking.score(
-                        likesCount = post.likesCount,
-                        commentsCount = post.commentsCount,
-                        createdAt = post.createdAt,
-                        currentTime = now,
-                        isFollowed = followedIds.contains(post.authorId)
-                    )
-                }
-        }
+        emitAll(
+            postDao.getFeedPosts(currentUserId).map { entities ->
+                val followedIds = followDao?.getFollowedIds(currentUserId) ?: emptyList()
+                val now = System.currentTimeMillis()
+                entities.map { it.toDomain() }
+                    .sortedByDescending { post ->
+                        FeedRanking.score(
+                            likesCount = post.likesCount,
+                            commentsCount = post.commentsCount,
+                            createdAt = post.createdAt,
+                            currentTime = now,
+                            isFollowed = followedIds.contains(post.authorId)
+                        )
+                    }
+            }
+        )
     }
 
-    override fun getFeedPostsGuest(): Flow<List<Post>> {
+    override fun getFeedPostsGuest(): Flow<List<Post>> = flow {
         syncPostsFromSupabase(isGuest = true)
-        return postDao.getFeedPostsGuest().map { entities ->
-            val now = System.currentTimeMillis()
-            entities.map { it.toDomain() }
-                .sortedByDescending { post ->
-                    FeedRanking.score(
-                        likesCount = post.likesCount,
-                        commentsCount = post.commentsCount,
-                        createdAt = post.createdAt,
-                        currentTime = now
-                    )
-                }
-        }
+        emitAll(
+            postDao.getFeedPostsGuest().map { entities ->
+                val now = System.currentTimeMillis()
+                entities.map { it.toDomain() }
+                    .sortedByDescending { post ->
+                        FeedRanking.score(
+                            likesCount = post.likesCount,
+                            commentsCount = post.commentsCount,
+                            createdAt = post.createdAt,
+                            currentTime = now
+                        )
+                    }
+            }
+        )
     }
 
-    private fun syncPostsFromSupabase(currentUserId: String? = null, isGuest: Boolean = false) {
-        scope.launch {
-            try {
-                val posts = supabase.postgrest["posts"]
-                    .select { filter { isNull("parent_post_id") } }
-                    .decodeList<PostEntity>()
+    private suspend fun syncPostsFromSupabase(currentUserId: String? = null, isGuest: Boolean = false) {
+        try {
+            val posts = supabase.postgrest["posts"]
+                .select()
+                .decodeList<PostEntity>()
 
-                val authorIds = posts.map { it.author_id }.distinct()
+            val authorIds = posts.map { it.author_id }.distinct()
+            if (authorIds.isNotEmpty()) {
                 val authors = supabase.postgrest["citizens"]
                     .select { filter { isIn("citizen_id", authorIds) } }
                     .decodeList<CitizenEntity>()
 
                 authors.forEach { citizenDao.insertCitizen(it) }
-                posts.forEach { postDao.insertPost(it) }
+            }
+            posts.forEach { postDao.insertPost(it) }
+        } catch (e: Throwable) {
+            e.printStackTrace()
+        }
 
-                if (!isGuest && currentUserId != null) {
-                    val likes = supabase.postgrest["post_likes"]
-                        .select { filter { eq("citizen_id", currentUserId) } }
-                        .decodeList<PostLikeEntity>()
-                    val saves = supabase.postgrest["saved_posts"]
-                        .select { filter { eq("citizen_id", currentUserId) } }
-                        .decodeList<SavedPostEntity>()
+        if (!isGuest && currentUserId != null) {
+            try {
+                val likes = supabase.postgrest["post_likes"]
+                    .select { filter { eq("citizen_id", currentUserId) } }
+                    .decodeList<PostLikeEntity>()
+                likes.forEach { postDao.insertLike(it) }
+            } catch (e: Throwable) {
+                e.printStackTrace()
+            }
 
-                    likes.forEach { postDao.insertLike(it) }
-                    saves.forEach { postDao.insertSavedPost(it) }
-                }
+            try {
+                val saves = supabase.postgrest["saved_posts"]
+                    .select { filter { eq("citizen_id", currentUserId) } }
+                    .decodeList<SavedPostEntity>()
+                saves.forEach { postDao.insertSavedPost(it) }
             } catch (e: Throwable) {
                 e.printStackTrace()
             }
@@ -351,10 +365,6 @@ class FeedRepositoryImpl(
         return postDao.getSharedPosts(userId).map { entities ->
             entities.map { it.toDomain() }
         }
-    }
-
-    private fun PostgrestFilterBuilder.isNull(column: String) {
-        filter(column, FilterOperator.IS, null)
     }
 
     private fun PostgrestFilterBuilder.isNotNull(column: String) {

@@ -21,7 +21,11 @@ class FollowRepositoryImpl(
         } catch (e: Throwable) {
             e.printStackTrace()
         }
-        followDao.insertFollow(entity)
+        try {
+            followDao.insertFollow(entity)
+        } catch (e: Throwable) {
+            e.printStackTrace()
+        }
     }
 
     override suspend fun unfollowUser(followerId: String, followedId: String) {
@@ -33,7 +37,11 @@ class FollowRepositoryImpl(
         } catch (e: Throwable) {
             e.printStackTrace()
         }
-        followDao.deleteFollow(followerId, followedId)
+        try {
+            followDao.deleteFollow(followerId, followedId)
+        } catch (e: Throwable) {
+            e.printStackTrace()
+        }
     }
 
     override fun isFollowing(followerId: String, followedId: String): Flow<Boolean> {

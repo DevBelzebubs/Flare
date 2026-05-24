@@ -1,12 +1,17 @@
 package com.social.flare.features.profile.presentation
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.*
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -23,7 +28,8 @@ fun ProfileScreen(
     activeCitizenId: String?,
     viewModel: ProfileViewModel = viewModel(factory = ProfileViewModelFactory(LocalContext.current)),
     onNavigateToLogin: () -> Unit = {},
-    onPostClick: (String) -> Unit = {}
+    onPostClick: (String) -> Unit = {},
+    onNavigateBack: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val followStats by viewModel.followStats.collectAsStateWithLifecycle()
@@ -33,6 +39,10 @@ fun ProfileScreen(
             viewModel.loadProfileData(citizenId, activeCitizenId)
         }
     }
+
+    val isOtherProfile = citizenId != null && citizenId != activeCitizenId
+
+    BackHandler(isOtherProfile) { onNavigateBack() }
 
     Box(
         modifier = Modifier
@@ -56,24 +66,38 @@ fun ProfileScreen(
                         savedPosts = state.savedPosts,
                         onPostClick = onPostClick
                     )
-                    if (citizenId != activeCitizenId && activeCitizenId != null) {
+
+                    if (isOtherProfile) {
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(top = 16.dp, end = 16.dp),
-                            contentAlignment = Alignment.TopEnd
+                                .padding(top = 16.dp, start = 4.dp, end = 16.dp)
                         ) {
-                            Button(
-                                onClick = { viewModel.toggleFollow(followerId = activeCitizenId, followedId = citizenId) },
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = if (followStats.isFollowingByMe) Color.DarkGray else Color(0xFFFF5722)
-                                )
+                            IconButton(
+                                onClick = onNavigateBack,
+                                modifier = Modifier.align(Alignment.TopStart)
                             ) {
-                                Text(
-                                    text = if (followStats.isFollowingByMe) "Siguiendo" else "Seguir",
-                                    color = Color.White,
-                                    fontWeight = FontWeight.Bold
+                                Icon(
+                                    Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = "Volver",
+                                    tint = Color.White
                                 )
+                            }
+
+                            if (activeCitizenId != null) {
+                                Button(
+                                    onClick = { viewModel.toggleFollow(followerId = activeCitizenId, followedId = citizenId) },
+                                    modifier = Modifier.align(Alignment.TopEnd),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = if (followStats.isFollowingByMe) Color.DarkGray else Color(0xFFFF5722)
+                                    )
+                                ) {
+                                    Text(
+                                        text = if (followStats.isFollowingByMe) "Siguiendo" else "Seguir",
+                                        color = Color.White,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
                             }
                         }
                     }
@@ -87,6 +111,30 @@ fun ProfileScreen(
                     )
                 }
             }
+        }
+
+        if (isOtherProfile) {
+            var dragAccumulator by remember { mutableFloatStateOf(0f) }
+            Box(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .width(30.dp)
+                    .align(Alignment.CenterStart)
+                    .pointerInput(onNavigateBack) {
+                        detectHorizontalDragGestures(
+                            onDragStart = { dragAccumulator = 0f },
+                            onHorizontalDrag = { _, dragAmount ->
+                                dragAccumulator += dragAmount
+                                if (dragAccumulator > 150f) {
+                                    onNavigateBack()
+                                    dragAccumulator = 0f
+                                }
+                            },
+                            onDragEnd = { dragAccumulator = 0f },
+                            onDragCancel = { dragAccumulator = 0f }
+                        )
+                    }
+            )
         }
     }
 }

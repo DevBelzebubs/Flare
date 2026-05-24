@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.social.flare.core.utils.TimeUtils.formatRelativeTime
 import com.social.flare.features.feed.domain.model.Post
+import com.social.flare.features.feed.presentation.components.VideoPlayer
 
 @Composable
 fun CommentItem(
@@ -89,16 +90,30 @@ fun CommentItem(
 
             if (post.mediaUrls.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(8.dp))
-                AsyncImage(
-                    model = post.mediaUrls.first(),
-                    contentDescription = "Comment image",
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(max = 350.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .clickable { onImageClick(post.mediaUrls.first()) }
-                )
+                val mediaUrl = post.mediaUrls.first()
+                val isVideo = mediaUrl.endsWith(".mp4", ignoreCase = true) ||
+                        mediaUrl.endsWith(".webm", ignoreCase = true) ||
+                        mediaUrl.endsWith(".mkv", ignoreCase = true) ||
+                        mediaUrl.endsWith(".mov", ignoreCase = true)
+                if (isVideo) {
+                    VideoPlayer(
+                        videoUrl = mediaUrl,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 350.dp)
+                    )
+                } else {
+                    AsyncImage(
+                        model = mediaUrl,
+                        contentDescription = "Comment image",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 350.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .clickable { onImageClick(mediaUrl) }
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(8.dp))

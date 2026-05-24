@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.social.flare.core.utils.TimeUtils.formatRelativeTime
 import com.social.flare.features.feed.domain.model.Post
+import com.social.flare.features.feed.presentation.components.VideoPlayer
 
 @Composable
 public fun MainPostDetail(
@@ -132,16 +133,29 @@ public fun MainPostDetail(
 
         if (post.mediaUrls.isNotEmpty()) {
             val mediaUrl = post.mediaUrls.first()
-            AsyncImage(
-                model = mediaUrl,
-                contentDescription = "Post image",
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .wrapContentHeight()
-                    .heightIn(max = 450.dp)
-                    .clickable { onImageClick(mediaUrl) }
-            )
+            val isVideo = mediaUrl.endsWith(".mp4", ignoreCase = true) ||
+                    mediaUrl.endsWith(".webm", ignoreCase = true) ||
+                    mediaUrl.endsWith(".mkv", ignoreCase = true) ||
+                    mediaUrl.endsWith(".mov", ignoreCase = true)
+            if (isVideo) {
+                VideoPlayer(
+                    videoUrl = mediaUrl,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 450.dp)
+                )
+            } else {
+                AsyncImage(
+                    model = mediaUrl,
+                    contentDescription = "Post image",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .wrapContentHeight()
+                        .heightIn(max = 450.dp)
+                        .clickable { onImageClick(mediaUrl) }
+                )
+            }
         }
 
         Row(

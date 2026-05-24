@@ -4,6 +4,14 @@ import com.social.flare.features.notifications.data.local.entity.NotificationEnt
 import com.social.flare.features.notifications.domain.model.FlareNotification
 import com.social.flare.features.notifications.domain.model.NotificationType
 
+private fun safeParseNotificationType(raw: String): NotificationType {
+    return try {
+        NotificationType.valueOf(raw)
+    } catch (_: IllegalArgumentException) {
+        NotificationType.LIKE
+    }
+}
+
 fun NotificationEntity.toDomain(): FlareNotification {
     return FlareNotification(
         id = id,
@@ -11,7 +19,7 @@ fun NotificationEntity.toDomain(): FlareNotification {
         actorId = actorId,
         actorUsername = actorUsername,
         actorAvatarUrl = actorAvatarUrl,
-        type = NotificationType.valueOf(type),
+        type = safeParseNotificationType(type),
         referencedPostId = referencedPostId,
         referencedPostMediaUrl = referencedPostMediaUrl,
         extraText = extraText,

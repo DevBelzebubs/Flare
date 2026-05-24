@@ -63,8 +63,8 @@ fun SettingsScreen(
                 }
 
                 is ProfileUiState.Success -> {
-                    val citizenFlow = (profileState as ProfileUiState.Success).citizen
-                    val currentCitizen by citizenFlow.collectAsState(initial = null)
+                    val success = profileState as ProfileUiState.Success
+                    val currentCitizen by success.citizen.collectAsState(initial = null)
 
                     SettingsProfileHeader(
                         avatarUrl = currentCitizen?.avatar_url,

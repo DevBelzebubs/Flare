@@ -8,6 +8,7 @@ import com.social.flare.features.feed.domain.usecase.GetFeedUseCase
 import com.social.flare.features.post.domain.usecase.DeletePostUseCase
 import com.social.flare.features.post.domain.usecase.UpdatePostUseCase
 import com.social.flare.features.profile.domain.repository.ProfileRepository
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -28,6 +29,10 @@ class FeedViewModel(
     val uiState = _uiState.asStateFlow()
     private var currentUserId: String? = null
 
+    private val exceptionHandler = CoroutineExceptionHandler { _, throwable ->
+        android.util.Log.e("FeedViewModel", "Uncaught coroutine exception", throwable)
+    }
+
     // Variables para rastrear y cancelar las corrutinas
     private var userJob: Job? = null
     private var feedJob: Job? = null
@@ -36,24 +41,33 @@ class FeedViewModel(
     fun loadFeed(activeUserId: String) {
         currentUserId = activeUserId
         cancelJobs()
+        _uiState.update { it.copy(posts = emptyList(), activeUser = null, stories = emptyList(), isLoading = true, error = null) }
 
-        userJob = viewModelScope.launch {
-            profileRepository.getCitizenProfile(activeUserId).collect { user ->
-                _uiState.update { it.copy(activeUser = user) }
+        userJob = viewModelScope.launch(exceptionHandler) {
+            try {
+                profileRepository.getCitizenProfile(activeUserId).collect { user ->
+                    _uiState.update { it.copy(activeUser = user) }
+                }
+            } catch (e: Throwable) {
+                android.util.Log.e("FeedViewModel", "userJob failed", e)
             }
         }
 
-        feedJob = viewModelScope.launch {
+        feedJob = viewModelScope.launch(exceptionHandler) {
             getFeedUseCase(activeUserId)
                 .catch { e -> _uiState.update { it.copy(error = e.message, isLoading = false) } }
                 .collect { posts ->
-                    _uiState.update { it.copy(posts = posts, isLoading = false) }
+                    _uiState.update { it.copy(posts = posts, isLoading = posts.isEmpty() && it.isLoading) }
                 }
         }
 
-        storyJob = viewModelScope.launch {
-            storyRepository.getActiveStories(activeUserId).collect { stories ->
-                _uiState.update { it.copy(stories = stories) }
+        storyJob = viewModelScope.launch(exceptionHandler) {
+            try {
+                storyRepository.getActiveStories(activeUserId).collect { stories ->
+                    _uiState.update { it.copy(stories = stories) }
+                }
+            } catch (e: Throwable) {
+                android.util.Log.e("FeedViewModel", "storyJob failed", e)
             }
         }
     }
@@ -61,14 +75,13 @@ class FeedViewModel(
     fun loadFeedGuest() {
         currentUserId = null
         cancelJobs()
+        _uiState.update { it.copy(posts = emptyList(), activeUser = null, stories = emptyList(), isLoading = true, error = null) }
 
-        _uiState.update { it.copy(activeUser = null) }
-
-        feedJob = viewModelScope.launch {
+        feedJob = viewModelScope.launch(exceptionHandler) {
             repository.getFeedPostsGuest()
                 .catch { e -> _uiState.update { it.copy(error = e.message, isLoading = false) } }
                 .collect { posts ->
-                    _uiState.update { it.copy(posts = posts, isLoading = false) }
+                    _uiState.update { it.copy(posts = posts, isLoading = posts.isEmpty() && it.isLoading) }
                 }
         }
     }

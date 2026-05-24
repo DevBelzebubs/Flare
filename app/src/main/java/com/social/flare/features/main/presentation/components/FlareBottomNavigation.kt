@@ -79,7 +79,7 @@ fun FlareBottomNavigation(
             )
         )
         NavigationBarItem(
-            selected = currentRoute == Screen.Profile.route,
+            selected = currentRoute?.startsWith(Screen.Profile.route) == true,
             onClick = { handleNavigate(Screen.Profile.route) },
             icon = { Icon(Icons.Default.Person, contentDescription = "Profile") },
             colors = NavigationBarItemDefaults.colors(

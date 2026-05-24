@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 class ProfileViewModel(
@@ -55,17 +56,18 @@ class ProfileViewModel(
                 }
 
                 // 2. Cargar el ciudadano y combinar con Posts y Stats
-                val citizen = repository.getCitizenProfile(targetCitizenId)
-                if (citizen != null) {
+                val citizenFlow = repository.getCitizenProfile(targetCitizenId)
+                val exists = citizenFlow.first() != null
+
+                if (exists) {
                     combine(
                         getUserPostsUseCase(targetCitizenId),
                         postDao.getSavedPosts(targetCitizenId),
                         _followStats
-                    ) { myPosts: List<Post>, savedPostsDetails: List<PostWithDetails>, stats: FollowStats ->
+                    ) { myPosts, savedPostsDetails, stats ->
                         val savedPosts = savedPostsDetails.map { it.toDomain() }
-
                         ProfileUiState.Success(
-                            citizen = citizen,
+                            citizen = citizenFlow,
                             postsCount = myPosts.size,
                             followersCount = stats.followersCount,
                             followingCount = stats.followingCount,

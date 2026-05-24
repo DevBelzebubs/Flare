@@ -1,23 +1,13 @@
 package com.social.flare.features.feed.data.local.entity
 
 import androidx.room.Entity
-import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import com.social.flare.features.auth.data.local.entity.CitizenEntity
 import kotlinx.serialization.Serializable
 
 @Serializable
 @Entity(
     tableName = "story_table",
-    foreignKeys = [
-        ForeignKey(
-            entity = CitizenEntity::class,
-            parentColumns = ["citizen_id"],
-            childColumns = ["author_id"],
-            onDelete = ForeignKey.CASCADE
-        )
-    ],
     indices = [Index("author_id")]
 )
 data class StoryEntity(

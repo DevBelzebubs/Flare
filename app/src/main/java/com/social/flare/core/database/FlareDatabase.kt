@@ -34,7 +34,7 @@ import com.social.flare.features.profile.data.local.entity.FollowEntity
         NotificationEntity::class,
         NewsItemEntity::class
     ],
-    version = 15,
+    version = 18,
     exportSchema = false
 )
 abstract class FlareDatabase : RoomDatabase() {

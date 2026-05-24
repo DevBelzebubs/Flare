@@ -34,9 +34,10 @@ class StoryRepositoryImpl(
 
     override suspend fun createStory(authorId: String, imageUri: Uri): Result<Unit> {
         return try {
-            val imageUrl = cloudinaryService.uploadImage(imageUri)
-            if (imageUrl == null) {
-                return Result.failure(Exception("Error al subir la imagen a la nube"))
+            val imageUrl = try {
+                cloudinaryService.uploadImage(imageUri)
+            } catch (e: Exception) {
+                return Result.failure(Exception("Error al subir la imagen a la nube", e))
             }
             val currentTime = System.currentTimeMillis()
             val expiresIn24Hours = currentTime + (24 * 60 * 60 * 1000L)
@@ -93,6 +94,7 @@ class StoryRepositoryImpl(
             supabase.postgrest["story_views"].insert(view)
         } catch (e: Throwable) { e.printStackTrace() }
         storyDao.insertStoryView(view)
+        storyDao.markStoryAsViewed(storyId)
     }
 
     override fun getStoryComments(storyId: String): Flow<List<StoryComment>> {

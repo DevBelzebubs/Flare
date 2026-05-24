@@ -5,20 +5,16 @@ import com.social.flare.features.auth.data.local.entity.CitizenEntity
 import com.social.flare.features.profile.domain.repository.ProfileRepository
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.launch
 
 class ProfileRepositoryImpl(
     private val citizenDao: CitizenDao,
     private val supabase: SupabaseClient
 ) : ProfileRepository {
 
-    private val scope = CoroutineScope(Dispatchers.IO)
-
     override suspend fun getCitizenProfile(citizenId: String): Flow<CitizenEntity?> {
-        scope.launch {
+        val local = citizenDao.getCitizenById(citizenId)
+        if (local == null) {
             try {
                 val remote = supabase.postgrest["citizens"]
                     .select { filter { eq("citizen_id", citizenId) } }

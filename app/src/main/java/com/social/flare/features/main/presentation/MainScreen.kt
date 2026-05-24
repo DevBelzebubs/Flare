@@ -278,9 +278,9 @@ fun MainScreen() {
                     }
 
                     var avatarUrl: String? = null
-                    if (profileState is ProfileUiState.Success) {
-                        val citizenFlow = (profileState as ProfileUiState.Success).citizen
-                        val currentCitizen by citizenFlow.collectAsStateWithLifecycle(initialValue = null)
+                    val successState = profileState as? ProfileUiState.Success
+                    if (successState != null) {
+                        val currentCitizen by successState.citizen.collectAsStateWithLifecycle(initialValue = null)
                         avatarUrl = currentCitizen?.avatar_url
                     }
 
@@ -392,7 +392,8 @@ fun MainScreen() {
                     ProfileScreen(
                         citizenId = targetCitizenId, activeCitizenId = activeCitizenId, viewModel = profileViewModel,
                         onNavigateToLogin = { navController.navigate(Screen.Login.route) },
-                        onPostClick = { postId -> navController.navigate("${Screen.PostDetail.route}/$postId") }
+                        onPostClick = { postId -> navController.navigate("${Screen.PostDetail.route}/$postId") },
+                        onNavigateBack = { navController.popBackStack() }
                     )
                 }
 
@@ -435,11 +436,11 @@ fun MainScreen() {
 
                     LaunchedEffect(activeCitizenId) { activeCitizenId?.let { profileViewModel.loadActiveUserProfile(it) } }
 
-                    if (profileState is ProfileUiState.Success) {
-                        val currentCitizen by (profileState as ProfileUiState.Success).citizen.collectAsStateWithLifecycle(initialValue = null)
-                        val citizen = currentCitizen
-                        if (citizen != null) {
-                            EditProfileScreen(citizen = citizen, viewModel = editViewModel, onNavigateBack = { navController.popBackStack() })
+                    val editProfileSuccess = profileState as? ProfileUiState.Success
+                    if (editProfileSuccess != null) {
+                        val currentCitizen by editProfileSuccess.citizen.collectAsStateWithLifecycle(initialValue = null)
+                        if (currentCitizen != null) {
+                            EditProfileScreen(citizen = currentCitizen!!, viewModel = editViewModel, onNavigateBack = { navController.popBackStack() })
                         }
                     }
                 }

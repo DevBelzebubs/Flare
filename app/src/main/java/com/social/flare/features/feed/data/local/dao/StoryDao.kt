@@ -19,17 +19,14 @@ interface StoryDao {
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertStoryView(storyView: StoryViewEntity)
-    @Transaction
     @Query("""
         SELECT s.*, 
                c.avatar_url AS authorAvatarUrl, 
                c.username AS authorUsername,
-               EXISTS(
-                   SELECT 1 FROM story_view_table 
-                   WHERE story_id = s.story_id AND citizen_id = :currentUserId
-               ) AS isViewedByMe
+               CASE WHEN sv.citizen_id IS NOT NULL THEN 1 ELSE 0 END AS isViewedByMe
         FROM story_table s
         INNER JOIN citizen_table c ON s.author_id = c.citizen_id
+        LEFT JOIN story_view_table sv ON s.story_id = sv.story_id AND sv.citizen_id = :currentUserId
         WHERE s.expires_at > :currentTime 
         AND (
             s.author_id = :currentUserId 
@@ -44,6 +41,12 @@ interface StoryDao {
 
     @Query("UPDATE story_table SET is_viewed = 1 WHERE story_id = :storyId")
     suspend fun markStoryAsViewed(storyId: String)
+
+    @Query("""
+        UPDATE story_table SET is_viewed = 1 
+        WHERE story_id IN (SELECT story_id FROM story_view_table WHERE citizen_id = :userId)
+    """)
+    suspend fun syncViewedStatus(userId: String)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertStoryComment(comment: StoryCommentEntity)

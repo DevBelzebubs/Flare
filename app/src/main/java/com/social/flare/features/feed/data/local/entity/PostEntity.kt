@@ -23,7 +23,7 @@ data class PostEntity(
     @PrimaryKey val post_id: String,
     val author_id: String,
     val content: String? = null,
-    val media_urls: String = "",
+    val media_urls: String? = null,
     val created_at: Long,
     val likes_count: Int = 0,
     val comments_count: Int = 0,

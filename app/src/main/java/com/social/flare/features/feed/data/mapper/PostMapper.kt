@@ -5,11 +5,7 @@ import com.social.flare.features.feed.data.local.entity.PostEntity
 import com.social.flare.features.feed.domain.model.Post
 
 fun PostWithDetails.toDomain(): Post {
-    val mediaList = if (this.post.media_urls.isNotBlank()) {
-        this.post.media_urls.split(",")
-    } else {
-        emptyList()
-    }
+    val mediaList = this.post.media_urls?.takeIf { it.isNotBlank() }?.split(",") ?: emptyList()
 
     return Post(
         id = this.post.post_id,
@@ -30,11 +26,7 @@ fun PostWithDetails.toDomain(): Post {
 }
 
 fun PostEntity.toDomainModel(activeUserId: String): Post {
-    val mediaList = if (this.media_urls.isNotBlank()) {
-        this.media_urls.split(",")
-    } else {
-        emptyList()
-    }
+    val mediaList = this.media_urls?.takeIf { it.isNotBlank() }?.split(",") ?: emptyList()
 
     return Post(
         id = this.post_id,

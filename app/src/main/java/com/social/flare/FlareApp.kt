@@ -8,21 +8,28 @@ import coil.disk.DiskCache
 import coil.memory.MemoryCache
 import com.cloudinary.android.MediaManager
 import com.social.flare.core.database.FlareDatabase
+import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.realtime.Realtime
+import io.github.jan.supabase.serializer.KotlinXSerializer
+import kotlinx.serialization.json.Json
 
 class FlareApp : Application(), ImageLoaderFactory {
 
     lateinit var database: FlareDatabase
         private set
 
-    lateinit var supabase: io.github.jan.supabase.SupabaseClient
+    lateinit var supabase: SupabaseClient
         private set
 
     override fun onCreate() {
         super.onCreate()
+
+        Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
+            android.util.Log.e("FlareApp", "UNCAUGHT EXCEPTION on thread: ${thread.name}", throwable)
+        }
 
         database = Room.databaseBuilder(
             applicationContext,
@@ -38,6 +45,12 @@ class FlareApp : Application(), ImageLoaderFactory {
             supabaseUrl = cleanUrl,
             supabaseKey = BuildConfig.SUPABASE_ANON_KEY
         ) {
+            defaultSerializer = KotlinXSerializer(Json {
+                ignoreUnknownKeys = true
+                isLenient = true
+                encodeDefaults = true
+                coerceInputValues = true
+            })
             install(Auth)
             install(Postgrest)
             install(Realtime)
