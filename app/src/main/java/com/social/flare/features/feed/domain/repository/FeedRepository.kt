@@ -12,10 +12,17 @@ interface FeedRepository {
         authorId: String,
         content: String,
         mediaUrls: List<String>,
-        parentPostId: String? = null
+        parentPostId: String? = null,
+        pollQuestion: String? = null,
+        pollOptions: String? = null,
+        pollExpiresAt: Long? = null,
+        locationName: String? = null,
+        locationLat: Double? = null,
+        locationLng: Double? = null
     )
 
     suspend fun toggleLike(postId: String, citizenId: String, isCurrentlyLiked: Boolean): Result<Unit>
+    suspend fun castVote(postId: String, citizenId: String, optionIndex: Int)
     suspend fun toggleSavePost(postId: String, citizenId: String, isCurrentlySaved: Boolean)
     suspend fun updatePost(postId: String, currentUserId: String, newContent: String): Result<Unit>
     suspend fun deletePost(postId: String, currentUserId: String): Result<Unit>

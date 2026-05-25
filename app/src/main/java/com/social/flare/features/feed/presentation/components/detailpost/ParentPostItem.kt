@@ -30,6 +30,8 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.social.flare.core.utils.TimeUtils.formatRelativeTime
 import com.social.flare.features.feed.domain.model.Post
+import com.social.flare.features.feed.presentation.components.LocationDisplay
+import com.social.flare.features.feed.presentation.components.PollDisplay
 import com.social.flare.features.feed.presentation.components.VideoPlayer
 
 @Composable
@@ -37,7 +39,8 @@ fun ParentPostItem(
     post: Post,
     onImageClick: (String) -> Unit,
     onBodyClick: () -> Unit,
-    onAuthorClick: (String) -> Unit
+    onAuthorClick: (String) -> Unit,
+    onVoteClick: ((Int) -> Unit)? = null
 ) {
     Row(
         modifier = Modifier
@@ -114,6 +117,26 @@ fun ParentPostItem(
                             .clickable { onImageClick(mediaUrl) }
                     )
                 }
+            }
+
+            if (!post.pollQuestion.isNullOrBlank() && !post.pollOptions.isNullOrEmpty()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                PollDisplay(
+                    question = post.pollQuestion,
+                    options = post.pollOptions,
+                    voteCounts = post.pollVoteCounts,
+                    userSelectedOptionIndex = post.userSelectedOptionIndex,
+                    onVote = { optionIndex -> onVoteClick?.invoke(optionIndex) },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+
+            if (!post.locationName.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                LocationDisplay(
+                    locationName = post.locationName,
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
         }
     }

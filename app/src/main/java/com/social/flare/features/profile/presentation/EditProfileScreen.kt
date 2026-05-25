@@ -42,8 +42,8 @@ fun EditProfileScreen(
     var username by remember { mutableStateOf(citizen.username) } // <--- ¡Añadido!
     var bio by remember { mutableStateOf(citizen.bio ?: "") }
 
-    var avatarUri by remember { mutableStateOf<Uri?>(citizen.avatar_url?.let { Uri.parse(it) }) }
-    var bannerUri by remember { mutableStateOf<Uri?>(citizen.banner_url?.let { Uri.parse(it) }) }
+    var avatarUri by remember { mutableStateOf<Uri?>(citizen.avatar_url?.takeIf { it.isNotBlank() }?.let { Uri.parse(it) }) }
+    var bannerUri by remember { mutableStateOf<Uri?>(citizen.banner_url?.takeIf { it.isNotBlank() }?.let { Uri.parse(it) }) }
 
     val isLoading by viewModel.isLoading.collectAsState()
     val isSuccess by viewModel.isSuccess.collectAsState()

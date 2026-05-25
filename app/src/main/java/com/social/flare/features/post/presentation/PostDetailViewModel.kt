@@ -92,6 +92,12 @@ class PostDetailViewModel(
         }
     }
 
+    fun castVote(postId: String, userId: String, optionIndex: Int) {
+        viewModelScope.launch {
+            repository.castVote(postId, userId, optionIndex)
+        }
+    }
+
     fun createReply(authorId: String, content: String, parentPostId: String, mediaUris: List<Uri> = emptyList()) {
         viewModelScope.launch {
             val result = runCatching {

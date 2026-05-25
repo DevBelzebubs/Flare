@@ -17,8 +17,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 import com.social.flare.FlareApp
@@ -77,7 +77,7 @@ import com.social.flare.features.admin.presentation.viewmodel.AdminViewModel
 @Composable
 fun MainScreen() {
     val navController = rememberNavController()
-    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val navBackStackEntry by navController.currentBackStackEntryFlow.collectAsStateWithLifecycle(null)
     val currentRoute = navBackStackEntry?.destination?.route
     val context = LocalContext.current
     var showAuthDialog by remember { mutableStateOf(false) }
@@ -280,8 +280,7 @@ fun MainScreen() {
                     var avatarUrl: String? = null
                     val successState = profileState as? ProfileUiState.Success
                     if (successState != null) {
-                        val currentCitizen by successState.citizen.collectAsStateWithLifecycle(initialValue = null)
-                        avatarUrl = currentCitizen?.avatar_url
+                        avatarUrl = successState.citizen?.avatar_url
                     }
 
                     Box(modifier = Modifier.fillMaxSize()) {
@@ -329,10 +328,36 @@ fun MainScreen() {
                     )
                     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
+                    var avatarUrl by remember { mutableStateOf<String?>(null) }
+                    LaunchedEffect(activeCitizenId) {
+                        activeCitizenId?.let { id ->
+                            try {
+                                profileRepository.getCitizenProfile(id).first { true }.let { citizen ->
+                                    avatarUrl = citizen?.avatar_url
+                                }
+                            } catch (_: Exception) { }
+                        }
+                    }
+
                     Box(modifier = Modifier.fillMaxSize()) {
                         AddPostScreen(
+                            activeUserAvatarUrl = avatarUrl,
                             onNavigateBack = { navController.popBackStack() },
-                            onPostClick = { content, uris -> activeCitizenId?.let { userId -> viewModel.createPost(userId, content, uris) } },
+                            onPostClick = { content, uris, pollQuestion, pollOptions, pollExpiresAt, locationName, locationLat, locationLng ->
+                                activeCitizenId?.let { userId ->
+                                    viewModel.createPost(
+                                        authorId = userId,
+                                        content = content,
+                                        mediaUris = uris,
+                                        pollQuestion = pollQuestion,
+                                        pollOptions = pollOptions,
+                                        pollExpiresAt = pollExpiresAt,
+                                        locationName = locationName,
+                                        locationLat = locationLat,
+                                        locationLng = locationLng
+                                    )
+                                }
+                            },
                             isSuccess = uiState.isSuccess,
                             onSuccessHandled = {
                                 viewModel.clearState()
@@ -438,9 +463,9 @@ fun MainScreen() {
 
                     val editProfileSuccess = profileState as? ProfileUiState.Success
                     if (editProfileSuccess != null) {
-                        val currentCitizen by editProfileSuccess.citizen.collectAsStateWithLifecycle(initialValue = null)
+                        val currentCitizen = editProfileSuccess.citizen
                         if (currentCitizen != null) {
-                            EditProfileScreen(citizen = currentCitizen!!, viewModel = editViewModel, onNavigateBack = { navController.popBackStack() })
+                            EditProfileScreen(citizen = currentCitizen, viewModel = editViewModel, onNavigateBack = { navController.popBackStack() })
                         }
                     }
                 }

@@ -5,8 +5,11 @@ import com.social.flare.features.auth.data.local.entity.CitizenEntity
 import com.social.flare.features.feed.data.local.dao.PostDao
 import com.social.flare.features.feed.data.local.entity.PostEntity
 import com.social.flare.features.feed.data.local.entity.PostLikeEntity
+import com.social.flare.features.feed.data.local.entity.PostVoteEntity
 import com.social.flare.features.feed.data.local.entity.SavedPostEntity
+import com.social.flare.features.feed.data.mapper.parseIntList
 import com.social.flare.features.feed.data.mapper.toDomain
+import com.social.flare.features.feed.data.mapper.toVoteCountsJson
 import com.social.flare.features.feed.domain.FeedRanking
 import com.social.flare.features.feed.domain.model.Post
 import com.social.flare.features.feed.domain.repository.FeedRepository
@@ -39,22 +42,30 @@ class FeedRepositoryImpl(
 
     override fun getFeedPosts(currentUserId: String): Flow<List<Post>> = flow {
         syncPostsFromSupabase(currentUserId, isGuest = false)
-        emitAll(
-            postDao.getFeedPosts(currentUserId).map { entities ->
-                val followedIds = followDao?.getFollowedIds(currentUserId) ?: emptyList()
-                val now = System.currentTimeMillis()
-                entities.map { it.toDomain() }
-                    .sortedByDescending { post ->
-                        FeedRanking.score(
-                            likesCount = post.likesCount,
-                            commentsCount = post.commentsCount,
-                            createdAt = post.createdAt,
-                            currentTime = now,
-                            isFollowed = followedIds.contains(post.authorId)
-                        )
-                    }
+        val sourceFlow = postDao.getFeedPosts(currentUserId)
+        sourceFlow.collect { entities ->
+            val followedIds = followDao?.getFollowedIds(currentUserId) ?: emptyList()
+            val now = System.currentTimeMillis()
+            val posts = entities.map { entity ->
+                val post = entity.toDomain()
+                if (post.pollQuestion != null) {
+                    val counts = parseIntList(entity.post.poll_vote_counts)
+                    val userVote = postDao.getUserVote(post.id, currentUserId)
+                    post.copy(pollVoteCounts = counts, userSelectedOptionIndex = userVote)
+                } else {
+                    post
+                }
+            }.sortedByDescending { post ->
+                FeedRanking.score(
+                    likesCount = post.likesCount,
+                    commentsCount = post.commentsCount,
+                    createdAt = post.createdAt,
+                    currentTime = now,
+                    isFollowed = followedIds.contains(post.authorId)
+                )
             }
-        )
+            emit(posts)
+        }
     }
 
     override fun getFeedPostsGuest(): Flow<List<Post>> = flow {
@@ -112,6 +123,15 @@ class FeedRepositoryImpl(
             } catch (e: Throwable) {
                 e.printStackTrace()
             }
+
+            try {
+                val votes = supabase.postgrest["post_votes"]
+                    .select { filter { eq("citizen_id", currentUserId) } }
+                    .decodeList<PostVoteEntity>()
+                votes.forEach { postDao.insertVote(it) }
+            } catch (e: Throwable) {
+                e.printStackTrace()
+            }
         }
     }
 
@@ -120,7 +140,14 @@ class FeedRepositoryImpl(
         currentUserId: String
     ): Flow<List<Post>> {
         return postDao.getPostReplies(parentPostId, currentUserId).map { entities ->
-            entities.map { it.toDomain() }
+            entities.map { entity ->
+                val post = entity.toDomain()
+                if (post.pollQuestion != null) {
+                    val counts = parseIntList(entity.post.poll_vote_counts)
+                    val userVote = postDao.getUserVote(post.id, currentUserId)
+                    post.copy(pollVoteCounts = counts, userSelectedOptionIndex = userVote)
+                } else post
+            }
         }
     }
 
@@ -128,7 +155,13 @@ class FeedRepositoryImpl(
         authorId: String,
         content: String,
         mediaUrls: List<String>,
-        parentPostId: String?
+        parentPostId: String?,
+        pollQuestion: String?,
+        pollOptions: String?,
+        pollExpiresAt: Long?,
+        locationName: String?,
+        locationLat: Double?,
+        locationLng: Double?
     ) {
         val newPostId = UUID.randomUUID().toString()
         val newPost = PostEntity(
@@ -139,19 +172,74 @@ class FeedRepositoryImpl(
             created_at = System.currentTimeMillis(),
             likes_count = 0,
             comments_count = 0,
-            parent_post_id = parentPostId
+            parent_post_id = parentPostId,
+            poll_question = pollQuestion,
+            poll_options = pollOptions,
+            poll_expires_at = pollExpiresAt,
+            location_name = locationName,
+            location_lat = locationLat,
+            location_lng = locationLng
         )
 
         try {
             supabase.postgrest["posts"].insert(newPost)
+
+            if (parentPostId != null) {
+                val parent = supabase.postgrest["posts"]
+                    .select { filter { eq("post_id", parentPostId) } }
+                    .decodeSingle<PostEntity>()
+
+                supabase.postgrest["posts"].update({
+                    set("comments_count", parent.comments_count + 1)
+                }) {
+                    filter { eq("post_id", parentPostId) }
+                }
+            }
         } catch (e: Throwable) {
             e.printStackTrace()
             throw e
         }
         postDao.insertPost(newPost)
-
         if (parentPostId != null) {
             postDao.incrementCommentsCount(parentPostId)
+        }
+    }
+
+    override suspend fun castVote(postId: String, citizenId: String, optionIndex: Int) {
+        val currentPost = postDao.getPostById(postId)
+        val currentCounts = parseIntList(currentPost?.post?.poll_vote_counts)
+            ?: currentPost?.post?.let { post ->
+                val options = post.poll_options
+                if (options != null) {
+                    val parsed = com.social.flare.features.feed.data.mapper.parsePollOptions(options)
+                    parsed?.map { 0 }
+                } else null
+            }
+            ?: return
+
+        val existingVote = postDao.getUserVote(postId, citizenId)
+        val newCounts = currentCounts.toMutableList()
+
+        if (existingVote != null) {
+            if (existingVote == optionIndex) return
+            newCounts[existingVote] = maxOf(0, newCounts[existingVote] - 1)
+            postDao.deleteVote(postId, citizenId)
+        }
+
+        if (optionIndex in newCounts.indices) {
+            newCounts[optionIndex] = newCounts[optionIndex] + 1
+        }
+
+        postDao.insertVote(PostVoteEntity(postId, citizenId, optionIndex))
+        postDao.insertPost(currentPost!!.post.copy(poll_vote_counts = newCounts.toVoteCountsJson()))
+
+        try {
+            supabase.postgrest["post_votes"].upsert(PostVoteEntity(postId, citizenId, optionIndex))
+            supabase.postgrest["posts"].update({
+                set("poll_vote_counts", newCounts.toVoteCountsJson())
+            }) { filter { eq("post_id", postId) } }
+        } catch (e: Throwable) {
+            e.printStackTrace()
         }
     }
 
@@ -161,18 +249,36 @@ class FeedRepositoryImpl(
         isCurrentlyLiked: Boolean
     ): Result<Unit> {
         return try {
+            val currentPost = supabase.postgrest["posts"]
+                .select { filter { eq("post_id", postId) } }
+                .decodeSingle<PostEntity>()
+
             if (isCurrentlyLiked) {
                 supabase.postgrest["post_likes"].delete {
                     filter { eq("post_id", postId) }
                     filter { eq("citizen_id", citizenId) }
                 }
+                val newCount = maxOf(0, currentPost.likes_count - 1)
+                supabase.postgrest["posts"].update({ set("likes_count", newCount) }) {
+                    filter { eq("post_id", postId) }
+                }
                 postDao.deleteLike(postId, citizenId)
+
             } else {
-                try {
-                    supabase.postgrest["post_likes"].insert(PostLikeEntity(postId, citizenId))
-                } catch (e: Throwable) { e.printStackTrace() }
+                supabase.postgrest["post_likes"].insert(PostLikeEntity(postId, citizenId))
+
+                val newCount = currentPost.likes_count + 1
+                supabase.postgrest["posts"].update({ set("likes_count", newCount) }) {
+                    filter { eq("post_id", postId) }
+                }
                 postDao.insertLike(PostLikeEntity(postId, citizenId))
             }
+
+            val updatedPost = supabase.postgrest["posts"]
+                .select { filter { eq("post_id", postId) } }
+                .decodeSingle<PostEntity>()
+            postDao.insertPost(updatedPost)
+
             Result.success(Unit)
         } catch (e: Throwable) {
             Result.failure(e)
@@ -246,16 +352,25 @@ class FeedRepositoryImpl(
                 val userPosts = supabase.postgrest["posts"]
                     .select { filter { eq("author_id", userId) } }
                     .decodeList<PostEntity>()
-                userPosts.forEach { postDao.insertPost(it) }
 
                 val author = supabase.postgrest["citizens"]
                     .select { filter { eq("citizen_id", userId) } }
                     .decodeSingle<CitizenEntity>()
+
                 citizenDao.insertCitizen(author)
+                userPosts.forEach { postDao.insertPost(it) }
+
             } catch (e: Throwable) { e.printStackTrace() }
         }
         return postDao.getPostsByAuthor(userId).map { entities ->
-            entities.map { it.toDomain() }
+            entities.map { entity ->
+                val post = entity.toDomain()
+                if (post.pollQuestion != null) {
+                    val counts = parseIntList(entity.post.poll_vote_counts)
+                    val userVote = postDao.getUserVote(post.id, userId)
+                    post.copy(pollVoteCounts = counts, userSelectedOptionIndex = userVote)
+                } else post
+            }
         }
     }
 
@@ -268,48 +383,62 @@ class FeedRepositoryImpl(
                 val post = supabase.postgrest["posts"]
                     .select { filter { eq("post_id", postId) } }
                     .decodeSingle<PostEntity>()
+
+                val author = supabase.postgrest["citizens"]
+                    .select { filter { eq("citizen_id", post.author_id) } }
+                    .decodeSingle<CitizenEntity>()
+
+                val replies = supabase.postgrest["posts"]
+                    .select { filter { eq("parent_post_id", postId) } }
+                    .decodeList<PostEntity>()
+
+                val replyAuthorIds = replies.map { it.author_id }.distinct()
+                val replyAuthors = if (replyAuthorIds.isNotEmpty()) {
+                    supabase.postgrest["citizens"]
+                        .select { filter { isIn("citizen_id", replyAuthorIds) } }
+                        .decodeList<CitizenEntity>()
+                } else emptyList()
+
+                val likes = supabase.postgrest["post_likes"]
+                    .select { filter { eq("citizen_id", currentUserId) } }
+                    .decodeList<PostLikeEntity>()
+
+                citizenDao.insertCitizen(author)
+                replyAuthors.forEach { citizenDao.insertCitizen(it) }
+
                 postDao.insertPost(post)
+                replies.forEach { postDao.insertPost(it) }
 
-                try {
-                    val author = supabase.postgrest["citizens"]
-                        .select { filter { eq("citizen_id", post.author_id) } }
-                        .decodeSingle<CitizenEntity>()
-                    citizenDao.insertCitizen(author)
-                } catch (e: Throwable) { e.printStackTrace() }
+                likes.forEach { postDao.insertLike(it) }
 
-                try {
-                    val replies = supabase.postgrest["posts"]
-                        .select { filter { eq("parent_post_id", postId) } }
-                        .decodeList<PostEntity>()
-                    replies.forEach { postDao.insertPost(it) }
-
-                    val replyAuthorIds = replies.map { it.author_id }.distinct()
-                    if (replyAuthorIds.isNotEmpty()) {
-                        try {
-                            val replyAuthors = supabase.postgrest["citizens"]
-                                .select { filter { isIn("citizen_id", replyAuthorIds) } }
-                                .decodeList<CitizenEntity>()
-                            replyAuthors.forEach { citizenDao.insertCitizen(it) }
-                        } catch (e: Throwable) { e.printStackTrace() }
-                    }
-                } catch (e: Throwable) { e.printStackTrace() }
-
-                try {
-                    val likes = supabase.postgrest["post_likes"]
-                        .select { filter { eq("citizen_id", currentUserId) } }
-                        .decodeList<PostLikeEntity>()
-                    likes.forEach { postDao.insertLike(it) }
-                } catch (e: Throwable) { e.printStackTrace() }
-            } catch (e: Throwable) { e.printStackTrace() }
+            } catch (e: Throwable) {
+                e.printStackTrace()
+            }
         }
 
         val mainPostFlow = postDao.getPostById(postId, currentUserId).filterNotNull()
         val repliesFlow = postDao.getPostReplies(postId, currentUserId)
 
         return combine(mainPostFlow, repliesFlow) { mainPostEntity, repliesEntities ->
+            val mainPost = mainPostEntity.toDomain()
+            val enrichedMain = if (mainPost.pollQuestion != null) {
+                val counts = parseIntList(mainPostEntity.post.poll_vote_counts)
+                val userVote = postDao.getUserVote(mainPost.id, currentUserId)
+                mainPost.copy(pollVoteCounts = counts, userSelectedOptionIndex = userVote)
+            } else mainPost
+
+            val enrichedReplies = repliesEntities.map { entity ->
+                val reply = entity.toDomain()
+                if (reply.pollQuestion != null) {
+                    val counts = parseIntList(entity.post.poll_vote_counts)
+                    val userVote = postDao.getUserVote(reply.id, currentUserId)
+                    reply.copy(pollVoteCounts = counts, userSelectedOptionIndex = userVote)
+                } else reply
+            }
+
             PostDetail(
-                mainPost = mainPostEntity.toDomain(),
-                replies = repliesEntities.map { it.toDomain() }
+                mainPost = enrichedMain,
+                replies = enrichedReplies
             )
         }
     }
@@ -319,15 +448,20 @@ class FeedRepositoryImpl(
             val post = supabase.postgrest["posts"]
                 .select { filter { eq("post_id", postId) } }
                 .decodeSingle<PostEntity>()
-            postDao.insertPost(post)
-
             val author = supabase.postgrest["citizens"]
                 .select { filter { eq("citizen_id", post.author_id) } }
                 .decodeSingle<CitizenEntity>()
             citizenDao.insertCitizen(author)
+            postDao.insertPost(post)
 
             val cached = postDao.getPostById(postId)
-            cached?.toDomain()
+            cached?.let { entity ->
+                val domain = entity.toDomain()
+                if (domain.pollQuestion != null) {
+                    val counts = parseIntList(entity.post.poll_vote_counts)
+                    domain.copy(pollVoteCounts = counts)
+                } else domain
+            }
         } catch (e: Throwable) {
             postDao.getPostById(postId)?.toDomain()
         }
@@ -363,7 +497,14 @@ class FeedRepositoryImpl(
             } catch (e: Throwable) { e.printStackTrace() }
         }
         return postDao.getSharedPosts(userId).map { entities ->
-            entities.map { it.toDomain() }
+            entities.map { entity ->
+                val post = entity.toDomain()
+                if (post.pollQuestion != null) {
+                    val counts = parseIntList(entity.post.poll_vote_counts)
+                    val userVote = postDao.getUserVote(post.id, userId)
+                    post.copy(pollVoteCounts = counts, userSelectedOptionIndex = userVote)
+                } else post
+            }
         }
     }
 

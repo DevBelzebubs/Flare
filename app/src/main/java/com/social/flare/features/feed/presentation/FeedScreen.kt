@@ -71,27 +71,55 @@ fun FeedScreen(
                         )
                         HorizontalDivider(color = Color(0xFF1A1A1A), thickness = 1.dp)
                     }
-
-                    items(
-                        items = uiState.posts,
-                        key = { post -> post.id }
-                    ) { post ->
-                        val displayPost = if (isGuest) post.copy(isLikedByMe = false) else post
-                        PostCard(
-                            post = displayPost,
-                            activeCitizenId = activeCitizenId,
-                            onEvent = { event ->
-                                // --- NUEVO MANEJO DE EVENTOS ---
-                                when (event) {
-                                    is FeedEvent.OnPostClick -> onPostClick(event.postId)
-                                    is FeedEvent.OnAuthorClick -> requireAuth { onAuthorClick(event.authorId) }
-                                    else -> requireAuth { viewModel.onEvent(event) }
+                    if (uiState.posts.isEmpty()) {
+                        item {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 80.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text(
+                                        text = "No hay posts por ahora",
+                                        color = Color.White,
+                                        style = MaterialTheme.typography.titleMedium
+                                    )
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        text = "Sigue a otros ciudadanos o sé el primero en publicar.",
+                                        color = Color.Gray,
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
                                 }
-                            },
-                            onImageClick = { url ->
-                                fullScreenImageUrl = url
                             }
-                        )
+                        }
+                    } else {
+                        items(
+                            items = uiState.posts,
+                            key = { post -> post.id }
+                        ) { post ->
+                            val displayPost = if (isGuest) post.copy(isLikedByMe = false) else post
+                            PostCard(
+                                post = displayPost,
+                                activeCitizenId = activeCitizenId,
+                                onEvent = { event ->
+                                    when (event) {
+                                        is FeedEvent.OnPostClick -> onPostClick(event.postId)
+                                        is FeedEvent.OnAuthorClick -> requireAuth {
+                                            onAuthorClick(
+                                                event.authorId
+                                            )
+                                        }
+
+                                        else -> requireAuth { viewModel.onEvent(event) }
+                                    }
+                                },
+                                onImageClick = { url ->
+                                    fullScreenImageUrl = url
+                                }
+                            )
+                        }
                     }
                 }
 

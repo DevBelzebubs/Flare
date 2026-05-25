@@ -15,5 +15,13 @@ data class Post(
     val isLikedByMe: Boolean = false,
     val isSavedByMe: Boolean = false,
     val parentPostId: String? = null,
-    val sharedPostId: String? = null
+    val sharedPostId: String? = null,
+    val pollQuestion: String? = null,
+    val pollOptions: List<String>? = null,
+    val pollExpiresAt: Long? = null,
+    val pollVoteCounts: List<Int>? = null,
+    val userSelectedOptionIndex: Int? = null,
+    val locationName: String? = null,
+    val locationLat: Double? = null,
+    val locationLng: Double? = null
 )

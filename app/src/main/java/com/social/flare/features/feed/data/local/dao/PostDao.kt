@@ -9,6 +9,7 @@ import androidx.room.Query
 import androidx.room.Transaction
 import com.social.flare.features.feed.data.local.entity.PostEntity
 import com.social.flare.features.feed.data.local.entity.PostLikeEntity
+import com.social.flare.features.feed.data.local.entity.PostVoteEntity
 import com.social.flare.features.feed.data.local.entity.SavedPostEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -52,8 +53,8 @@ interface PostDao {
             c.display_name AS authorDisplayName, 
             c.username AS authorUsername, 
             c.avatar_url AS authorAvatarUrl,
-            (SELECT COUNT(*) FROM post_likes WHERE post_id = p.post_id) AS likesCount,
-            (SELECT COUNT(*) FROM post_table WHERE parent_post_id = p.post_id) AS commentsCount,
+            p.likes_count AS likesCount,
+            p.comments_count AS commentsCount,
             EXISTS(SELECT 1 FROM post_likes WHERE post_id = p.post_id AND citizen_id = :currentUserId) AS isLikedByMe,
             EXISTS(SELECT 1 FROM saved_post_table WHERE post_id = p.post_id AND citizen_id = :currentUserId) AS isSavedByMe
         FROM post_table p
@@ -70,8 +71,8 @@ interface PostDao {
             c.display_name AS authorDisplayName, 
             c.username AS authorUsername, 
             c.avatar_url AS authorAvatarUrl,
-            (SELECT COUNT(*) FROM post_likes WHERE post_id = p.post_id) AS likesCount,
-            (SELECT COUNT(*) FROM post_table WHERE parent_post_id = p.post_id) AS commentsCount,
+            p.likes_count AS likesCount,
+            p.comments_count AS commentsCount,
             0 AS isLikedByMe,
             0 AS isSavedByMe
         FROM post_table p
@@ -86,8 +87,8 @@ interface PostDao {
             c.display_name AS authorDisplayName, 
             c.username AS authorUsername, 
             c.avatar_url AS authorAvatarUrl,
-            (SELECT COUNT(*) FROM post_likes WHERE post_id = p.post_id) AS likesCount,
-            (SELECT COUNT(*) FROM post_table WHERE parent_post_id = p.post_id) AS commentsCount,
+            p.likes_count AS likesCount,
+            p.comments_count AS commentsCount,
             EXISTS(SELECT 1 FROM post_likes WHERE post_id = p.post_id AND citizen_id = :currentUserId) AS isLikedByMe,
             EXISTS(SELECT 1 FROM saved_post_table WHERE post_id = p.post_id AND citizen_id = :currentUserId) AS isSavedByMe
         FROM post_table p
@@ -102,8 +103,8 @@ interface PostDao {
             c.display_name AS authorDisplayName, 
             c.username AS authorUsername, 
             c.avatar_url AS authorAvatarUrl,
-            (SELECT COUNT(*) FROM post_likes WHERE post_id = p.post_id) AS likesCount,
-            (SELECT COUNT(*) FROM post_table WHERE parent_post_id = p.post_id) AS commentsCount,
+            p.likes_count AS likesCount,
+            p.comments_count AS commentsCount,
             EXISTS(SELECT 1 FROM post_likes WHERE post_id = p.post_id AND citizen_id = :currentUserId) AS isLikedByMe,
             EXISTS(SELECT 1 FROM saved_post_table WHERE post_id = p.post_id AND citizen_id = :currentUserId) AS isSavedByMe
         FROM post_table p
@@ -149,8 +150,8 @@ interface PostDao {
             c.display_name AS authorDisplayName, 
             c.username AS authorUsername, 
             c.avatar_url AS authorAvatarUrl,
-            (SELECT COUNT(*) FROM post_likes WHERE post_id = p.post_id) AS likesCount,
-            (SELECT COUNT(*) FROM post_table WHERE parent_post_id = p.post_id) AS commentsCount,
+            p.likes_count AS likesCount,
+            p.comments_count AS commentsCount,
             EXISTS(SELECT 1 FROM post_likes WHERE post_id = p.post_id AND citizen_id = :userId) AS isLikedByMe,
             EXISTS(SELECT 1 FROM saved_post_table WHERE post_id = p.post_id AND citizen_id = :userId) AS isSavedByMe
         FROM post_table p
@@ -166,8 +167,8 @@ interface PostDao {
             c.display_name AS authorDisplayName, 
             c.username AS authorUsername, 
             c.avatar_url AS authorAvatarUrl,
-            (SELECT COUNT(*) FROM post_likes WHERE post_id = p.post_id) AS likesCount,
-            (SELECT COUNT(*) FROM post_table WHERE parent_post_id = p.post_id) AS commentsCount,
+            p.likes_count AS likesCount,
+            p.comments_count AS commentsCount,
             EXISTS(SELECT 1 FROM post_likes WHERE post_id = p.post_id AND citizen_id = :currentUserId) AS isLikedByMe,
             EXISTS(SELECT 1 FROM saved_post_table WHERE post_id = p.post_id AND citizen_id = :currentUserId) AS isSavedByMe
         FROM post_table p
@@ -182,8 +183,8 @@ interface PostDao {
                c.display_name AS authorDisplayName,
                c.username AS authorUsername,
                c.avatar_url AS authorAvatarUrl,
-               (SELECT COUNT(*) FROM post_likes WHERE post_id = p.post_id) AS likesCount,
-               (SELECT COUNT(*) FROM post_table WHERE parent_post_id = p.post_id) AS commentsCount,
+               p.likes_count AS likesCount,
+                p.comments_count AS commentsCount,
                EXISTS(SELECT 1 FROM post_likes WHERE post_id = p.post_id AND citizen_id = :currentUserId) AS isLikedByMe,
                EXISTS(SELECT 1 FROM saved_post_table WHERE post_id = p.post_id AND citizen_id = :currentUserId) AS isSavedByMe
         FROM post_table p
@@ -200,8 +201,8 @@ interface PostDao {
             c.display_name AS authorDisplayName, 
             c.username AS authorUsername, 
             c.avatar_url AS authorAvatarUrl,
-            (SELECT COUNT(*) FROM post_likes WHERE post_id = p.post_id) AS likesCount,
-            (SELECT COUNT(*) FROM post_table WHERE parent_post_id = p.post_id) AS commentsCount,
+            p.likes_count AS likesCount,
+            p.comments_count AS commentsCount,
             0 AS isLikedByMe,
             0 AS isSavedByMe
         FROM post_table p
@@ -217,8 +218,8 @@ interface PostDao {
             c.display_name AS authorDisplayName, 
             c.username AS authorUsername, 
             c.avatar_url AS authorAvatarUrl,
-            (SELECT COUNT(*) FROM post_likes WHERE post_id = p.post_id) AS likesCount,
-            (SELECT COUNT(*) FROM post_table WHERE parent_post_id = p.post_id) AS commentsCount,
+            p.likes_count AS likesCount,
+            p.comments_count AS commentsCount,
             0 AS isLikedByMe,
             0 AS isSavedByMe
         FROM post_table p
@@ -245,8 +246,8 @@ interface PostDao {
             c.display_name AS authorDisplayName, 
             c.username AS authorUsername, 
             c.avatar_url AS authorAvatarUrl,
-            (SELECT COUNT(*) FROM post_likes WHERE post_id = p.post_id) AS likesCount,
-            (SELECT COUNT(*) FROM post_table WHERE parent_post_id = p.post_id) AS commentsCount,
+            p.likes_count AS likesCount,
+            p.comments_count AS commentsCount,
             0 AS isLikedByMe,
             0 AS isSavedByMe
         FROM post_table p
@@ -255,4 +256,17 @@ interface PostDao {
         ORDER BY p.created_at DESC
     """)
     fun getSharedPosts(userId: String): Flow<List<PostWithDetails>>
+
+    // --- POLL VOTES ---
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertVote(vote: PostVoteEntity)
+
+    @Query("DELETE FROM post_votes WHERE post_id = :postId AND citizen_id = :citizenId")
+    suspend fun deleteVote(postId: String, citizenId: String)
+
+    @Query("SELECT selected_option_index FROM post_votes WHERE post_id = :postId AND citizen_id = :citizenId LIMIT 1")
+    suspend fun getUserVote(postId: String, citizenId: String): Int?
+
+    @Query("DELETE FROM post_votes WHERE post_id = :postId")
+    suspend fun deleteAllVotesForPost(postId: String)
 }

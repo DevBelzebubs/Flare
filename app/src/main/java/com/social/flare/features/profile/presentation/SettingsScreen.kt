@@ -64,7 +64,7 @@ fun SettingsScreen(
 
                 is ProfileUiState.Success -> {
                     val success = profileState as ProfileUiState.Success
-                    val currentCitizen by success.citizen.collectAsState(initial = null)
+                    val currentCitizen = success.citizen
 
                     SettingsProfileHeader(
                         avatarUrl = currentCitizen?.avatar_url,

@@ -39,6 +39,8 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.social.flare.features.feed.domain.model.Post
 import com.social.flare.features.feed.presentation.FeedEvent
+import com.social.flare.features.feed.presentation.components.LocationDisplay
+import com.social.flare.features.feed.presentation.components.PollDisplay
 
 @Composable
 fun PostCard(
@@ -124,6 +126,26 @@ fun PostCard(
                     }
                 }
                 Spacer(modifier = Modifier.height(16.dp))
+            }
+
+            if (!post.pollQuestion.isNullOrBlank() && !post.pollOptions.isNullOrEmpty()) {
+                PollDisplay(
+                    question = post.pollQuestion,
+                    options = post.pollOptions,
+                    voteCounts = post.pollVoteCounts,
+                    userSelectedOptionIndex = post.userSelectedOptionIndex,
+                    onVote = { optionIndex -> onEvent(FeedEvent.OnVoteClick(post.id, optionIndex)) },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+
+            if (!post.locationName.isNullOrBlank()) {
+                LocationDisplay(
+                    locationName = post.locationName,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(12.dp))
             }
 
             PostStats(

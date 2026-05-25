@@ -24,7 +24,11 @@ import androidx.compose.ui.unit.sp
 @Composable
 public fun AddPostBottomToolbar(
     contentLength: Int,
-    onOpenGallery: () -> Unit
+    onOpenGallery: () -> Unit,
+    onPollToggle: () -> Unit = {},
+    onLocationToggle: () -> Unit = {},
+    isPollActive: Boolean = false,
+    isLocationActive: Boolean = false
 ) {
     Row(
         modifier = Modifier
@@ -38,8 +42,12 @@ public fun AddPostBottomToolbar(
         IconButton(onClick = onOpenGallery) {
             Icon(Icons.Outlined.Image, contentDescription = "Add Media", tint = Color(0xFFFF5722))
         }
-        IconButton(onClick = { /* TODO */ }) { Icon(Icons.Outlined.Poll, null, tint = Color.Gray) }
-        IconButton(onClick = { /* TODO */ }) { Icon(Icons.Outlined.LocationOn, null, tint = Color.Gray) }
+        IconButton(onClick = onPollToggle) {
+            Icon(Icons.Outlined.Poll, contentDescription = "Add Poll", tint = if (isPollActive) Color(0xFFFF5722) else Color.Gray)
+        }
+        IconButton(onClick = onLocationToggle) {
+            Icon(Icons.Outlined.LocationOn, contentDescription = "Add Location", tint = if (isLocationActive) Color(0xFFFF5722) else Color.Gray)
+        }
 
         Spacer(modifier = Modifier.weight(1f))
 

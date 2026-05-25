@@ -15,6 +15,7 @@ import com.social.flare.features.feed.data.local.entity.StoryEntity
 import com.social.flare.features.feed.data.local.entity.StoryCommentEntity
 import com.social.flare.features.feed.data.local.entity.StoryViewEntity
 import com.social.flare.features.feed.data.local.entity.PostMediaEntity
+import com.social.flare.features.feed.data.local.entity.PostVoteEntity
 import com.social.flare.features.notifications.data.local.dao.NotificationDao
 import com.social.flare.features.notifications.data.local.entity.NotificationEntity
 import com.social.flare.features.profile.data.local.dao.FollowDao
@@ -32,9 +33,10 @@ import com.social.flare.features.profile.data.local.entity.FollowEntity
         StoryCommentEntity::class,
         FollowEntity::class,
         NotificationEntity::class,
-        NewsItemEntity::class
+        NewsItemEntity::class,
+        PostVoteEntity::class
     ],
-    version = 18,
+    version = 19,
     exportSchema = false
 )
 abstract class FlareDatabase : RoomDatabase() {

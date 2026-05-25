@@ -63,24 +63,38 @@ class StoryRepositoryImpl(
     override fun getActiveStories(currentUserId: String): Flow<List<StoryWithAuthor>> {
         scope.launch {
             try {
+                val currentTime = System.currentTimeMillis()
+
+                supabase.postgrest["stories"].delete {
+                    filter { lte("expires_at", currentTime) }
+                }
+
                 val stories = supabase.postgrest["stories"]
-                    .select { filter { gt("expires_at", System.currentTimeMillis()) } }
+                    .select { filter { gt("expires_at", currentTime) } }
                     .decodeList<StoryEntity>()
 
                 val authorIds = stories.map { it.author_id }.distinct()
+
                 val authors = supabase.postgrest["citizens"]
                     .select { filter { isIn("citizen_id", authorIds) } }
                     .decodeList<CitizenEntity>()
 
+                val myViews = supabase.postgrest["story_views"]
+                    .select { filter { eq("citizen_id", currentUserId) } }
+                    .decodeList<StoryViewEntity>()
+
                 authors.forEach { citizenDao.insertCitizen(it) }
                 stories.forEach { storyDao.insertStory(it) }
-            } catch (e: Throwable) { e.printStackTrace() }
+                myViews.forEach { storyDao.insertStoryView(it) }
+
+            } catch (e: Throwable) {
+                e.printStackTrace()
+            }
         }
 
-        val currentTime = System.currentTimeMillis()
         return storyDao.getActiveStories(
             currentUserId = currentUserId,
-            currentTime = currentTime
+            currentTime = System.currentTimeMillis()
         )
     }
 
@@ -90,11 +104,21 @@ class StoryRepositoryImpl(
             citizen_id = citizenId,
             viewed_at = System.currentTimeMillis()
         )
-        try {
-            supabase.postgrest["story_views"].insert(view)
-        } catch (e: Throwable) { e.printStackTrace() }
+
         storyDao.insertStoryView(view)
         storyDao.markStoryAsViewed(storyId)
+
+        try {
+            supabase.postgrest["story_views"].insert(view)
+
+            supabase.postgrest["stories"].update({
+                set("is_viewed", true)
+            }) {
+                filter { eq("story_id", storyId) }
+            }
+        } catch (e: Throwable) {
+            e.printStackTrace()
+        }
     }
 
     override fun getStoryComments(storyId: String): Flow<List<StoryComment>> {

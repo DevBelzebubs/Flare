@@ -57,7 +57,7 @@ class FeedViewModel(
             getFeedUseCase(activeUserId)
                 .catch { e -> _uiState.update { it.copy(error = e.message, isLoading = false) } }
                 .collect { posts ->
-                    _uiState.update { it.copy(posts = posts, isLoading = posts.isEmpty() && it.isLoading) }
+                    _uiState.update { it.copy(posts = posts, isLoading = false) }
                 }
         }
 
@@ -103,6 +103,14 @@ class FeedViewModel(
             is FeedEvent.OnSaveClick -> handleSave(event.postId)
             is FeedEvent.OnPostClick -> { }
             is FeedEvent.OnAuthorClick -> {}
+            is FeedEvent.OnVoteClick -> handleVote(event.postId, event.optionIndex)
+        }
+    }
+
+    private fun handleVote(postId: String, optionIndex: Int) {
+        val userId = currentUserId ?: return
+        viewModelScope.launch {
+            repository.castVote(postId, userId, optionIndex)
         }
     }
 

@@ -17,7 +17,18 @@ class AddPostViewModel(
     private val _uiState = MutableStateFlow(AddPostUiState())
     val uiState: StateFlow<AddPostUiState> = _uiState.asStateFlow()
 
-    fun createPost(authorId: String, content: String, mediaUris: List<Uri>, parentPostId: String? = null) {
+    fun createPost(
+        authorId: String,
+        content: String,
+        mediaUris: List<Uri>,
+        parentPostId: String? = null,
+        pollQuestion: String? = null,
+        pollOptions: List<String>? = null,
+        pollExpiresAt: Long? = null,
+        locationName: String? = null,
+        locationLat: Double? = null,
+        locationLng: Double? = null
+    ) {
         viewModelScope.launch {
             _uiState.update { it.copy(isUploading = true, errorMessage = null) }
 
@@ -26,7 +37,13 @@ class AddPostViewModel(
                     authorId = authorId,
                     content = content,
                     mediaUris = mediaUris,
-                    parentPostId = parentPostId
+                    parentPostId = parentPostId,
+                    pollQuestion = pollQuestion,
+                    pollOptions = pollOptions,
+                    pollExpiresAt = pollExpiresAt,
+                    locationName = locationName,
+                    locationLat = locationLat,
+                    locationLng = locationLng
                 )
             }
 

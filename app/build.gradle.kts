@@ -93,6 +93,7 @@ dependencies {
     implementation("androidx.media3:media3-ui:1.3.0")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.7.0")
     implementation("androidx.datastore:datastore-preferences:1.1.1")
+    implementation("com.google.android.gms:play-services-location:21.3.0")
     implementation(platform("io.github.jan-tennert.supabase:bom:3.6.0"))
     implementation("io.github.jan-tennert.supabase:postgrest-kt")
     implementation("io.github.jan-tennert.supabase:auth-kt")

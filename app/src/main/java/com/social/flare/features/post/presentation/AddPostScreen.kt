@@ -19,18 +19,23 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.social.flare.features.post.presentation.components.AddPostTopBar
+import com.social.flare.features.post.presentation.components.AddPollSection
 import com.social.flare.features.post.presentation.components.AddPostBottomToolbar
 import com.social.flare.features.post.presentation.components.AddPostInputArea
 import com.social.flare.features.post.presentation.components.AddPostMediaPreview
+import com.social.flare.features.post.presentation.components.AddLocationSection
+import com.social.flare.features.post.presentation.components.PollData
+import com.social.flare.features.post.presentation.components.PostLocationData
+import com.social.flare.features.post.presentation.components.AddPostTopBar
 import kotlinx.coroutines.delay
 
 @Composable
 fun AddPostScreen(
     onNavigateBack: () -> Unit,
-    onPostClick: (String, List<Uri>) -> Unit,
+    onPostClick: (String, List<Uri>, String?, List<String>?, Long?, String?, Double?, Double?) -> Unit,
     isSuccess: Boolean = false,
-    onSuccessHandled: () -> Unit = {}
+    onSuccessHandled: () -> Unit = {},
+    activeUserAvatarUrl: String? = null
 ) {
     var showSuccessOverlay by remember { mutableStateOf(false) }
 
@@ -43,11 +48,30 @@ fun AddPostScreen(
     }
     var content by remember { mutableStateOf("") }
     var selectedMedia by remember { mutableStateOf<List<Uri>>(emptyList()) }
+    var pollData by remember { mutableStateOf<PollData?>(null) }
+    var locationData by remember { mutableStateOf<PostLocationData?>(null) }
+
+    val hasPoll = pollData != null
+    val hasLocation = locationData != null
     val isPostEnabled = content.isNotBlank() || selectedMedia.isNotEmpty()
+
     val mediaPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickMultipleVisualMedia(maxItems = 4)
     ) { uris ->
         if (uris.isNotEmpty()) selectedMedia = selectedMedia + uris
+    }
+
+    fun handlePost() {
+        onPostClick(
+            content,
+            selectedMedia,
+            pollData?.question?.takeIf { it.isNotBlank() },
+            pollData?.nonEmptyOptions,
+            null,
+            locationData?.name?.takeIf { it.isNotBlank() },
+            locationData?.lat,
+            locationData?.lng
+        )
     }
 
     Scaffold(
@@ -56,7 +80,7 @@ fun AddPostScreen(
             AddPostTopBar(
                 isPostEnabled = isPostEnabled,
                 onNavigateBack = onNavigateBack,
-                onPostClick = { onPostClick(content, selectedMedia) }
+                onPostClick = { handlePost() }
             )
         },
         bottomBar = {
@@ -64,7 +88,11 @@ fun AddPostScreen(
                 contentLength = content.length,
                 onOpenGallery = {
                     mediaPickerLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo))
-                }
+                },
+                onPollToggle = { pollData = if (hasPoll) null else PollData() },
+                onLocationToggle = { locationData = if (hasLocation) null else PostLocationData() },
+                isPollActive = hasPoll,
+                isLocationActive = hasLocation
             )
         }
     ) { paddingValues ->
@@ -77,10 +105,46 @@ fun AddPostScreen(
         ) {
             AddPostInputArea(
                 content = content,
-                onContentChange = { content = it }
+                onContentChange = { content = it },
+                avatarUrl = activeUserAvatarUrl
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(12.dp))
+
+            if (hasPoll) {
+                pollData?.let { currentPoll ->
+                    AddPollSection(
+                        pollData = currentPoll,
+                        onQuestionChange = { question -> pollData = currentPoll.copy(question = question) },
+                        onOptionChange = { index, option ->
+                            val newOptions = currentPoll.options.toMutableList()
+                            if (index in newOptions.indices) newOptions[index] = option
+                            pollData = currentPoll.copy(options = newOptions)
+                        },
+                        onAddOption = {
+                            if (currentPoll.options.size < 4) {
+                                pollData = currentPoll.copy(options = currentPoll.options + "")
+                            }
+                        },
+                        onRemoveOption = { index ->
+                            val newOptions = currentPoll.options.toMutableList()
+                            if (index in newOptions.indices && newOptions.size > 2) newOptions.removeAt(index)
+                            pollData = currentPoll.copy(options = newOptions)
+                        },
+                        onRemovePoll = { pollData = null }
+                    )
+                }
+            }
+
+            if (hasLocation) {
+                Spacer(modifier = Modifier.height(8.dp))
+                AddLocationSection(
+                    location = locationData ?: PostLocationData(),
+                    onLocationChanged = { locationData = it }
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
 
             if (selectedMedia.isNotEmpty()) {
                 AddPostMediaPreview(

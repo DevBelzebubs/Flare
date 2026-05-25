@@ -29,5 +29,12 @@ data class PostEntity(
     val comments_count: Int = 0,
     val sync_status: Int = 0,
     val parent_post_id: String? = null,
-    val shared_post_id: String? = null
+    val shared_post_id: String? = null,
+    val poll_question: String? = null,
+    val poll_options: String? = null,
+    val poll_expires_at: Long? = null,
+    val poll_vote_counts: String? = null,
+    val location_name: String? = null,
+    val location_lat: Double? = null,
+    val location_lng: Double? = null
 )

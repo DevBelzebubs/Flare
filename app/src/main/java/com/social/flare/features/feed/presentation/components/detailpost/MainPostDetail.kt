@@ -39,6 +39,8 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.social.flare.core.utils.TimeUtils.formatRelativeTime
 import com.social.flare.features.feed.domain.model.Post
+import com.social.flare.features.feed.presentation.components.LocationDisplay
+import com.social.flare.features.feed.presentation.components.PollDisplay
 import com.social.flare.features.feed.presentation.components.VideoPlayer
 
 @Composable
@@ -53,6 +55,7 @@ public fun MainPostDetail(
     onEditClick: (String) -> Unit,
     onDeleteClick: () -> Unit,
     onAuthorClick: (String) -> Unit,
+    onVoteClick: ((Int) -> Unit)? = null,
     activeUserId: String? = null
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
@@ -156,6 +159,26 @@ public fun MainPostDetail(
                         .clickable { onImageClick(mediaUrl) }
                 )
             }
+        }
+
+        if (!post.pollQuestion.isNullOrBlank() && !post.pollOptions.isNullOrEmpty()) {
+            Spacer(modifier = Modifier.height(12.dp))
+            PollDisplay(
+                question = post.pollQuestion,
+                options = post.pollOptions,
+                voteCounts = post.pollVoteCounts,
+                userSelectedOptionIndex = post.userSelectedOptionIndex,
+                onVote = { optionIndex -> onVoteClick?.invoke(optionIndex) },
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
+        }
+
+        if (!post.locationName.isNullOrBlank()) {
+            Spacer(modifier = Modifier.height(12.dp))
+            LocationDisplay(
+                locationName = post.locationName,
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
         }
 
         Row(

@@ -33,7 +33,7 @@ class EditProfileViewModel(
                 val finalAvatarUrl = if (newAvatarUri != null && newAvatarUri.toString().startsWith("content://")) {
                     val uploadedUrl = cloudinaryService.uploadImage(newAvatarUri)
 
-                    if (uploadedUrl.isNotBlank() && citizen.avatar_url != null && !citizen.avatar_url.contains("default")) {
+                    if (uploadedUrl.isNotBlank() && !citizen.avatar_url.isNullOrBlank()) {
                         cloudinaryService.deleteImage(citizen.avatar_url)
                     }
                     uploadedUrl
@@ -43,7 +43,7 @@ class EditProfileViewModel(
                 val finalBannerUrl = if (newBannerUri != null && newBannerUri.toString().startsWith("content://")) {
                     val uploadedUrl = cloudinaryService.uploadImage(newBannerUri)
 
-                    if (uploadedUrl.isNotBlank() && citizen.banner_url != null && !citizen.banner_url.contains("default")) {
+                    if (uploadedUrl.isNotBlank() && !citizen.banner_url.isNullOrBlank()) {
                         cloudinaryService.deleteImage(citizen.banner_url)
                     }
                     uploadedUrl

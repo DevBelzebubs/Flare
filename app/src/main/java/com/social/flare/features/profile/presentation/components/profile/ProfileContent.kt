@@ -14,7 +14,6 @@ import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.ViewList
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
@@ -36,7 +35,7 @@ fun ProfileContent(
     savedPosts: List<Post>,
     onPostClick: (String) -> Unit
 ) {
-    val citizen by state.citizen.collectAsState(initial = null)
+    val citizen = state.citizen
     var selectedTab by remember { mutableIntStateOf(0) }
 
     val tabs = listOf(

@@ -131,7 +131,10 @@ fun PostDetailScreen(
                                     post = detail.parentPost,
                                     onImageClick = { url -> fullScreenImageUrl = url },
                                     onBodyClick = { onCommentNavigate(detail.parentPost.id) },
-                                    onAuthorClick = onAuthorClick
+                                    onAuthorClick = onAuthorClick,
+                                    onVoteClick = { optionIndex ->
+                                        activeCitizenId?.let { viewModel.castVote(detail.mainPost.id, it, optionIndex) }
+                                    }
                                 )
                             }
                         }
@@ -160,6 +163,9 @@ fun PostDetailScreen(
                                     activeCitizenId?.let { viewModel.deletePost(detail.mainPost.id, it) }
                                 },
                                 onAuthorClick = onAuthorClick,
+                                onVoteClick = { optionIndex ->
+                                    activeCitizenId?.let { viewModel.castVote(detail.mainPost.id, it, optionIndex) }
+                                },
                                 activeUserId = activeCitizenId
                             )
                         }

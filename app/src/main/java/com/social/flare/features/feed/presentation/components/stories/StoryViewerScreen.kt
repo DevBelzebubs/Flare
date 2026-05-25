@@ -46,29 +46,26 @@ fun StoryViewerScreen(
         onClose()
         return
     }
-
+    val sessionStories = remember { userStories.toList() }
     var currentIndex by remember { mutableIntStateOf(0) }
     var replyText by remember { mutableStateOf("") }
     var showMenu by remember { mutableStateOf(false) }
 
     var isPaused by remember { mutableStateOf(false) }
 
-    // --- SOLUCIÓN A LA PANTALLA NEGRA: Animatable de Compose ---
     val progressAnim = remember { Animatable(0f) }
 
-    val currentStory = userStories[currentIndex]
+    val currentStory = sessionStories[currentIndex]
     val storyUrl = currentStory.story.media_url
     val avatarUrl = currentStory.authorAvatarUrl
     val username = currentStory.authorUsername
     val timeAgo = getTimeAgo(currentStory.story.created_at)
     val isOwner = currentStory.story.author_id == activeCitizenId
 
-    // Resetea la animación al cambiar de historia
     LaunchedEffect(currentIndex) {
         progressAnim.snapTo(0f)
     }
 
-    // Animador fluido que respeta la pausa sin ahogar el hilo de Coil
     LaunchedEffect(currentIndex, isPaused) {
         if (isPaused) {
             progressAnim.stop()

@@ -11,4 +11,5 @@ sealed interface FeedEvent {
     data class OnEditPost(val postId: String, val newContent: String) : FeedEvent
     data class OnPostClick(val postId: String) : FeedEvent
     data class OnAuthorClick(val authorId: String) : FeedEvent
+    data class OnVoteClick(val postId: String, val optionIndex: Int) : FeedEvent
 }
