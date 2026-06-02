@@ -3,7 +3,9 @@ package com.social.flare.features.feed.data.repository
 import com.social.flare.features.auth.data.local.dao.CitizenDao
 import com.social.flare.features.auth.data.local.entity.CitizenEntity
 import com.social.flare.features.feed.data.local.dao.PostDao
+import com.social.flare.features.feed.data.local.entity.HashtagEntity
 import com.social.flare.features.feed.data.local.entity.PostEntity
+import com.social.flare.features.feed.data.local.entity.PostHashtagEntity
 import com.social.flare.features.feed.data.local.entity.PostLikeEntity
 import com.social.flare.features.feed.data.local.entity.PostVoteEntity
 import com.social.flare.features.feed.data.local.entity.SavedPostEntity
@@ -26,7 +28,9 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import java.util.UUID
@@ -183,24 +187,44 @@ class FeedRepositoryImpl(
 
         try {
             supabase.postgrest["posts"].insert(newPost)
-
-            if (parentPostId != null) {
-                val parent = supabase.postgrest["posts"]
-                    .select { filter { eq("post_id", parentPostId) } }
-                    .decodeSingle<PostEntity>()
-
-                supabase.postgrest["posts"].update({
-                    set("comments_count", parent.comments_count + 1)
-                }) {
-                    filter { eq("post_id", parentPostId) }
-                }
-            }
         } catch (e: Throwable) {
             e.printStackTrace()
             throw e
         }
         postDao.insertPost(newPost)
+
+        try {
+            val hashtagPattern = Regex("#(\\w+)")
+            val hashtags = hashtagPattern.findAll(content)
+                .map { it.groupValues[1].lowercase() }
+                .distinct()
+                .toList()
+            for (tag in hashtags) {
+                val existingId = postDao.getHashtagId(tag)
+                val tagId = existingId ?: UUID.randomUUID().toString().also {
+                    supabase.postgrest["hashtags"].insert(HashtagEntity(it, tag, System.currentTimeMillis()))
+                    postDao.insertHashtag(HashtagEntity(it, tag, System.currentTimeMillis()))
+                }
+                try {
+                    supabase.postgrest["post_hashtags"].insert(PostHashtagEntity(newPostId, tagId))
+                } catch (_: Exception) {}
+                postDao.insertPostHashtag(PostHashtagEntity(newPostId, tagId))
+            }
+        } catch (e: Throwable) {
+            e.printStackTrace()
+        }
+
         if (parentPostId != null) {
+            try {
+                val parent = supabase.postgrest["posts"]
+                    .select { filter { eq("post_id", parentPostId) } }
+                    .decodeSingle<PostEntity>()
+                supabase.postgrest["posts"].update({
+                    set("comments_count", parent.comments_count + 1)
+                }) {
+                    filter { eq("post_id", parentPostId) }
+                }
+            } catch (_: Exception) {}
             postDao.incrementCommentsCount(parentPostId)
         }
     }
@@ -340,6 +364,9 @@ class FeedRepositoryImpl(
                 filter { eq("author_id", currentUserId) }
             }
             postDao.deletePostSafely(postId, currentUserId)
+            supabase.postgrest["post_hashtags"].delete {
+                filter { eq("post_id", postId) }
+            }
             Result.success(Unit)
         } catch (e: Throwable) {
             Result.failure(e)
@@ -383,7 +410,20 @@ class FeedRepositoryImpl(
                 val post = supabase.postgrest["posts"]
                     .select { filter { eq("post_id", postId) } }
                     .decodeSingle<PostEntity>()
-
+                if (post.shared_post_id != null) {
+                    try {
+                        val originalPost = supabase.postgrest["posts"]
+                            .select { filter { eq("post_id", post.shared_post_id!!) } }
+                            .decodeSingle<PostEntity>()
+                        val originalAuthor = supabase.postgrest["citizens"]
+                            .select { filter { eq("citizen_id", originalPost.author_id) } }
+                            .decodeSingle<CitizenEntity>()
+                        citizenDao.insertCitizen(originalAuthor)
+                        postDao.insertPost(originalPost)
+                    } catch (e: Throwable) {
+                        e.printStackTrace()
+                    }
+                }
                 val author = supabase.postgrest["citizens"]
                     .select { filter { eq("citizen_id", post.author_id) } }
                     .decodeSingle<CitizenEntity>()
@@ -419,7 +459,15 @@ class FeedRepositoryImpl(
         val mainPostFlow = postDao.getPostById(postId, currentUserId).filterNotNull()
         val repliesFlow = postDao.getPostReplies(postId, currentUserId)
 
-        return combine(mainPostFlow, repliesFlow) { mainPostEntity, repliesEntities ->
+        val parentPostFlow = mainPostFlow.flatMapLatest { mainEntity ->
+            val sharedId = mainEntity.post.shared_post_id
+            if (sharedId != null) {
+                postDao.getPostById(sharedId, currentUserId)
+            } else {
+                flowOf(null)
+            }
+        }
+        return combine(mainPostFlow, repliesFlow, parentPostFlow) { mainPostEntity, repliesEntities, parentPostEntity ->
             val mainPost = mainPostEntity.toDomain()
             val enrichedMain = if (mainPost.pollQuestion != null) {
                 val counts = parseIntList(mainPostEntity.post.poll_vote_counts)
@@ -437,6 +485,7 @@ class FeedRepositoryImpl(
             }
 
             PostDetail(
+                parentPost = parentPostEntity?.toDomain(),
                 mainPost = enrichedMain,
                 replies = enrichedReplies
             )
@@ -467,21 +516,29 @@ class FeedRepositoryImpl(
         }
     }
 
-    override suspend fun sharePost(authorId: String, originalPostId: String) {
-        val newPostId = UUID.randomUUID().toString()
-        val sharedPost = PostEntity(
-            post_id = newPostId,
-            author_id = authorId,
-            content = null,
-            media_urls = "",
-            created_at = System.currentTimeMillis(),
-            likes_count = 0,
-            comments_count = 0,
-            shared_post_id = originalPostId
-        )
+    override suspend fun toggleSharePost(authorId: String, originalPostId: String, isCurrentlyShared: Boolean) {
+        if (isCurrentlyShared) {
+            val sharedPostId = postDao.getSharedPostId(authorId, originalPostId)
+            if (sharedPostId != null) {
+                supabase.postgrest["posts"].delete { filter { eq("post_id", sharedPostId) } }
+                postDao.deleteTargetPost(sharedPostId)
+            }
+        } else {
+            val newPostId = UUID.randomUUID().toString()
+            val sharedPost = PostEntity(
+                post_id = newPostId,
+                author_id = authorId,
+                content = null,
+                media_urls = "",
+                created_at = System.currentTimeMillis(),
+                likes_count = 0,
+                comments_count = 0,
+                shared_post_id = originalPostId
+            )
 
-        supabase.postgrest["posts"].insert(sharedPost)
-        postDao.insertPost(sharedPost)
+            supabase.postgrest["posts"].insert(sharedPost)
+            postDao.insertPost(sharedPost)
+        }
     }
 
     override fun getSharedPosts(userId: String): Flow<List<Post>> {
@@ -493,17 +550,37 @@ class FeedRepositoryImpl(
                         filter { isNotNull("shared_post_id") }
                     }
                     .decodeList<PostEntity>()
+
+                val originalIds = shared.mapNotNull { it.shared_post_id }.distinct()
+                if (originalIds.isNotEmpty()) {
+                    val originals = supabase.postgrest["posts"]
+                        .select { filter { isIn("post_id", originalIds) } }
+                        .decodeList<PostEntity>()
+                    originals.forEach { postDao.insertPost(it) }
+                }
+
                 shared.forEach { postDao.insertPost(it) }
             } catch (e: Throwable) { e.printStackTrace() }
         }
         return postDao.getSharedPosts(userId).map { entities ->
             entities.map { entity ->
-                val post = entity.toDomain()
+                var post = entity.toDomain()
+                if (post.content.isNullOrBlank() && post.mediaUrls.isEmpty() && post.sharedPostId != null) {
+                    val original = postDao.getPostById(post.sharedPostId!!)
+                    if (original != null) {
+                        val origPost = original.toDomain()
+                        post = post.copy(
+                            content = origPost.content,
+                            mediaUrls = origPost.mediaUrls
+                        )
+                    }
+                }
                 if (post.pollQuestion != null) {
                     val counts = parseIntList(entity.post.poll_vote_counts)
                     val userVote = postDao.getUserVote(post.id, userId)
-                    post.copy(pollVoteCounts = counts, userSelectedOptionIndex = userVote)
-                } else post
+                    post = post.copy(pollVoteCounts = counts, userSelectedOptionIndex = userVote)
+                }
+                post
             }
         }
     }

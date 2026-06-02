@@ -29,16 +29,12 @@ fun ProfileScreen(
     viewModel: ProfileViewModel = viewModel(factory = ProfileViewModelFactory(LocalContext.current)),
     onNavigateToLogin: () -> Unit = {},
     onPostClick: (String) -> Unit = {},
-    onNavigateBack: () -> Unit = {}
+    onNavigateBack: () -> Unit = {},
+    onNavigateToFollowers: ((String) -> Unit)? = null,
+    onNavigateToFollowing: ((String) -> Unit)? = null
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val followStats by viewModel.followStats.collectAsStateWithLifecycle()
-
-    LaunchedEffect(citizenId, activeCitizenId) {
-        if (citizenId != null) {
-            viewModel.loadProfileData(citizenId, activeCitizenId)
-        }
-    }
 
     val isOtherProfile = citizenId != null && citizenId != activeCitizenId
 
@@ -64,41 +60,32 @@ fun ProfileScreen(
                         state = state,
                         myPosts = state.myPosts,
                         savedPosts = state.savedPosts,
-                        onPostClick = onPostClick
+                        sharedPosts = state.sharedPosts,
+                        onPostClick = onPostClick,
+                        onFollowersClick = { onNavigateToFollowers?.invoke(citizenId) },
+                        onFollowingClick = { onNavigateToFollowing?.invoke(citizenId) },
+                        isOtherProfile = isOtherProfile,
+                        activeCitizenId = activeCitizenId,
+                        isFollowingByMe = followStats.isFollowingByMe,
+                        onToggleFollow = {
+                            activeCitizenId?.let { follower ->
+                                viewModel.toggleFollow(followerId = follower, followedId = citizenId)
+                            }
+                        }
                     )
 
                     if (isOtherProfile) {
-                        Box(
+                        IconButton(
+                            onClick = onNavigateBack,
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 16.dp, start = 4.dp, end = 16.dp)
+                                .padding(top = 12.dp, start = 4.dp)
+                                .align(Alignment.TopStart)
                         ) {
-                            IconButton(
-                                onClick = onNavigateBack,
-                                modifier = Modifier.align(Alignment.TopStart)
-                            ) {
-                                Icon(
-                                    Icons.AutoMirrored.Filled.ArrowBack,
-                                    contentDescription = "Volver",
-                                    tint = Color.White
-                                )
-                            }
-
-                            if (activeCitizenId != null) {
-                                Button(
-                                    onClick = { viewModel.toggleFollow(followerId = activeCitizenId, followedId = citizenId) },
-                                    modifier = Modifier.align(Alignment.TopEnd),
-                                    colors = ButtonDefaults.buttonColors(
-                                        containerColor = if (followStats.isFollowingByMe) Color.DarkGray else Color(0xFFFF5722)
-                                    )
-                                ) {
-                                    Text(
-                                        text = if (followStats.isFollowingByMe) "Siguiendo" else "Seguir",
-                                        color = Color.White,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                }
-                            }
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Volver",
+                                tint = Color.White
+                            )
                         }
                     }
                 }

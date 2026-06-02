@@ -26,4 +26,7 @@ interface FollowDao {
 
     @Query("SELECT followedId FROM follow_table WHERE followerId = :userId")
     suspend fun getFollowedIds(userId: String): List<String>
+
+    @Query("SELECT followerId FROM follow_table WHERE followedId = :userId")
+    suspend fun getFollowerIds(userId: String): List<String>
 }

@@ -3,10 +3,9 @@ package com.social.flare.features.profile.presentation.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.social.flare.features.feed.data.local.dao.PostDao
-import com.social.flare.features.feed.data.local.dao.PostWithDetails
 import com.social.flare.features.feed.data.mapper.toDomain
 import com.social.flare.features.feed.domain.model.Post
-
+import com.social.flare.features.feed.domain.repository.FeedRepository
 import com.social.flare.features.post.domain.usecase.GetUserPostsUseCase
 import com.social.flare.features.profile.domain.model.FollowStats
 import com.social.flare.features.profile.domain.repository.ProfileRepository
@@ -23,6 +22,7 @@ class ProfileViewModel(
     private val repository: ProfileRepository,
     private val getUserPostsUseCase: GetUserPostsUseCase,
     private val postDao: PostDao,
+    private val feedRepository: FeedRepository,
     private val toggleFollowUseCase: ToggleFollowUseCase,
     private val getFollowStatsUseCase: GetFollowStatsUseCase
 ) : ViewModel() {
@@ -61,8 +61,9 @@ class ProfileViewModel(
                     citizenFlow,
                     getUserPostsUseCase(targetCitizenId),
                     postDao.getSavedPosts(targetCitizenId),
+                    feedRepository.getSharedPosts(targetCitizenId),
                     _followStats
-                ) { citizen, myPosts, savedPostsDetails, stats ->
+                ) { citizen, myPosts, savedPostsDetails, sharedPosts, stats ->
                     if (citizen == null) {
                         ProfileUiState.UserNotFound
                     } else {
@@ -73,7 +74,8 @@ class ProfileViewModel(
                             followersCount = stats.followersCount,
                             followingCount = stats.followingCount,
                             myPosts = myPosts,
-                            savedPosts = savedPosts
+                            savedPosts = savedPosts,
+                            sharedPosts = sharedPosts
                         )
                     }
                 }.collect { state ->

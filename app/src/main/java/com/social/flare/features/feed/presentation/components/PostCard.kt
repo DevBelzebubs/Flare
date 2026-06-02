@@ -84,7 +84,7 @@ fun PostCard(
                     showDeleteDialog = true
                 },
                 onAuthorClick = {
-                    onEvent(FeedEvent.OnAuthorClick(post.authorId)) // <-- Propagamos el evento hacia arriba
+                    onEvent(FeedEvent.OnAuthorClick(post.authorId))
                 }
             )
 
@@ -161,6 +161,7 @@ fun PostCard(
             PostActionButtons(
                 isLikedByMe = post.isLikedByMe,
                 isSavedByMe = post.isSavedByMe,
+                isSharedByMe = post.isSharedByMe,
                 onLikeClick = { onEvent(FeedEvent.OnLikeClick(post.id)) },
                 onCommentClick = { onEvent(FeedEvent.OnCommentClick(post.id)) },
                 onSaveClick = { onEvent(FeedEvent.OnSaveClick(post.id)) },
@@ -347,6 +348,7 @@ private fun PostStats(likesCount: Int, commentsCount: Int, isLikedByMe: Boolean)
 private fun PostActionButtons(
     isLikedByMe: Boolean,
     isSavedByMe: Boolean,
+    isSharedByMe: Boolean,
     onLikeClick: () -> Unit,
     onCommentClick: () -> Unit,
     onSaveClick: () -> Unit,
@@ -373,9 +375,9 @@ private fun PostActionButtons(
 
             IconButton(onClick = onShareClick) {
                 Icon(
-                    Icons.Outlined.Repeat,
+                    imageVector = if (isSharedByMe) Icons.Filled.Repeat else Icons.Outlined.Repeat,
                     contentDescription = "Repost",
-                    tint = Color.White
+                    tint = if (isSharedByMe) Color(0xFFFF5722) else Color.White
                 )
             }
         }

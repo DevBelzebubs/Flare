@@ -1,18 +1,22 @@
 package com.social.flare.features.profile.presentation.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -24,9 +28,10 @@ fun ProfileGridItem(post: Post, onClick: () -> Unit) {
     Box(
         modifier = Modifier
             .aspectRatio(1f)
-            .border(0.5.dp, Color.Black)
+            .padding(1.dp)
+            .clip(RoundedCornerShape(4.dp))
             .clickable { onClick() }
-            .background(Color(0xFF1E1E1E)),
+            .background(Color(0xFF262626)),
         contentAlignment = Alignment.Center
     ) {
         if (post.mediaUrls.isNotEmpty()) {
@@ -44,17 +49,54 @@ fun ProfileGridItem(post: Post, onClick: () -> Unit) {
                     imageVector = Icons.Default.PlayArrow,
                     contentDescription = "Video",
                     tint = Color.White,
-                    modifier = Modifier.size(32.dp).align(Alignment.TopEnd).padding(4.dp)
+                    modifier = Modifier
+                        .size(28.dp)
+                        .align(Alignment.Center)
                 )
+            }
+            if (post.likesCount > 0) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp)
+                        .align(Alignment.BottomCenter)
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.7f))
+                            )
+                        )
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .align(Alignment.BottomStart)
+                            .padding(start = 6.dp, bottom = 4.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Favorite,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(12.dp)
+                        )
+                        Spacer(modifier = Modifier.width(3.dp))
+                        Text(
+                            text = post.likesCount.toString(),
+                            color = Color.White,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
             }
         } else if (!post.content.isNullOrBlank()) {
             Text(
                 text = post.content,
-                color = Color.White,
-                fontSize = 12.sp,
-                maxLines = 4,
+                color = Color(0xFFCCCCCC),
+                fontSize = 13.sp,
+                maxLines = 5,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(12.dp)
+                lineHeight = 18.sp,
+                modifier = Modifier.padding(14.dp)
             )
         }
     }
