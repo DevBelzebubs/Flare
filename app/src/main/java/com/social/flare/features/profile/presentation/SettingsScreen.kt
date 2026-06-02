@@ -17,7 +17,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.social.flare.core.data.SettingsManager
@@ -48,6 +50,9 @@ fun SettingsScreen(
     val scope = rememberCoroutineScope()
     val pushNotificationsEnabled by settingsManager.pushNotificationsEnabledFlow.collectAsState(initial = false)
     val darkModeEnabled by settingsManager.darkModeEnabledFlow.collectAsState(initial = true)
+    val textSizeScale by settingsManager.textSizeScaleFlow.collectAsState(initial = 0.5f)
+    val currentDensity = LocalDensity.current
+    val settingsFontScale = textSizeScaleToFontScale(textSizeScale)
 
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
@@ -66,149 +71,167 @@ fun SettingsScreen(
         }
     }
     val profileState by profileViewModel.uiState.collectAsState()
-    Scaffold(
-        containerColor = Color.Black,
-        topBar = {
-            TopAppBar(
-                title = { Text("Settings", color = Color.White, fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = null, tint = Color.White)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Black)
-            )
-        }
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-        ) {
-            if (isGuest) {
-                SettingsProfileHeader(
-                    avatarUrl = null,
-                    displayName = "Guest User",
-                    username = "guest",
-                    showEditButton = false
-                )
-            } else {
-                when (profileState) {
-                    is ProfileUiState.Loading -> {
-                        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                            CircularProgressIndicator(color = Color(0xFFFF5722))
+    CompositionLocalProvider(
+        LocalDensity provides Density(
+            density = currentDensity.density,
+            fontScale = currentDensity.fontScale * settingsFontScale
+        )
+    ) {
+        Scaffold(
+            containerColor = Color.Black,
+            topBar = {
+                TopAppBar(
+                    title = { Text("Settings", color = Color.White, fontWeight = FontWeight.Bold) },
+                    navigationIcon = {
+                        IconButton(onClick = onNavigateBack) {
+                            Icon(Icons.Default.ArrowBack, contentDescription = null, tint = Color.White)
                         }
-                    }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Black)
+                )
+            }
+        ) { padding ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .verticalScroll(rememberScrollState())
+            ) {
+                if (isGuest) {
+                    SettingsProfileHeader(
+                        avatarUrl = null,
+                        displayName = "Guest User",
+                        username = "guest",
+                        showEditButton = false
+                    )
+                } else {
+                    when (profileState) {
+                        is ProfileUiState.Loading -> {
+                            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                                CircularProgressIndicator(color = Color(0xFFFF5722))
+                            }
+                        }
 
-                    is ProfileUiState.Success -> {
-                        val success = profileState as ProfileUiState.Success
-                        val currentCitizen = success.citizen
+                        is ProfileUiState.Success -> {
+                            val success = profileState as ProfileUiState.Success
+                            val currentCitizen = success.citizen
 
-                        SettingsProfileHeader(
-                            avatarUrl = currentCitizen?.avatar_url,
-                            displayName = currentCitizen?.display_name,
-                            username = currentCitizen?.username,
-                            onEditClick = onNavigateToEditProfile
-                        )
+                            SettingsProfileHeader(
+                                avatarUrl = currentCitizen?.avatar_url,
+                                displayName = currentCitizen?.display_name,
+                                username = currentCitizen?.username,
+                                onEditClick = onNavigateToEditProfile
+                            )
 
-                        if (currentCitizen?.is_admin == true) {
-                            SettingsSectionTitle("ADMIN")
-                            SettingsItem(
-                                icon = Icons.Default.AdminPanelSettings,
-                                title = "Admin Panel",
-                                onClick = onNavigateToAdmin
+                            if (currentCitizen?.is_admin == true) {
+                                SettingsSectionTitle("ADMIN")
+                                SettingsItem(
+                                    icon = Icons.Default.AdminPanelSettings,
+                                    title = "Admin Panel",
+                                    onClick = onNavigateToAdmin
+                                )
+                            }
+                        }
+
+                        else -> {
+                            SettingsProfileHeader(
+                                avatarUrl = null,
+                                displayName = "User",
+                                username = "",
+                                onEditClick = onNavigateToEditProfile
                             )
                         }
                     }
-
-                    else -> {
-                        SettingsProfileHeader(
-                            avatarUrl = null,
-                            displayName = "User",
-                            username = "",
-                            onEditClick = onNavigateToEditProfile
-                        )
-                    }
                 }
-            }
 
-            if (!isGuest) {
-                SettingsSectionTitle("ACCOUNT")
-                SettingsItem(Icons.Default.Person, "Edit Profile", onClick = onNavigateToEditProfile)
-                SettingsItem(Icons.Default.Lock, "Change Password")
-                SettingsItem(Icons.Default.Shield, "Privacy Settings")
-            }
+                if (!isGuest) {
+                    SettingsSectionTitle("ACCOUNT")
+                    SettingsItem(Icons.Default.Person, "Edit Profile", onClick = onNavigateToEditProfile)
+                    SettingsItem(Icons.Default.Lock, "Change Password")
+                    SettingsItem(Icons.Default.Shield, "Privacy Settings")
+                }
 
-            SettingsSectionTitle("NOTIFICATIONS")
-            SettingsToggleItem(
-                icon = Icons.Default.Notifications,
-                title = "Push Notifications",
-                checked = pushNotificationsEnabled,
-                onCheckedChange = { enabled ->
-                    if (enabled) {
-                        val requiresPermission = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
-                        val permissionGranted = !requiresPermission ||
-                            ContextCompat.checkSelfPermission(
-                                context,
-                                Manifest.permission.POST_NOTIFICATIONS
-                            ) == PackageManager.PERMISSION_GRANTED
+                SettingsSectionTitle("NOTIFICATIONS")
+                SettingsToggleItem(
+                    icon = Icons.Default.Notifications,
+                    title = "Push Notifications",
+                    checked = pushNotificationsEnabled,
+                    onCheckedChange = { enabled ->
+                        if (enabled) {
+                            val requiresPermission = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+                            val permissionGranted = !requiresPermission ||
+                                ContextCompat.checkSelfPermission(
+                                    context,
+                                    Manifest.permission.POST_NOTIFICATIONS
+                                ) == PackageManager.PERMISSION_GRANTED
 
-                        if (permissionGranted) {
-                            scope.launch {
-                                settingsManager.setPushNotificationsEnabled(true)
+                            if (permissionGranted) {
+                                scope.launch {
+                                    settingsManager.setPushNotificationsEnabled(true)
+                                }
+                            } else {
+                                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                             }
                         } else {
-                            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                        }
-                    } else {
-                        scope.launch {
-                            settingsManager.setPushNotificationsEnabled(false)
+                            scope.launch {
+                                settingsManager.setPushNotificationsEnabled(false)
+                            }
                         }
                     }
-                }
-            )
-            if (!isGuest) {
-                SettingsToggleItem(Icons.Default.Email, "Email Notifications", false)
-            }
-
-            SettingsSectionTitle("DISPLAY")
-            SettingsDarkModeSelector(
-                checked = darkModeEnabled,
-                onCheckedChange = { enabled ->
-                    scope.launch {
-                        settingsManager.setDarkModeEnabled(enabled)
-                    }
-                }
-            )
-            SettingsTextSizeSelector()
-
-            SettingsSectionTitle("SUPPORT")
-            SettingsItem(Icons.Default.Description, "Privacy Policy", isExternal = true)
-            SettingsItem(Icons.Default.Assignment, "Terms of Service", isExternal = true)
-            SettingsItem(Icons.Default.Help, "Help Center", isExternal = true)
-
-            Spacer(modifier = Modifier.height(32.dp))
-
-            Button(
-                onClick = if (isGuest) onLogin else onLogout,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp)
-                    .height(50.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isGuest) Color(0xFFFF5722) else Color(0xFF1A0000)
-                ),
-                shape = RoundedCornerShape(12.dp),
-                border = if (isGuest) null else BorderStroke(1.dp, Color(0xFF440000))
-            ) {
-                Text(
-                    text = if (isGuest) "Log In" else "Log Out",
-                    color = if (isGuest) Color.White else Color.Red,
-                    fontWeight = FontWeight.Bold
                 )
+                if (!isGuest) {
+                    SettingsToggleItem(Icons.Default.Email, "Email Notifications", false)
+                }
+
+                SettingsSectionTitle("DISPLAY")
+                SettingsDarkModeSelector(
+                    checked = darkModeEnabled,
+                    onCheckedChange = { enabled ->
+                        scope.launch {
+                            settingsManager.setDarkModeEnabled(enabled)
+                        }
+                    }
+                )
+                SettingsTextSizeSelector(
+                    value = textSizeScale,
+                    onValueChange = { value ->
+                        scope.launch {
+                            settingsManager.setTextSizeScale(value)
+                        }
+                    }
+                )
+
+                SettingsSectionTitle("SUPPORT")
+                SettingsItem(Icons.Default.Description, "Privacy Policy", isExternal = true)
+                SettingsItem(Icons.Default.Assignment, "Terms of Service", isExternal = true)
+                SettingsItem(Icons.Default.Help, "Help Center", isExternal = true)
+
+                Spacer(modifier = Modifier.height(32.dp))
+
+                Button(
+                    onClick = if (isGuest) onLogin else onLogout,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp)
+                        .height(50.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (isGuest) Color(0xFFFF5722) else Color(0xFF1A0000)
+                    ),
+                    shape = RoundedCornerShape(12.dp),
+                    border = if (isGuest) null else BorderStroke(1.dp, Color(0xFF440000))
+                ) {
+                    Text(
+                        text = if (isGuest) "Log In" else "Log Out",
+                        color = if (isGuest) Color.White else Color.Red,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                Spacer(modifier = Modifier.height(50.dp))
             }
-            Spacer(modifier = Modifier.height(50.dp))
         }
     }
+}
+
+private fun textSizeScaleToFontScale(value: Float): Float {
+    return 0.85f + value.coerceIn(0f, 1f) * 0.3f
 }
