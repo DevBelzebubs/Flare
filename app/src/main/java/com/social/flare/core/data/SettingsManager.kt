@@ -12,15 +12,26 @@ val Context.settingsDataStore by preferencesDataStore(name = "app_settings")
 class SettingsManager(private val context: Context) {
     companion object {
         private val PUSH_NOTIFICATIONS_ENABLED = booleanPreferencesKey("push_notifications_enabled")
+        private val DARK_MODE_ENABLED = booleanPreferencesKey("dark_mode_enabled")
     }
 
     val pushNotificationsEnabledFlow: Flow<Boolean> = context.settingsDataStore.data.map { preferences ->
         preferences[PUSH_NOTIFICATIONS_ENABLED] ?: false
     }
 
+    val darkModeEnabledFlow: Flow<Boolean> = context.settingsDataStore.data.map { preferences ->
+        preferences[DARK_MODE_ENABLED] ?: true
+    }
+
     suspend fun setPushNotificationsEnabled(value: Boolean) {
         context.settingsDataStore.edit { preferences ->
             preferences[PUSH_NOTIFICATIONS_ENABLED] = value
+        }
+    }
+
+    suspend fun setDarkModeEnabled(value: Boolean) {
+        context.settingsDataStore.edit { preferences ->
+            preferences[DARK_MODE_ENABLED] = value
         }
     }
 }

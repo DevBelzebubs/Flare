@@ -47,6 +47,7 @@ fun SettingsScreen(
     val settingsManager = remember { SettingsManager(context.applicationContext) }
     val scope = rememberCoroutineScope()
     val pushNotificationsEnabled by settingsManager.pushNotificationsEnabledFlow.collectAsState(initial = false)
+    val darkModeEnabled by settingsManager.darkModeEnabledFlow.collectAsState(initial = true)
 
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
@@ -172,7 +173,14 @@ fun SettingsScreen(
             }
 
             SettingsSectionTitle("DISPLAY")
-            SettingsDarkModeSelector()
+            SettingsDarkModeSelector(
+                checked = darkModeEnabled,
+                onCheckedChange = { enabled ->
+                    scope.launch {
+                        settingsManager.setDarkModeEnabled(enabled)
+                    }
+                }
+            )
             SettingsTextSizeSelector()
 
             SettingsSectionTitle("SUPPORT")
