@@ -1,5 +1,7 @@
 package com.social.flare.features.profile.data.repository
 
+import com.social.flare.features.auth.data.local.dao.CitizenDao
+import com.social.flare.features.auth.data.local.entity.CitizenEntity
 import com.social.flare.features.profile.data.local.dao.FollowDao
 import com.social.flare.features.profile.data.local.entity.FollowEntity
 import com.social.flare.features.profile.domain.model.FollowStats
@@ -11,6 +13,7 @@ import kotlinx.coroutines.flow.combine
 
 class FollowRepositoryImpl(
     private val followDao: FollowDao,
+    private val citizenDao: CitizenDao,
     private val supabase: SupabaseClient
 ) : FollowRepository {
 
@@ -63,5 +66,43 @@ class FollowRepositoryImpl(
                 isFollowingByMe = isFollowing
             )
         }
+    }
+
+    override suspend fun getFollowedIds(userId: String): List<String> {
+        return followDao.getFollowedIds(userId)
+    }
+
+    override suspend fun getFollowers(userId: String): List<CitizenEntity> {
+        try {
+            val follows = supabase.postgrest["follows"]
+                .select { filter { eq("followedId", userId) } }
+                .decodeList<FollowEntity>()
+            follows.forEach { followDao.insertFollow(it) }
+            val ids = follows.map { it.followerId }
+            if (ids.isNotEmpty()) {
+                supabase.postgrest["citizens"]
+                    .select { filter { isIn("citizen_id", ids) } }
+                    .decodeList<CitizenEntity>()
+                    .forEach { citizenDao.insertCitizen(it) }
+            }
+        } catch (_: Exception) {}
+        return followDao.getFollowerIds(userId).mapNotNull { citizenDao.getCitizenById(it) }
+    }
+
+    override suspend fun getFollowing(userId: String): List<CitizenEntity> {
+        try {
+            val follows = supabase.postgrest["follows"]
+                .select { filter { eq("followerId", userId) } }
+                .decodeList<FollowEntity>()
+            follows.forEach { followDao.insertFollow(it) }
+            val ids = follows.map { it.followedId }
+            if (ids.isNotEmpty()) {
+                supabase.postgrest["citizens"]
+                    .select { filter { isIn("citizen_id", ids) } }
+                    .decodeList<CitizenEntity>()
+                    .forEach { citizenDao.insertCitizen(it) }
+            }
+        } catch (_: Exception) {}
+        return followDao.getFollowedIds(userId).mapNotNull { citizenDao.getCitizenById(it) }
     }
 }

@@ -27,7 +27,7 @@ class ProfileViewModelFactory(private val context: Context) : ViewModelProvider.
                 followDao = database.followDao(),
                 supabase = supabase
             )
-            val followRepository = FollowRepositoryImpl(database.followDao(), supabase)
+            val followRepository = FollowRepositoryImpl(database.followDao(), database.citizenDao(), supabase)
 
             val getPostsUseCase = GetUserPostsUseCase(feedRepository)
             val toggleFollowUseCase = ToggleFollowUseCase(followRepository)

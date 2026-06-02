@@ -5,9 +5,11 @@ import com.social.flare.features.auth.data.local.entity.CitizenEntity
 import com.social.flare.features.profile.domain.repository.ProfileRepository
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.withContext
 import kotlin.coroutines.cancellation.CancellationException
 
 class ProfileRepositoryImpl(
@@ -15,13 +17,15 @@ class ProfileRepositoryImpl(
     private val supabase: SupabaseClient
 ) : ProfileRepository {
 
+    private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+
     override suspend fun getCitizenProfile(citizenId: String): Flow<CitizenEntity?> {
         try {
-            val remote = withContext(Dispatchers.IO) {
+            val remote = scope.async {
                 supabase.postgrest["citizens"]
                     .select { filter { eq("citizen_id", citizenId) } }
                     .decodeSingle<CitizenEntity>()
-            }
+            }.await()
             citizenDao.insertCitizen(remote)
         } catch (e: Exception) {
             if (e !is CancellationException) {

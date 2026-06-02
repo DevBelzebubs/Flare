@@ -74,6 +74,8 @@ import com.social.flare.features.admin.presentation.AdminPostsScreen
 import com.social.flare.features.admin.presentation.AdminNewsScreen
 import com.social.flare.features.admin.presentation.viewmodel.AdminViewModel
 import com.social.flare.features.notifications.domain.usecase.GetSuggestedAccountsUseCase
+import com.social.flare.features.profile.presentation.FollowListScreen
+import com.social.flare.features.profile.presentation.viewmodel.FollowListViewModel
 import com.social.flare.features.search.data.repository.SearchRepositoryImpl
 
 @Composable
@@ -109,7 +111,7 @@ fun MainScreen() {
             supabase = app.supabase
         )
     }
-    val followRepository = remember { FollowRepositoryImpl(followDao, app.supabase) }
+    val followRepository = remember { FollowRepositoryImpl(followDao, citizenDao, app.supabase) }
 
     val notificationRepository = remember {
         NotificationRepositoryImpl(
@@ -445,7 +447,41 @@ fun MainScreen() {
                         citizenId = targetCitizenId, activeCitizenId = activeCitizenId, viewModel = profileViewModel,
                         onNavigateToLogin = { navController.navigate(Screen.Login.route) },
                         onPostClick = { postId -> navController.navigate("${Screen.PostDetail.route}/$postId") },
-                        onNavigateBack = { navController.popBackStack() }
+                        onNavigateBack = { navController.popBackStack() },
+                        onNavigateToFollowers = { userId ->
+                            navController.navigate("${Screen.FollowList.route}/$userId/followers")
+                        },
+                        onNavigateToFollowing = { userId ->
+                            navController.navigate("${Screen.FollowList.route}/$userId/following")
+                        }
+                    )
+                }
+
+                composable("${Screen.FollowList.route}/{userId}/{type}") { backStackEntry ->
+                    val userId = backStackEntry.arguments?.getString("userId") ?: return@composable
+                    val type = backStackEntry.arguments?.getString("type") ?: return@composable
+
+                    val followListViewModel: FollowListViewModel = viewModel(
+                        factory = object : ViewModelProvider.Factory {
+                            @Suppress("UNCHECKED_CAST")
+                            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                                return FollowListViewModel(
+                                    followRepository = followRepository,
+                                    toggleFollowUseCase = toggleFollowUseCase
+                                ) as T
+                            }
+                        }
+                    )
+
+                    FollowListScreen(
+                        userId = userId,
+                        type = type,
+                        activeCitizenId = activeCitizenId,
+                        viewModel = followListViewModel,
+                        onNavigateBack = { navController.popBackStack() },
+                        onNavigateToProfile = { profileId ->
+                            navController.navigate("${Screen.Profile.route}/$profileId")
+                        }
                     )
                 }
 

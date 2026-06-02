@@ -7,5 +7,6 @@ data class NotificationUiState(
     val isLoading: Boolean = true,
     val notifications: List<FlareNotification> = emptyList(),
     val suggestedAccounts: List<CitizenEntity> = emptyList(),
-    val error: String? = null
+    val error: String? = null,
+    val suggestedFollowedIds: Set<String> = emptySet()
 )

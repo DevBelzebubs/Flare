@@ -104,9 +104,9 @@ fun NotificationScreen(
                         items(uiState.suggestedAccounts, key = { it.citizen_id }) { citizen ->
                             SuggestedAccountItem(
                                 citizen = citizen,
-                                isFollowing = false,
+                                isFollowing = citizen.citizen_id in uiState.suggestedFollowedIds,
                                 onFollowClick = {
-                                    viewModel.followSuggested(citizen.citizen_id, isCurrentlyFollowing = false)
+                                    viewModel.followSuggested(citizen.citizen_id)
                                 },
                                 onAvatarClick = { onNavigateToProfile(citizen.citizen_id) }
                             )

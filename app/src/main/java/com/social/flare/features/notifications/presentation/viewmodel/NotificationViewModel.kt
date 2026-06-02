@@ -49,13 +49,19 @@ class NotificationViewModel(
         }
     }
 
-    fun followSuggested(followedId: String, isCurrentlyFollowing: Boolean) {
+    fun followSuggested(followedId: String) {
         val followerId = activeUserId ?: return
         viewModelScope.launch {
+            val isCurrentlyFollowing = followedId in _uiState.value.suggestedFollowedIds
             toggleFollowUseCase(followerId, followedId, isCurrentlyFollowing)
-            loadSuggestedAccounts()
+            _uiState.update {
+                val updated = if (isCurrentlyFollowing) it.suggestedFollowedIds - followedId
+                else it.suggestedFollowedIds + followedId
+                it.copy(suggestedFollowedIds = updated)
+            }
         }
     }
+
 
     fun onNotificationClick(notificationId: String) {
         viewModelScope.launch {

@@ -1,5 +1,6 @@
 package com.social.flare.features.notifications.presentation.components
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -39,6 +40,7 @@ fun SuggestedAccountItem(
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier
             .fillMaxWidth()
+            .clickable { onAvatarClick() }
             .padding(horizontal = 16.dp, vertical = 8.dp)
     ) {
         AsyncImage(
