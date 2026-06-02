@@ -1,5 +1,11 @@
 package com.social.flare.features.profile.presentation
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -10,8 +16,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
+import com.social.flare.core.data.SettingsManager
 import com.social.flare.features.profile.presentation.components.settings.SettingsDarkModeSelector
 import com.social.flare.features.profile.presentation.components.settings.SettingsItem
 import com.social.flare.features.profile.presentation.components.settings.SettingsProfileHeader
@@ -20,6 +29,7 @@ import com.social.flare.features.profile.presentation.components.settings.Settin
 import com.social.flare.features.profile.presentation.components.settings.SettingsToggleItem
 import com.social.flare.features.profile.presentation.viewmodel.ProfileUiState
 import com.social.flare.features.profile.presentation.viewmodel.ProfileViewModel
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -33,6 +43,21 @@ fun SettingsScreen(
     onNavigateToAdmin: () -> Unit = {}
 ) {
     val isGuest = activeCitizenId == null
+    val context = LocalContext.current
+    val settingsManager = remember { SettingsManager(context.applicationContext) }
+    val scope = rememberCoroutineScope()
+    val pushNotificationsEnabled by settingsManager.pushNotificationsEnabledFlow.collectAsState(initial = false)
+
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        scope.launch {
+            settingsManager.setPushNotificationsEnabled(isGranted)
+        }
+        if (!isGranted) {
+            Toast.makeText(context, "Notification permission denied", Toast.LENGTH_SHORT).show()
+        }
+    }
 
     LaunchedEffect(activeCitizenId) {
         if (activeCitizenId != null) {
@@ -115,7 +140,33 @@ fun SettingsScreen(
             }
 
             SettingsSectionTitle("NOTIFICATIONS")
-            SettingsToggleItem(Icons.Default.Notifications, "Push Notifications", true)
+            SettingsToggleItem(
+                icon = Icons.Default.Notifications,
+                title = "Push Notifications",
+                checked = pushNotificationsEnabled,
+                onCheckedChange = { enabled ->
+                    if (enabled) {
+                        val requiresPermission = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+                        val permissionGranted = !requiresPermission ||
+                            ContextCompat.checkSelfPermission(
+                                context,
+                                Manifest.permission.POST_NOTIFICATIONS
+                            ) == PackageManager.PERMISSION_GRANTED
+
+                        if (permissionGranted) {
+                            scope.launch {
+                                settingsManager.setPushNotificationsEnabled(true)
+                            }
+                        } else {
+                            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        }
+                    } else {
+                        scope.launch {
+                            settingsManager.setPushNotificationsEnabled(false)
+                        }
+                    }
+                }
+            )
             if (!isGuest) {
                 SettingsToggleItem(Icons.Default.Email, "Email Notifications", false)
             }
