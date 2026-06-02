@@ -53,6 +53,7 @@ fun SettingsScreen(
     val textSizeScale by settingsManager.textSizeScaleFlow.collectAsState(initial = 0.5f)
     val currentDensity = LocalDensity.current
     val settingsFontScale = textSizeScaleToFontScale(textSizeScale)
+    var supportDialog by remember { mutableStateOf<SettingsSupportDialog?>(null) }
 
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
@@ -202,9 +203,21 @@ fun SettingsScreen(
                 )
 
                 SettingsSectionTitle("SUPPORT")
-                SettingsItem(Icons.Default.Description, "Privacy Policy", isExternal = true)
-                SettingsItem(Icons.Default.Assignment, "Terms of Service", isExternal = true)
-                SettingsItem(Icons.Default.Help, "Help Center", isExternal = true)
+                SettingsItem(
+                    icon = Icons.Default.Description,
+                    title = "Privacy Policy",
+                    onClick = { supportDialog = SettingsSupportDialog.PrivacyPolicy }
+                )
+                SettingsItem(
+                    icon = Icons.Default.Assignment,
+                    title = "Terms of Service",
+                    onClick = { supportDialog = SettingsSupportDialog.TermsOfService }
+                )
+                SettingsItem(
+                    icon = Icons.Default.Help,
+                    title = "Help Center",
+                    onClick = { supportDialog = SettingsSupportDialog.HelpCenter }
+                )
 
                 Spacer(modifier = Modifier.height(32.dp))
 
@@ -229,9 +242,55 @@ fun SettingsScreen(
                 Spacer(modifier = Modifier.height(50.dp))
             }
         }
+
+        supportDialog?.let { dialog ->
+            SettingsSupportDialog(
+                dialog = dialog,
+                onDismiss = { supportDialog = null }
+            )
+        }
     }
 }
 
 private fun textSizeScaleToFontScale(value: Float): Float {
     return 0.85f + value.coerceIn(0f, 1f) * 0.3f
+}
+
+private enum class SettingsSupportDialog {
+    PrivacyPolicy,
+    TermsOfService,
+    HelpCenter
+}
+
+@Composable
+private fun SettingsSupportDialog(
+    dialog: SettingsSupportDialog,
+    onDismiss: () -> Unit
+) {
+    val title = when (dialog) {
+        SettingsSupportDialog.PrivacyPolicy -> "Privacy Policy"
+        SettingsSupportDialog.TermsOfService -> "Terms of Service"
+        SettingsSupportDialog.HelpCenter -> "Help Center"
+    }
+    val message = when (dialog) {
+        SettingsSupportDialog.PrivacyPolicy -> "Flare stores the account information needed to provide your profile and app experience. Your settings preferences are saved locally on this device. We do not sell your personal information."
+        SettingsSupportDialog.TermsOfService -> "Use Flare respectfully and do not post harmful, abusive, or illegal content. You are responsible for the activity on your account and for following community guidelines."
+        SettingsSupportDialog.HelpCenter -> "Need help with Flare? Contact the support team or review the app documentation for account, profile, notification, and settings guidance."
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Color(0xFF121212),
+        title = {
+            Text(title, color = Color.White, fontWeight = FontWeight.Bold)
+        },
+        text = {
+            Text(message, color = Color.LightGray)
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("OK", color = Color(0xFFFF5722), fontWeight = FontWeight.Bold)
+            }
+        }
+    )
 }
