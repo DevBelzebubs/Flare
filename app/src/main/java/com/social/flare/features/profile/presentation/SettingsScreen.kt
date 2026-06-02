@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -42,6 +43,9 @@ fun SettingsScreen(
     onNavigateToEditProfile: () -> Unit,
     onLogout: () -> Unit,
     onLogin: () -> Unit = {},
+    onChangePassword: suspend (String) -> Result<Unit> = {
+        Result.failure(Exception("Change password is not available"))
+    },
     onNavigateToAdmin: () -> Unit = {}
 ) {
     val isGuest = activeCitizenId == null
@@ -55,6 +59,7 @@ fun SettingsScreen(
     val currentDensity = LocalDensity.current
     val settingsFontScale = textSizeScaleToFontScale(textSizeScale)
     var supportDialog by remember { mutableStateOf<SettingsSupportDialog?>(null) }
+    var showChangePasswordDialog by remember { mutableStateOf(false) }
 
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
@@ -149,7 +154,7 @@ fun SettingsScreen(
                 if (!isGuest) {
                     SettingsSectionTitle("ACCOUNT")
                     SettingsItem(Icons.Default.Person, "Edit Profile", onClick = onNavigateToEditProfile)
-                    SettingsItem(Icons.Default.Lock, "Change Password")
+                    SettingsItem(Icons.Default.Lock, "Change Password", onClick = { showChangePasswordDialog = true })
                     SettingsItem(Icons.Default.Shield, "Privacy Settings")
                 }
 
@@ -259,6 +264,16 @@ fun SettingsScreen(
                 onDismiss = { supportDialog = null }
             )
         }
+
+        if (showChangePasswordDialog) {
+            ChangePasswordDialog(
+                onDismiss = { showChangePasswordDialog = false },
+                onChangePassword = onChangePassword,
+                onSuccess = {
+                    Toast.makeText(context, "Password updated successfully", Toast.LENGTH_SHORT).show()
+                }
+            )
+        }
     }
 }
 
@@ -303,4 +318,121 @@ private fun SettingsSupportDialog(
             }
         }
     )
+}
+
+@Composable
+private fun ChangePasswordDialog(
+    onDismiss: () -> Unit,
+    onChangePassword: suspend (String) -> Result<Unit>,
+    onSuccess: () -> Unit
+) {
+    val scope = rememberCoroutineScope()
+    var newPassword by remember { mutableStateOf("") }
+    var confirmPassword by remember { mutableStateOf("") }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+    var isSaving by remember { mutableStateOf(false) }
+
+    AlertDialog(
+        onDismissRequest = {
+            if (!isSaving) {
+                onDismiss()
+            }
+        },
+        containerColor = Color(0xFF121212),
+        title = {
+            Text("Change Password", color = Color.White, fontWeight = FontWeight.Bold)
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedTextField(
+                    value = newPassword,
+                    onValueChange = {
+                        newPassword = it
+                        errorMessage = null
+                    },
+                    label = { Text("New password") },
+                    singleLine = true,
+                    visualTransformation = PasswordVisualTransformation(),
+                    enabled = !isSaving,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color(0xFFFF5722),
+                        unfocusedBorderColor = Color.DarkGray,
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        cursorColor = Color(0xFFFF5722),
+                        focusedLabelColor = Color(0xFFFF5722),
+                        unfocusedLabelColor = Color.Gray
+                    )
+                )
+                OutlinedTextField(
+                    value = confirmPassword,
+                    onValueChange = {
+                        confirmPassword = it
+                        errorMessage = null
+                    },
+                    label = { Text("Confirm new password") },
+                    singleLine = true,
+                    visualTransformation = PasswordVisualTransformation(),
+                    enabled = !isSaving,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color(0xFFFF5722),
+                        unfocusedBorderColor = Color.DarkGray,
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        cursorColor = Color(0xFFFF5722),
+                        focusedLabelColor = Color(0xFFFF5722),
+                        unfocusedLabelColor = Color.Gray
+                    )
+                )
+                errorMessage?.let { message ->
+                    Text(message, color = Color.Red)
+                }
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss, enabled = !isSaving) {
+                Text("Cancel", color = Color.Gray, fontWeight = FontWeight.Bold)
+            }
+        },
+        confirmButton = {
+            TextButton(
+                enabled = !isSaving,
+                onClick = {
+                    errorMessage = validatePasswordChange(newPassword, confirmPassword)
+                    if (errorMessage != null) {
+                        return@TextButton
+                    }
+
+                    scope.launch {
+                        isSaving = true
+                        val result = onChangePassword(newPassword)
+                        isSaving = false
+
+                        if (result.isSuccess) {
+                            onDismiss()
+                            onSuccess()
+                        } else {
+                            errorMessage = result.exceptionOrNull()?.message ?: "Unable to update password"
+                        }
+                    }
+                }
+            ) {
+                Text(
+                    text = if (isSaving) "Saving..." else "Update Password",
+                    color = Color(0xFFFF5722),
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+    )
+}
+
+private fun validatePasswordChange(newPassword: String, confirmPassword: String): String? {
+    return when {
+        newPassword.isBlank() -> "New password cannot be empty"
+        confirmPassword.isBlank() -> "Confirm password cannot be empty"
+        newPassword.length < 6 -> "Password must be at least 6 characters"
+        newPassword != confirmPassword -> "Passwords do not match"
+        else -> null
+    }
 }
