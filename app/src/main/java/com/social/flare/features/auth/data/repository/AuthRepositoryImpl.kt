@@ -101,4 +101,21 @@ class AuthRepositoryImpl(
             supabase.auth.signOut()
         } catch (e: Throwable) { e.printStackTrace() }
     }
+
+    override suspend fun changePassword(newPassword: String): Result<Unit> {
+        return try {
+            supabase.auth.awaitInitialization()
+            if (supabase.auth.currentSessionOrNull() == null) {
+                return Result.failure(Exception("No active session found. Please log in again."))
+            }
+
+            supabase.auth.updateUser {
+                password = newPassword
+            }
+
+            Result.success(Unit)
+        } catch (e: Throwable) {
+            Result.failure(e)
+        }
+    }
 }

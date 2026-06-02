@@ -1,5 +1,11 @@
 package com.social.flare.features.profile.presentation
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -10,8 +16,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
+import com.social.flare.core.data.SettingsManager
 import com.social.flare.features.profile.presentation.components.settings.SettingsDarkModeSelector
 import com.social.flare.features.profile.presentation.components.settings.SettingsItem
 import com.social.flare.features.profile.presentation.components.settings.SettingsProfileHeader
@@ -20,6 +32,7 @@ import com.social.flare.features.profile.presentation.components.settings.Settin
 import com.social.flare.features.profile.presentation.components.settings.SettingsToggleItem
 import com.social.flare.features.profile.presentation.viewmodel.ProfileUiState
 import com.social.flare.features.profile.presentation.viewmodel.ProfileViewModel
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -29,103 +42,505 @@ fun SettingsScreen(
     onNavigateBack: () -> Unit,
     onNavigateToEditProfile: () -> Unit,
     onLogout: () -> Unit,
+    onLogin: () -> Unit = {},
+    onChangePassword: suspend (String) -> Result<Unit> = {
+        Result.failure(Exception("Change password is not available"))
+    },
     onNavigateToAdmin: () -> Unit = {}
 ) {
+    val isGuest = activeCitizenId == null
+    val context = LocalContext.current
+    val settingsManager = remember { SettingsManager(context.applicationContext) }
+    val scope = rememberCoroutineScope()
+    val pushNotificationsEnabled by settingsManager.pushNotificationsEnabledFlow.collectAsState(initial = false)
+    val emailNotificationsEnabled by settingsManager.emailNotificationsEnabledFlow.collectAsState(initial = false)
+    val darkModeEnabled by settingsManager.darkModeEnabledFlow.collectAsState(initial = true)
+    val textSizeScale by settingsManager.textSizeScaleFlow.collectAsState(initial = 0.5f)
+    val privateAccountEnabled by settingsManager.privateAccountEnabledFlow.collectAsState(initial = false)
+    val showActivityStatusEnabled by settingsManager.showActivityStatusEnabledFlow.collectAsState(initial = true)
+    val allowProfileSearchEnabled by settingsManager.allowProfileSearchEnabledFlow.collectAsState(initial = true)
+    val currentDensity = LocalDensity.current
+    val settingsFontScale = textSizeScaleToFontScale(textSizeScale)
+    var supportDialog by remember { mutableStateOf<SettingsSupportDialog?>(null) }
+    var showChangePasswordDialog by remember { mutableStateOf(false) }
+    var showPrivacySettingsDialog by remember { mutableStateOf(false) }
+
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        scope.launch {
+            settingsManager.setPushNotificationsEnabled(isGranted)
+        }
+        if (!isGranted) {
+            Toast.makeText(context, "Notification permission denied", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     LaunchedEffect(activeCitizenId) {
-        activeCitizenId?.let { profileViewModel.loadActiveUserProfile(it) }
+        if (activeCitizenId != null) {
+            profileViewModel.loadActiveUserProfile(activeCitizenId)
+        }
     }
     val profileState by profileViewModel.uiState.collectAsState()
-    Scaffold(
-        containerColor = Color.Black,
-        topBar = {
-            TopAppBar(
-                title = { Text("Settings", color = Color.White, fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = null, tint = Color.White)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Black)
-            )
-        }
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-        ) {
-            when (profileState) {
-                is ProfileUiState.Loading -> {
-                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(color = Color(0xFFFF5722))
-                    }
-                }
-
-                is ProfileUiState.Success -> {
-                    val success = profileState as ProfileUiState.Success
-                    val currentCitizen = success.citizen
-
-                    SettingsProfileHeader(
-                        avatarUrl = currentCitizen?.avatar_url,
-                        displayName = currentCitizen?.display_name,
-                        username = currentCitizen?.username,
-                        onEditClick = onNavigateToEditProfile
-                    )
-
-                    if (currentCitizen?.is_admin == true) {
-                        SettingsSectionTitle("ADMIN")
-                        SettingsItem(
-                            icon = Icons.Default.AdminPanelSettings,
-                            title = "Admin Panel",
-                            onClick = onNavigateToAdmin
-                        )
-                    }
-                }
-
-                else -> {
+    CompositionLocalProvider(
+        LocalDensity provides Density(
+            density = currentDensity.density,
+            fontScale = currentDensity.fontScale * settingsFontScale
+        )
+    ) {
+        Scaffold(
+            containerColor = Color.Black,
+            topBar = {
+                TopAppBar(
+                    title = { Text("Settings", color = Color.White, fontWeight = FontWeight.Bold) },
+                    navigationIcon = {
+                        IconButton(onClick = onNavigateBack) {
+                            Icon(Icons.Default.ArrowBack, contentDescription = null, tint = Color.White)
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Black)
+                )
+            }
+        ) { padding ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .verticalScroll(rememberScrollState())
+            ) {
+                if (isGuest) {
                     SettingsProfileHeader(
                         avatarUrl = null,
                         displayName = "Guest User",
                         username = "guest",
-                        onEditClick = {}
+                        showEditButton = false
+                    )
+                } else {
+                    when (profileState) {
+                        is ProfileUiState.Loading -> {
+                            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                                CircularProgressIndicator(color = Color(0xFFFF5722))
+                            }
+                        }
+
+                        is ProfileUiState.Success -> {
+                            val success = profileState as ProfileUiState.Success
+                            val currentCitizen = success.citizen
+
+                            SettingsProfileHeader(
+                                avatarUrl = currentCitizen?.avatar_url,
+                                displayName = currentCitizen?.display_name,
+                                username = currentCitizen?.username,
+                                onEditClick = onNavigateToEditProfile
+                            )
+
+                            if (currentCitizen?.is_admin == true) {
+                                SettingsSectionTitle("ADMIN")
+                                SettingsItem(
+                                    icon = Icons.Default.AdminPanelSettings,
+                                    title = "Admin Panel",
+                                    onClick = onNavigateToAdmin
+                                )
+                            }
+                        }
+
+                        else -> {
+                            SettingsProfileHeader(
+                                avatarUrl = null,
+                                displayName = "User",
+                                username = "",
+                                onEditClick = onNavigateToEditProfile
+                            )
+                        }
+                    }
+                }
+
+                if (!isGuest) {
+                    SettingsSectionTitle("ACCOUNT")
+                    SettingsItem(Icons.Default.Person, "Edit Profile", onClick = onNavigateToEditProfile)
+                    SettingsItem(Icons.Default.Lock, "Change Password", onClick = { showChangePasswordDialog = true })
+                    SettingsItem(
+                        icon = Icons.Default.Shield,
+                        title = "Privacy Settings",
+                        onClick = { showPrivacySettingsDialog = true }
                     )
                 }
+
+                SettingsSectionTitle("NOTIFICATIONS")
+                SettingsToggleItem(
+                    icon = Icons.Default.Notifications,
+                    title = "Push Notifications",
+                    checked = pushNotificationsEnabled,
+                    onCheckedChange = { enabled ->
+                        if (enabled) {
+                            val requiresPermission = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+                            val permissionGranted = !requiresPermission ||
+                                ContextCompat.checkSelfPermission(
+                                    context,
+                                    Manifest.permission.POST_NOTIFICATIONS
+                                ) == PackageManager.PERMISSION_GRANTED
+
+                            if (permissionGranted) {
+                                scope.launch {
+                                    settingsManager.setPushNotificationsEnabled(true)
+                                }
+                            } else {
+                                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                            }
+                        } else {
+                            scope.launch {
+                                settingsManager.setPushNotificationsEnabled(false)
+                            }
+                        }
+                    }
+                )
+                if (!isGuest) {
+                    SettingsToggleItem(
+                        icon = Icons.Default.Email,
+                        title = "Email Notifications",
+                        checked = emailNotificationsEnabled,
+                        onCheckedChange = { enabled ->
+                            scope.launch {
+                                settingsManager.setEmailNotificationsEnabled(enabled)
+                            }
+                        }
+                    )
+                }
+
+                SettingsSectionTitle("DISPLAY")
+                SettingsDarkModeSelector(
+                    checked = darkModeEnabled,
+                    onCheckedChange = { enabled ->
+                        scope.launch {
+                            settingsManager.setDarkModeEnabled(enabled)
+                        }
+                    }
+                )
+                SettingsTextSizeSelector(
+                    value = textSizeScale,
+                    onValueChange = { value ->
+                        scope.launch {
+                            settingsManager.setTextSizeScale(value)
+                        }
+                    }
+                )
+
+                SettingsSectionTitle("SUPPORT")
+                SettingsItem(
+                    icon = Icons.Default.Description,
+                    title = "Privacy Policy",
+                    onClick = { supportDialog = SettingsSupportDialog.PrivacyPolicy }
+                )
+                SettingsItem(
+                    icon = Icons.Default.Assignment,
+                    title = "Terms of Service",
+                    onClick = { supportDialog = SettingsSupportDialog.TermsOfService }
+                )
+                SettingsItem(
+                    icon = Icons.Default.Help,
+                    title = "Help Center",
+                    onClick = { supportDialog = SettingsSupportDialog.HelpCenter }
+                )
+
+                Spacer(modifier = Modifier.height(32.dp))
+
+                Button(
+                    onClick = if (isGuest) onLogin else onLogout,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp)
+                        .height(50.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (isGuest) Color(0xFFFF5722) else Color(0xFF1A0000)
+                    ),
+                    shape = RoundedCornerShape(12.dp),
+                    border = if (isGuest) null else BorderStroke(1.dp, Color(0xFF440000))
+                ) {
+                    Text(
+                        text = if (isGuest) "Log In" else "Log Out",
+                        color = if (isGuest) Color.White else Color.Red,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+                Spacer(modifier = Modifier.height(50.dp))
             }
-
-            SettingsSectionTitle("ACCOUNT")
-            SettingsItem(Icons.Default.Person, "Edit Profile", onClick = onNavigateToEditProfile)
-            SettingsItem(Icons.Default.Lock, "Change Password")
-            SettingsItem(Icons.Default.Shield, "Privacy Settings")
-
-            SettingsSectionTitle("NOTIFICATIONS")
-            SettingsToggleItem(Icons.Default.Notifications, "Push Notifications", true)
-            SettingsToggleItem(Icons.Default.Email, "Email Notifications", false)
-
-            SettingsSectionTitle("DISPLAY")
-            SettingsDarkModeSelector()
-            SettingsTextSizeSelector()
-
-            SettingsSectionTitle("SUPPORT")
-            SettingsItem(Icons.Default.Description, "Privacy Policy", isExternal = true)
-            SettingsItem(Icons.Default.Assignment, "Terms of Service", isExternal = true)
-            SettingsItem(Icons.Default.Help, "Help Center", isExternal = true)
-
-            Spacer(modifier = Modifier.height(32.dp))
-
-            Button(
-                onClick = onLogout,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp)
-                    .height(50.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1A0000)),
-                shape = RoundedCornerShape(12.dp),
-                border = BorderStroke(1.dp, Color(0xFF440000))
-            ) {
-                Text("Log Out", color = Color.Red, fontWeight = FontWeight.Bold)
-            }
-            Spacer(modifier = Modifier.height(50.dp))
         }
+
+        supportDialog?.let { dialog ->
+            SettingsSupportDialog(
+                dialog = dialog,
+                onDismiss = { supportDialog = null }
+            )
+        }
+
+        if (showChangePasswordDialog) {
+            ChangePasswordDialog(
+                onDismiss = { showChangePasswordDialog = false },
+                onChangePassword = onChangePassword,
+                onSuccess = {
+                    Toast.makeText(context, "Password updated successfully", Toast.LENGTH_SHORT).show()
+                }
+            )
+        }
+
+        if (showPrivacySettingsDialog && !isGuest) {
+            PrivacySettingsDialog(
+                privateAccountEnabled = privateAccountEnabled,
+                showActivityStatusEnabled = showActivityStatusEnabled,
+                allowProfileSearchEnabled = allowProfileSearchEnabled,
+                onPrivateAccountChange = { enabled ->
+                    scope.launch {
+                        settingsManager.setPrivateAccountEnabled(enabled)
+                    }
+                },
+                onShowActivityStatusChange = { enabled ->
+                    scope.launch {
+                        settingsManager.setShowActivityStatusEnabled(enabled)
+                    }
+                },
+                onAllowProfileSearchChange = { enabled ->
+                    scope.launch {
+                        settingsManager.setAllowProfileSearchEnabled(enabled)
+                    }
+                },
+                onDismiss = { showPrivacySettingsDialog = false }
+            )
+        }
+    }
+}
+
+private fun textSizeScaleToFontScale(value: Float): Float {
+    return 0.85f + value.coerceIn(0f, 1f) * 0.3f
+}
+
+private enum class SettingsSupportDialog {
+    PrivacyPolicy,
+    TermsOfService,
+    HelpCenter
+}
+
+@Composable
+private fun SettingsSupportDialog(
+    dialog: SettingsSupportDialog,
+    onDismiss: () -> Unit
+) {
+    val title = when (dialog) {
+        SettingsSupportDialog.PrivacyPolicy -> "Privacy Policy"
+        SettingsSupportDialog.TermsOfService -> "Terms of Service"
+        SettingsSupportDialog.HelpCenter -> "Help Center"
+    }
+    val message = when (dialog) {
+        SettingsSupportDialog.PrivacyPolicy -> "Flare stores the account information needed to provide your profile and app experience. Your settings preferences are saved locally on this device. We do not sell your personal information."
+        SettingsSupportDialog.TermsOfService -> "Use Flare respectfully and do not post harmful, abusive, or illegal content. You are responsible for the activity on your account and for following community guidelines."
+        SettingsSupportDialog.HelpCenter -> "Need help with Flare? Contact the support team or review the app documentation for account, profile, notification, and settings guidance."
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Color(0xFF121212),
+        title = {
+            Text(title, color = Color.White, fontWeight = FontWeight.Bold)
+        },
+        text = {
+            Text(message, color = Color.LightGray)
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("OK", color = Color(0xFFFF5722), fontWeight = FontWeight.Bold)
+            }
+        }
+    )
+}
+
+@Composable
+private fun ChangePasswordDialog(
+    onDismiss: () -> Unit,
+    onChangePassword: suspend (String) -> Result<Unit>,
+    onSuccess: () -> Unit
+) {
+    val scope = rememberCoroutineScope()
+    var newPassword by remember { mutableStateOf("") }
+    var confirmPassword by remember { mutableStateOf("") }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+    var isSaving by remember { mutableStateOf(false) }
+
+    AlertDialog(
+        onDismissRequest = {
+            if (!isSaving) {
+                onDismiss()
+            }
+        },
+        containerColor = Color(0xFF121212),
+        title = {
+            Text("Change Password", color = Color.White, fontWeight = FontWeight.Bold)
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedTextField(
+                    value = newPassword,
+                    onValueChange = {
+                        newPassword = it
+                        errorMessage = null
+                    },
+                    label = { Text("New password") },
+                    singleLine = true,
+                    visualTransformation = PasswordVisualTransformation(),
+                    enabled = !isSaving,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color(0xFFFF5722),
+                        unfocusedBorderColor = Color.DarkGray,
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        cursorColor = Color(0xFFFF5722),
+                        focusedLabelColor = Color(0xFFFF5722),
+                        unfocusedLabelColor = Color.Gray
+                    )
+                )
+                OutlinedTextField(
+                    value = confirmPassword,
+                    onValueChange = {
+                        confirmPassword = it
+                        errorMessage = null
+                    },
+                    label = { Text("Confirm new password") },
+                    singleLine = true,
+                    visualTransformation = PasswordVisualTransformation(),
+                    enabled = !isSaving,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Color(0xFFFF5722),
+                        unfocusedBorderColor = Color.DarkGray,
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        cursorColor = Color(0xFFFF5722),
+                        focusedLabelColor = Color(0xFFFF5722),
+                        unfocusedLabelColor = Color.Gray
+                    )
+                )
+                errorMessage?.let { message ->
+                    Text(message, color = Color.Red)
+                }
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss, enabled = !isSaving) {
+                Text("Cancel", color = Color.Gray, fontWeight = FontWeight.Bold)
+            }
+        },
+        confirmButton = {
+            TextButton(
+                enabled = !isSaving,
+                onClick = {
+                    errorMessage = validatePasswordChange(newPassword, confirmPassword)
+                    if (errorMessage != null) {
+                        return@TextButton
+                    }
+
+                    scope.launch {
+                        isSaving = true
+                        val result = onChangePassword(newPassword)
+                        isSaving = false
+
+                        if (result.isSuccess) {
+                            onDismiss()
+                            onSuccess()
+                        } else {
+                            errorMessage = result.exceptionOrNull()?.message ?: "Unable to update password"
+                        }
+                    }
+                }
+            ) {
+                Text(
+                    text = if (isSaving) "Saving..." else "Update Password",
+                    color = Color(0xFFFF5722),
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+    )
+}
+
+private fun validatePasswordChange(newPassword: String, confirmPassword: String): String? {
+    return when {
+        newPassword.isBlank() -> "New password cannot be empty"
+        confirmPassword.isBlank() -> "Confirm password cannot be empty"
+        newPassword.length < 6 -> "Password must be at least 6 characters"
+        newPassword != confirmPassword -> "Passwords do not match"
+        else -> null
+    }
+}
+
+@Composable
+private fun PrivacySettingsDialog(
+    privateAccountEnabled: Boolean,
+    showActivityStatusEnabled: Boolean,
+    allowProfileSearchEnabled: Boolean,
+    onPrivateAccountChange: (Boolean) -> Unit,
+    onShowActivityStatusChange: (Boolean) -> Unit,
+    onAllowProfileSearchChange: (Boolean) -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Color(0xFF121212),
+        title = {
+            Text("Privacy Settings", color = Color.White, fontWeight = FontWeight.Bold)
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                PrivacySettingSwitchRow(
+                    title = "Private Account",
+                    checked = privateAccountEnabled,
+                    onCheckedChange = onPrivateAccountChange
+                )
+                PrivacySettingSwitchRow(
+                    title = "Show Activity Status",
+                    checked = showActivityStatusEnabled,
+                    onCheckedChange = onShowActivityStatusChange
+                )
+                PrivacySettingSwitchRow(
+                    title = "Allow Profile Search",
+                    checked = allowProfileSearchEnabled,
+                    onCheckedChange = onAllowProfileSearchChange
+                )
+                Text(
+                    text = "These privacy preferences are saved on this device. Backend enforcement can be added when remote privacy fields are available.",
+                    color = Color.Gray,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Close", color = Color(0xFFFF5722), fontWeight = FontWeight.Bold)
+            }
+        }
+    )
+}
+
+@Composable
+private fun PrivacySettingSwitchRow(
+    title: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = title,
+            color = Color.White,
+            modifier = Modifier.weight(1f)
+        )
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = Color.White,
+                checkedTrackColor = Color(0xFFFF5722),
+                uncheckedThumbColor = Color.Gray,
+                uncheckedTrackColor = Color(0xFF333333)
+            )
+        )
     }
 }

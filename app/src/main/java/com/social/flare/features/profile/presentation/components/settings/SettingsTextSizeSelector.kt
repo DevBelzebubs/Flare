@@ -13,10 +13,6 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -24,8 +20,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun SettingsTextSizeSelector() {
-    var sliderValue by remember { mutableStateOf(0.5f) }
+fun SettingsTextSizeSelector(
+    value: Float,
+    onValueChange: (Float) -> Unit
+) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -34,9 +32,10 @@ fun SettingsTextSizeSelector() {
         Spacer(modifier = Modifier.width(16.dp))
         Text("A", color = Color.Gray, fontSize = 12.sp)
         Slider(
-            value = sliderValue,
-            onValueChange = { sliderValue = it },
+            value = value,
+            onValueChange = onValueChange,
             modifier = Modifier.weight(1f).padding(horizontal = 8.dp),
+            steps = 1,
             colors = SliderDefaults.colors(
                 thumbColor = Color(0xFFFF5722),
                 activeTrackColor = Color(0xFFFF5722),

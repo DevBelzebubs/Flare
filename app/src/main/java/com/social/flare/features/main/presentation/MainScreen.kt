@@ -25,6 +25,8 @@ import com.social.flare.FlareApp
 import com.social.flare.core.data.SessionManager
 import com.social.flare.core.navigation.Screen
 import com.social.flare.core.ui.components.AuthDialog
+import com.social.flare.features.auth.data.repository.AuthRepositoryImpl
+import com.social.flare.features.auth.domain.usecase.ChangePasswordUseCase
 import com.social.flare.features.auth.presentation.LoginScreen
 import com.social.flare.features.auth.presentation.SignUpScreen
 import com.social.flare.features.feed.presentation.FeedScreen
@@ -94,6 +96,7 @@ fun MainScreen() {
     val cloudinaryService = remember { CloudinaryService(context.applicationContext) }
     val followDao = remember { app.database.followDao() }
     val citizenDao = remember { app.database.citizenDao() }
+    val authRepository = remember { AuthRepositoryImpl(citizenDao, app.supabase) }
     val feedRepository = remember {
         FeedRepositoryImpl(
             postDao = app.database.postDao(),
@@ -126,6 +129,7 @@ fun MainScreen() {
     val deletePostUseCase = remember { DeletePostUseCase(feedRepository, cloudinaryService) }
     val updatePostUseCase = remember { UpdatePostUseCase(feedRepository) }
     val createPostUseCase = remember { CreatePostUseCase(feedRepository, cloudinaryService) }
+    val changePasswordUseCase = remember { ChangePasswordUseCase(authRepository) }
     val getNotificationsUseCase = remember { GetNotificationsUseCase(notificationRepository) }
     val manageRealtimeNotificationsUseCase = remember {
         ManageRealtimeNotificationsUseCase(
@@ -508,6 +512,8 @@ fun MainScreen() {
                         onNavigateBack = { navController.popBackStack() },
                         onNavigateToEditProfile = { navController.navigate(Screen.EditProfile.route) },
                         onLogout = { scope.launch { sessionManager.clearSession(); navController.navigate(Screen.Login.route) { popUpTo(0) { inclusive = true } } } },
+                        onLogin = { navController.navigate(Screen.Login.route) },
+                        onChangePassword = { newPassword -> changePasswordUseCase(newPassword) },
                         onNavigateToAdmin = { navController.navigate(Screen.AdminDashboard.route) }
                     )
                 }

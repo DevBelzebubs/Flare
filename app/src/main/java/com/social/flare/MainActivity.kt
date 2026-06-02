@@ -11,8 +11,11 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import com.social.flare.core.data.SettingsManager
 import com.social.flare.core.ui.theme.FlareTheme
 import com.social.flare.features.feed.presentation.FeedScreen
 import com.social.flare.features.main.presentation.MainScreen
@@ -22,8 +25,12 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        val settingsManager = SettingsManager(applicationContext)
+
         setContent {
-            FlareTheme {
+            val darkModeEnabled by settingsManager.darkModeEnabledFlow.collectAsState(initial = true)
+
+            FlareTheme(darkTheme = darkModeEnabled) {
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                     MainScreen()
                 }

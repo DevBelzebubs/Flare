@@ -23,8 +23,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun SettingsToggleItem(icon: ImageVector, title: String, initialValue: Boolean) {
-    var checked by remember { mutableStateOf(initialValue) }
+fun SettingsToggleItem(
+    icon: ImageVector,
+    title: String,
+    checked: Boolean,
+    onCheckedChange: ((Boolean) -> Unit)? = null
+) {
+    var localChecked by remember { mutableStateOf(checked) }
+    val currentChecked = if (onCheckedChange != null) checked else localChecked
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -35,8 +42,14 @@ fun SettingsToggleItem(icon: ImageVector, title: String, initialValue: Boolean) 
         Spacer(modifier = Modifier.width(16.dp))
         Text(title, color = Color.White, fontSize = 16.sp, modifier = Modifier.weight(1f))
         Switch(
-            checked = checked,
-            onCheckedChange = { checked = it },
+            checked = currentChecked,
+            onCheckedChange = { newValue ->
+                if (onCheckedChange != null) {
+                    onCheckedChange(newValue)
+                } else {
+                    localChecked = newValue
+                }
+            },
             colors = SwitchDefaults.colors(
                 checkedThumbColor = Color.White,
                 checkedTrackColor = Color(0xFFFF5722),
