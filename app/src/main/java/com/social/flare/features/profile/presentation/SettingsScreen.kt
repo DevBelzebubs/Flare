@@ -29,10 +29,15 @@ fun SettingsScreen(
     onNavigateBack: () -> Unit,
     onNavigateToEditProfile: () -> Unit,
     onLogout: () -> Unit,
+    onLogin: () -> Unit = {},
     onNavigateToAdmin: () -> Unit = {}
 ) {
+    val isGuest = activeCitizenId == null
+
     LaunchedEffect(activeCitizenId) {
-        activeCitizenId?.let { profileViewModel.loadActiveUserProfile(it) }
+        if (activeCitizenId != null) {
+            profileViewModel.loadActiveUserProfile(activeCitizenId)
+        }
     }
     val profileState by profileViewModel.uiState.collectAsState()
     Scaffold(
@@ -55,52 +60,65 @@ fun SettingsScreen(
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
         ) {
-            when (profileState) {
-                is ProfileUiState.Loading -> {
-                    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(color = Color(0xFFFF5722))
+            if (isGuest) {
+                SettingsProfileHeader(
+                    avatarUrl = null,
+                    displayName = "Guest User",
+                    username = "guest",
+                    showEditButton = false
+                )
+            } else {
+                when (profileState) {
+                    is ProfileUiState.Loading -> {
+                        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(color = Color(0xFFFF5722))
+                        }
                     }
-                }
 
-                is ProfileUiState.Success -> {
-                    val success = profileState as ProfileUiState.Success
-                    val currentCitizen = success.citizen
+                    is ProfileUiState.Success -> {
+                        val success = profileState as ProfileUiState.Success
+                        val currentCitizen = success.citizen
 
-                    SettingsProfileHeader(
-                        avatarUrl = currentCitizen?.avatar_url,
-                        displayName = currentCitizen?.display_name,
-                        username = currentCitizen?.username,
-                        onEditClick = onNavigateToEditProfile
-                    )
+                        SettingsProfileHeader(
+                            avatarUrl = currentCitizen?.avatar_url,
+                            displayName = currentCitizen?.display_name,
+                            username = currentCitizen?.username,
+                            onEditClick = onNavigateToEditProfile
+                        )
 
-                    if (currentCitizen?.is_admin == true) {
-                        SettingsSectionTitle("ADMIN")
-                        SettingsItem(
-                            icon = Icons.Default.AdminPanelSettings,
-                            title = "Admin Panel",
-                            onClick = onNavigateToAdmin
+                        if (currentCitizen?.is_admin == true) {
+                            SettingsSectionTitle("ADMIN")
+                            SettingsItem(
+                                icon = Icons.Default.AdminPanelSettings,
+                                title = "Admin Panel",
+                                onClick = onNavigateToAdmin
+                            )
+                        }
+                    }
+
+                    else -> {
+                        SettingsProfileHeader(
+                            avatarUrl = null,
+                            displayName = "User",
+                            username = "",
+                            onEditClick = onNavigateToEditProfile
                         )
                     }
                 }
-
-                else -> {
-                    SettingsProfileHeader(
-                        avatarUrl = null,
-                        displayName = "Guest User",
-                        username = "guest",
-                        onEditClick = {}
-                    )
-                }
             }
 
-            SettingsSectionTitle("ACCOUNT")
-            SettingsItem(Icons.Default.Person, "Edit Profile", onClick = onNavigateToEditProfile)
-            SettingsItem(Icons.Default.Lock, "Change Password")
-            SettingsItem(Icons.Default.Shield, "Privacy Settings")
+            if (!isGuest) {
+                SettingsSectionTitle("ACCOUNT")
+                SettingsItem(Icons.Default.Person, "Edit Profile", onClick = onNavigateToEditProfile)
+                SettingsItem(Icons.Default.Lock, "Change Password")
+                SettingsItem(Icons.Default.Shield, "Privacy Settings")
+            }
 
             SettingsSectionTitle("NOTIFICATIONS")
             SettingsToggleItem(Icons.Default.Notifications, "Push Notifications", true)
-            SettingsToggleItem(Icons.Default.Email, "Email Notifications", false)
+            if (!isGuest) {
+                SettingsToggleItem(Icons.Default.Email, "Email Notifications", false)
+            }
 
             SettingsSectionTitle("DISPLAY")
             SettingsDarkModeSelector()
@@ -114,16 +132,22 @@ fun SettingsScreen(
             Spacer(modifier = Modifier.height(32.dp))
 
             Button(
-                onClick = onLogout,
+                onClick = if (isGuest) onLogin else onLogout,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 24.dp)
                     .height(50.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1A0000)),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (isGuest) Color(0xFFFF5722) else Color(0xFF1A0000)
+                ),
                 shape = RoundedCornerShape(12.dp),
-                border = BorderStroke(1.dp, Color(0xFF440000))
+                border = if (isGuest) null else BorderStroke(1.dp, Color(0xFF440000))
             ) {
-                Text("Log Out", color = Color.Red, fontWeight = FontWeight.Bold)
+                Text(
+                    text = if (isGuest) "Log In" else "Log Out",
+                    color = if (isGuest) Color.White else Color.Red,
+                    fontWeight = FontWeight.Bold
+                )
             }
             Spacer(modifier = Modifier.height(50.dp))
         }

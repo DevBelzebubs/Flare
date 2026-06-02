@@ -445,6 +445,7 @@ fun MainScreen() {
                         onNavigateBack = { navController.popBackStack() },
                         onNavigateToEditProfile = { navController.navigate(Screen.EditProfile.route) },
                         onLogout = { scope.launch { sessionManager.clearSession(); navController.navigate(Screen.Login.route) { popUpTo(0) { inclusive = true } } } },
+                        onLogin = { navController.navigate(Screen.Login.route) },
                         onNavigateToAdmin = { navController.navigate(Screen.AdminDashboard.route) }
                     )
                 }

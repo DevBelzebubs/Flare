@@ -34,6 +34,7 @@ fun SettingsProfileHeader(
     displayName: String?,
     username: String?,
     modifier: Modifier = Modifier,
+    showEditButton: Boolean = true,
     onEditClick: () -> Unit = {}
 ) {
     Row(
@@ -46,7 +47,13 @@ fun SettingsProfileHeader(
                     .size(80.dp)
                     .clip(CircleShape)
                     .background(Color.DarkGray)
-                    .clickable { onEditClick() }
+                    .let {
+                        if (showEditButton) {
+                            it.clickable { onEditClick() }
+                        } else {
+                            it
+                        }
+                    }
             ) {
                 if (!avatarUrl.isNullOrBlank()) {
                     AsyncImage(
@@ -65,17 +72,19 @@ fun SettingsProfileHeader(
                 }
             }
 
-            Box(
-                modifier = Modifier
-                    .size(24.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xFFFF5722))
-                    .align(Alignment.BottomEnd)
-                    .border(2.dp, Color.Black, CircleShape)
-                    .clickable { onEditClick() },
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(Icons.Default.Edit, contentDescription = "Edit Profile", modifier = Modifier.size(12.dp), tint = Color.Black)
+            if (showEditButton) {
+                Box(
+                    modifier = Modifier
+                        .size(24.dp)
+                        .clip(CircleShape)
+                        .background(Color(0xFFFF5722))
+                        .align(Alignment.BottomEnd)
+                        .border(2.dp, Color.Black, CircleShape)
+                        .clickable { onEditClick() },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Default.Edit, contentDescription = "Edit Profile", modifier = Modifier.size(12.dp), tint = Color.Black)
+                }
             }
         }
 
