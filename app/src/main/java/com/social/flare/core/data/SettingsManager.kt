@@ -16,6 +16,9 @@ class SettingsManager(private val context: Context) {
         private val EMAIL_NOTIFICATIONS_ENABLED = booleanPreferencesKey("email_notifications_enabled")
         private val DARK_MODE_ENABLED = booleanPreferencesKey("dark_mode_enabled")
         private val TEXT_SIZE_SCALE = floatPreferencesKey("text_size_scale")
+        private val PRIVATE_ACCOUNT_ENABLED = booleanPreferencesKey("private_account_enabled")
+        private val SHOW_ACTIVITY_STATUS_ENABLED = booleanPreferencesKey("show_activity_status_enabled")
+        private val ALLOW_PROFILE_SEARCH_ENABLED = booleanPreferencesKey("allow_profile_search_enabled")
     }
 
     val pushNotificationsEnabledFlow: Flow<Boolean> = context.settingsDataStore.data.map { preferences ->
@@ -32,6 +35,18 @@ class SettingsManager(private val context: Context) {
 
     val textSizeScaleFlow: Flow<Float> = context.settingsDataStore.data.map { preferences ->
         preferences[TEXT_SIZE_SCALE] ?: 0.5f
+    }
+
+    val privateAccountEnabledFlow: Flow<Boolean> = context.settingsDataStore.data.map { preferences ->
+        preferences[PRIVATE_ACCOUNT_ENABLED] ?: false
+    }
+
+    val showActivityStatusEnabledFlow: Flow<Boolean> = context.settingsDataStore.data.map { preferences ->
+        preferences[SHOW_ACTIVITY_STATUS_ENABLED] ?: true
+    }
+
+    val allowProfileSearchEnabledFlow: Flow<Boolean> = context.settingsDataStore.data.map { preferences ->
+        preferences[ALLOW_PROFILE_SEARCH_ENABLED] ?: true
     }
 
     suspend fun setPushNotificationsEnabled(value: Boolean) {
@@ -55,6 +70,24 @@ class SettingsManager(private val context: Context) {
     suspend fun setTextSizeScale(value: Float) {
         context.settingsDataStore.edit { preferences ->
             preferences[TEXT_SIZE_SCALE] = value.coerceIn(0f, 1f)
+        }
+    }
+
+    suspend fun setPrivateAccountEnabled(value: Boolean) {
+        context.settingsDataStore.edit { preferences ->
+            preferences[PRIVATE_ACCOUNT_ENABLED] = value
+        }
+    }
+
+    suspend fun setShowActivityStatusEnabled(value: Boolean) {
+        context.settingsDataStore.edit { preferences ->
+            preferences[SHOW_ACTIVITY_STATUS_ENABLED] = value
+        }
+    }
+
+    suspend fun setAllowProfileSearchEnabled(value: Boolean) {
+        context.settingsDataStore.edit { preferences ->
+            preferences[ALLOW_PROFILE_SEARCH_ENABLED] = value
         }
     }
 }

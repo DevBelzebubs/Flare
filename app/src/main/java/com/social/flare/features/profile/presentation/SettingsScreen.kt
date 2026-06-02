@@ -56,10 +56,14 @@ fun SettingsScreen(
     val emailNotificationsEnabled by settingsManager.emailNotificationsEnabledFlow.collectAsState(initial = false)
     val darkModeEnabled by settingsManager.darkModeEnabledFlow.collectAsState(initial = true)
     val textSizeScale by settingsManager.textSizeScaleFlow.collectAsState(initial = 0.5f)
+    val privateAccountEnabled by settingsManager.privateAccountEnabledFlow.collectAsState(initial = false)
+    val showActivityStatusEnabled by settingsManager.showActivityStatusEnabledFlow.collectAsState(initial = true)
+    val allowProfileSearchEnabled by settingsManager.allowProfileSearchEnabledFlow.collectAsState(initial = true)
     val currentDensity = LocalDensity.current
     val settingsFontScale = textSizeScaleToFontScale(textSizeScale)
     var supportDialog by remember { mutableStateOf<SettingsSupportDialog?>(null) }
     var showChangePasswordDialog by remember { mutableStateOf(false) }
+    var showPrivacySettingsDialog by remember { mutableStateOf(false) }
 
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
@@ -155,7 +159,11 @@ fun SettingsScreen(
                     SettingsSectionTitle("ACCOUNT")
                     SettingsItem(Icons.Default.Person, "Edit Profile", onClick = onNavigateToEditProfile)
                     SettingsItem(Icons.Default.Lock, "Change Password", onClick = { showChangePasswordDialog = true })
-                    SettingsItem(Icons.Default.Shield, "Privacy Settings")
+                    SettingsItem(
+                        icon = Icons.Default.Shield,
+                        title = "Privacy Settings",
+                        onClick = { showPrivacySettingsDialog = true }
+                    )
                 }
 
                 SettingsSectionTitle("NOTIFICATIONS")
@@ -272,6 +280,30 @@ fun SettingsScreen(
                 onSuccess = {
                     Toast.makeText(context, "Password updated successfully", Toast.LENGTH_SHORT).show()
                 }
+            )
+        }
+
+        if (showPrivacySettingsDialog && !isGuest) {
+            PrivacySettingsDialog(
+                privateAccountEnabled = privateAccountEnabled,
+                showActivityStatusEnabled = showActivityStatusEnabled,
+                allowProfileSearchEnabled = allowProfileSearchEnabled,
+                onPrivateAccountChange = { enabled ->
+                    scope.launch {
+                        settingsManager.setPrivateAccountEnabled(enabled)
+                    }
+                },
+                onShowActivityStatusChange = { enabled ->
+                    scope.launch {
+                        settingsManager.setShowActivityStatusEnabled(enabled)
+                    }
+                },
+                onAllowProfileSearchChange = { enabled ->
+                    scope.launch {
+                        settingsManager.setAllowProfileSearchEnabled(enabled)
+                    }
+                },
+                onDismiss = { showPrivacySettingsDialog = false }
             )
         }
     }
@@ -434,5 +466,81 @@ private fun validatePasswordChange(newPassword: String, confirmPassword: String)
         newPassword.length < 6 -> "Password must be at least 6 characters"
         newPassword != confirmPassword -> "Passwords do not match"
         else -> null
+    }
+}
+
+@Composable
+private fun PrivacySettingsDialog(
+    privateAccountEnabled: Boolean,
+    showActivityStatusEnabled: Boolean,
+    allowProfileSearchEnabled: Boolean,
+    onPrivateAccountChange: (Boolean) -> Unit,
+    onShowActivityStatusChange: (Boolean) -> Unit,
+    onAllowProfileSearchChange: (Boolean) -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Color(0xFF121212),
+        title = {
+            Text("Privacy Settings", color = Color.White, fontWeight = FontWeight.Bold)
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                PrivacySettingSwitchRow(
+                    title = "Private Account",
+                    checked = privateAccountEnabled,
+                    onCheckedChange = onPrivateAccountChange
+                )
+                PrivacySettingSwitchRow(
+                    title = "Show Activity Status",
+                    checked = showActivityStatusEnabled,
+                    onCheckedChange = onShowActivityStatusChange
+                )
+                PrivacySettingSwitchRow(
+                    title = "Allow Profile Search",
+                    checked = allowProfileSearchEnabled,
+                    onCheckedChange = onAllowProfileSearchChange
+                )
+                Text(
+                    text = "These privacy preferences are saved on this device. Backend enforcement can be added when remote privacy fields are available.",
+                    color = Color.Gray,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Close", color = Color(0xFFFF5722), fontWeight = FontWeight.Bold)
+            }
+        }
+    )
+}
+
+@Composable
+private fun PrivacySettingSwitchRow(
+    title: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = title,
+            color = Color.White,
+            modifier = Modifier.weight(1f)
+        )
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = Color.White,
+                checkedTrackColor = Color(0xFFFF5722),
+                uncheckedThumbColor = Color.Gray,
+                uncheckedTrackColor = Color(0xFF333333)
+            )
+        )
     }
 }
