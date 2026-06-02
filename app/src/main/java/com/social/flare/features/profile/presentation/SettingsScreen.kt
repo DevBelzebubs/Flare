@@ -49,6 +49,7 @@ fun SettingsScreen(
     val settingsManager = remember { SettingsManager(context.applicationContext) }
     val scope = rememberCoroutineScope()
     val pushNotificationsEnabled by settingsManager.pushNotificationsEnabledFlow.collectAsState(initial = false)
+    val emailNotificationsEnabled by settingsManager.emailNotificationsEnabledFlow.collectAsState(initial = false)
     val darkModeEnabled by settingsManager.darkModeEnabledFlow.collectAsState(initial = true)
     val textSizeScale by settingsManager.textSizeScaleFlow.collectAsState(initial = 0.5f)
     val currentDensity = LocalDensity.current
@@ -181,7 +182,16 @@ fun SettingsScreen(
                     }
                 )
                 if (!isGuest) {
-                    SettingsToggleItem(Icons.Default.Email, "Email Notifications", false)
+                    SettingsToggleItem(
+                        icon = Icons.Default.Email,
+                        title = "Email Notifications",
+                        checked = emailNotificationsEnabled,
+                        onCheckedChange = { enabled ->
+                            scope.launch {
+                                settingsManager.setEmailNotificationsEnabled(enabled)
+                            }
+                        }
+                    )
                 }
 
                 SettingsSectionTitle("DISPLAY")
