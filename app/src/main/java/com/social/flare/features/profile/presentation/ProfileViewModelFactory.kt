@@ -37,6 +37,7 @@ class ProfileViewModelFactory(private val context: Context) : ViewModelProvider.
                 repository = profileRepository,
                 getUserPostsUseCase = getPostsUseCase,
                 postDao = database.postDao(),
+                feedRepository = feedRepository,
                 toggleFollowUseCase = toggleFollowUseCase,
                 getFollowStatsUseCase = getFollowStatsUseCase
             ) as T

@@ -33,6 +33,7 @@ fun ProfileContent(
     state: ProfileUiState.Success,
     myPosts: List<Post>,
     savedPosts: List<Post>,
+    sharedPosts: List<Post>,
     onPostClick: (String) -> Unit
 ) {
     val citizen = state.citizen
@@ -94,9 +95,21 @@ fun ProfileContent(
                 }
             }
         } else {
-            item(span = { GridItemSpan(3) }) {
-                Box(modifier = Modifier.height(200.dp).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                    Text("No hay posts compartidos.", color = Color.DarkGray)
+            if (sharedPosts.isEmpty()) {
+                item(span = { GridItemSpan(3) }) {
+                    Box(modifier = Modifier.height(200.dp).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        Text("No hay posts compartidos.", color = Color.DarkGray)
+                    }
+                }
+            } else {
+                items(
+                    items = sharedPosts,
+                    key = { it.id }
+                ) { post ->
+                    ProfileGridItem(
+                        post = post,
+                        onClick = { onPostClick(post.id) }
+                    )
                 }
             }
         }

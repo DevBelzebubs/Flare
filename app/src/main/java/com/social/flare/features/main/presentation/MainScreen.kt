@@ -73,6 +73,8 @@ import com.social.flare.features.admin.presentation.AdminUsersScreen
 import com.social.flare.features.admin.presentation.AdminPostsScreen
 import com.social.flare.features.admin.presentation.AdminNewsScreen
 import com.social.flare.features.admin.presentation.viewmodel.AdminViewModel
+import com.social.flare.features.notifications.domain.usecase.GetSuggestedAccountsUseCase
+import com.social.flare.features.search.data.repository.SearchRepositoryImpl
 
 @Composable
 fun MainScreen() {
@@ -308,15 +310,31 @@ fun MainScreen() {
                     )
                 }
                 composable(Screen.Search.route) {
+                    val searchRepository = remember {
+                        SearchRepositoryImpl(
+                            postDao = app.database.postDao(),
+                            citizenDao = citizenDao,
+                            searchDao = app.database.searchDao(),
+                            supabase = app.supabase
+                        )
+                    }
                     val searchViewModel: SearchViewModel = viewModel(
                         factory = object : ViewModelProvider.Factory {
                             @Suppress("UNCHECKED_CAST")
                             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                                return SearchViewModel(adminRepository) as T
+                                return SearchViewModel(
+                                    searchRepository = searchRepository,
+                                    adminRepository = adminRepository,
+                                    currentUserId = activeCitizenId ?: ""
+                                ) as T
                             }
                         }
                     )
-                    SearchScreen(viewModel = searchViewModel)
+                    SearchScreen(
+                        viewModel = searchViewModel,
+                        onPostClick = { postId -> navController.navigate("${Screen.PostDetail.route}/$postId") },
+                        onAuthorClick = { authorId -> navController.navigate("${Screen.Profile.route}/$authorId") }
+                    )
                 }
 
                 composable(Screen.AddPost.route) {
@@ -367,6 +385,13 @@ fun MainScreen() {
                     }
                 }
                 composable(Screen.Notifications.route) {
+                    val getSuggestedAccountsUseCase = remember {
+                        GetSuggestedAccountsUseCase(
+                            citizenDao = citizenDao,
+                            followDao = followDao,
+                            supabase = app.supabase
+                        )
+                    }
                     val notificationViewModel: NotificationViewModel = viewModel(
                         factory = object : ViewModelProvider.Factory {
                             @Suppress("UNCHECKED_CAST")
@@ -375,7 +400,8 @@ fun MainScreen() {
                                     getNotificationsUseCase = getNotificationsUseCase,
                                     manageRealtimeNotificationsUseCase = manageRealtimeNotificationsUseCase,
                                     markNotificationReadUseCase = markNotificationReadUseCase,
-                                    toggleFollowUseCase = toggleFollowUseCase
+                                    toggleFollowUseCase = toggleFollowUseCase,
+                                    getSuggestedAccountsUseCase = getSuggestedAccountsUseCase
                                 ) as T
                             }
                         }
@@ -403,6 +429,7 @@ fun MainScreen() {
                                     repository = profileRepository,
                                     getUserPostsUseCase = getPostsUseCase,
                                     postDao = app.database.postDao(),
+                                    feedRepository = feedRepository,
                                     toggleFollowUseCase = toggleFollowUseCase,
                                     getFollowStatsUseCase = getFollowStatsUseCase
                                 ) as T

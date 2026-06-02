@@ -64,6 +64,7 @@ fun ProfileScreen(
                         state = state,
                         myPosts = state.myPosts,
                         savedPosts = state.savedPosts,
+                        sharedPosts = state.sharedPosts,
                         onPostClick = onPostClick
                     )
 

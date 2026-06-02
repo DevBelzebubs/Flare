@@ -3,6 +3,10 @@ package com.social.flare.features.search.presentation
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -14,57 +18,75 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.social.flare.features.admin.domain.model.NewsItem
+import com.social.flare.features.feed.domain.model.Post
+import com.social.flare.features.search.domain.model.TrendingHashtag
+import com.social.flare.features.profile.presentation.components.ProfileGridItem
 import com.social.flare.features.search.presentation.components.TrendingTag
 import com.social.flare.features.search.presentation.components.NewsCard
 import com.social.flare.features.search.presentation.components.SearchBar
+import com.social.flare.features.search.presentation.components.SearchProfileItem
 
 
 @Composable
 fun SearchScreen(
-    viewModel: SearchViewModel
+    viewModel: SearchViewModel,
+    onPostClick: (String) -> Unit = {},
+    onAuthorClick: (String) -> Unit = {}
 ) {
-    var searchQuery by remember { mutableStateOf("") }
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    LaunchedEffect(Unit) {
-        viewModel.loadNews()
+    Column(modifier = Modifier.fillMaxSize()) {
+        Spacer(modifier = Modifier.height(16.dp))
+        SearchBar(
+            query = uiState.query,
+            onQueryChange = viewModel::onQueryChange,
+            modifier = Modifier.padding(horizontal = 16.dp)
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+
+        if (uiState.query.isBlank()) {
+            ExploreContent(
+                news = uiState.news,
+                isLoading = uiState.isLoading,
+                trendingHashtags = uiState.trendingHashtags,
+                explorePosts = uiState.explorePosts,
+                onHashtagClick = viewModel::onHashtagClick,
+                onPostClick = onPostClick
+            )
+        } else {
+            SearchResultsContent(
+                uiState = uiState,
+                onTabSelected = viewModel::selectTab,
+                onPostClick = onPostClick,
+                onAuthorClick = onAuthorClick
+            )
+        }
     }
+}
 
-    val trendingTopics = listOf(
-        Pair("#ChainsawMan", "124K"),
-        Pair("#HexagonalArch", "85K"),
-        Pair("#Kotlin", "45K"),
-        Pair("#JetpackCompose", "32K")
-    )
-
-    LazyColumn(
+@Composable
+private fun ExploreContent(
+    news: List<NewsItem>,
+    isLoading: Boolean,
+    trendingHashtags: List<TrendingHashtag>,
+    explorePosts: List<Post>,
+    onHashtagClick: (String) -> Unit,
+    onPostClick: (String) -> Unit
+) {
+    LazyVerticalGrid(
+        columns = GridCells.Fixed(3),
         modifier = Modifier.fillMaxSize()
     ) {
-        item {
-            Spacer(modifier = Modifier.height(16.dp))
-            SearchBar(
-                query = searchQuery,
-                onQueryChange = { searchQuery = it },
-                modifier = Modifier.padding(horizontal = 16.dp)
-            )
-            Spacer(modifier = Modifier.height(24.dp))
+        item(span = { GridItemSpan(maxLineSpan) }) {
+            SectionHeader(title = "News")
         }
-
-        item {
-            Text(
-                text = "News",
-                color = Color.White,
-                fontWeight = FontWeight.Bold,
-                fontSize = 20.sp,
-                modifier = Modifier.padding(horizontal = 16.dp)
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-
-            if (uiState.isLoading) {
+        item(span = { GridItemSpan(maxLineSpan) }) {
+            if (isLoading) {
                 Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(color = Color(0xFFFF5722), modifier = Modifier.size(24.dp))
                 }
-            } else if (uiState.news.isEmpty()) {
+            } else if (news.isEmpty()) {
                 Text(
                     text = "No hay noticias disponibles",
                     color = Color.Gray,
@@ -76,49 +98,157 @@ fun SearchScreen(
                     contentPadding = PaddingValues(horizontal = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    items(uiState.news) { news ->
-                        NewsCard(title = news.title, description = news.description)
+                    items(news) { item ->
+                        NewsCard(title = item.title, description = item.description)
                     }
                 }
             }
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(16.dp))
         }
 
-        item {
-            Text(
-                text = "Trending now",
-                color = Color.White,
-                fontWeight = FontWeight.Bold,
-                fontSize = 20.sp,
-                modifier = Modifier.padding(horizontal = 16.dp)
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-
-            LazyRow(
-                contentPadding = PaddingValues(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(trendingTopics) { topic ->
-                    TrendingTag(
-                        tagName = topic.first,
-                        postCount = topic.second,
-                        modifier = Modifier.width(160.dp)
-                    )
+        item(span = { GridItemSpan(maxLineSpan) }) {
+            SectionHeader(title = "Trending now")
+        }
+        item(span = { GridItemSpan(maxLineSpan) }) {
+            if (trendingHashtags.isEmpty()) {
+                Text(
+                    text = "No hay tendencias",
+                    color = Color.Gray,
+                    fontSize = 14.sp,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
+            } else {
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    items(trendingHashtags) { tag ->
+                        TrendingTag(
+                            tagName = "#${tag.name}",
+                            postCount = tag.postCount.toString(),
+                            modifier = Modifier.width(160.dp),
+                            onClick = { onHashtagClick(tag.name) }
+                        )
+                    }
                 }
             }
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(16.dp))
         }
 
-        item {
-            Text(
-                text = "Explore",
-                color = Color.White,
-                fontWeight = FontWeight.Bold,
-                fontSize = 20.sp,
-                modifier = Modifier.padding(horizontal = 16.dp)
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-            Spacer(modifier = Modifier.height(100.dp))
+        item(span = { GridItemSpan(maxLineSpan) }) {
+            SectionHeader(title = "Explore")
+            Spacer(modifier = Modifier.height(8.dp))
         }
+
+        items(explorePosts) { post ->
+            ProfileGridItem(post = post, onClick = { onPostClick(post.id) })
+        }
+    }
+}
+
+@Composable
+private fun SearchResultsContent(
+    uiState: SearchUiState,
+    onTabSelected: (SearchTab) -> Unit,
+    onPostClick: (String) -> Unit,
+    onAuthorClick: (String) -> Unit
+) {
+    Column(modifier = Modifier.fillMaxSize()) {
+        TabRow(
+            selectedTabIndex = uiState.selectedTab.ordinal,
+            containerColor = Color.Black,
+            contentColor = Color(0xFFFF5722),
+            modifier = Modifier.padding(horizontal = 16.dp)
+        ) {
+            SearchTab.entries.forEach { tab ->
+                Tab(
+                    selected = uiState.selectedTab == tab,
+                    onClick = { onTabSelected(tab) },
+                    text = {
+                        Text(
+                            text = when (tab) {
+                                SearchTab.PROFILES -> "Profiles"
+                                SearchTab.POSTS -> "Posts"
+                                SearchTab.HASHTAGS -> "Hashtags"
+                            },
+                            color = if (uiState.selectedTab == tab) Color(0xFFFF5722) else Color.Gray,
+                            fontWeight = if (uiState.selectedTab == tab) FontWeight.Bold else FontWeight.Normal
+                        )
+                    }
+                )
+            }
+        }
+
+        when (uiState.selectedTab) {
+            SearchTab.PROFILES -> {
+                val profiles = uiState.searchResults?.profiles ?: emptyList()
+                if (profiles.isEmpty()) {
+                    EmptyResultMessage()
+                } else {
+                    LazyColumn(modifier = Modifier.fillMaxSize()) {
+                        items(profiles) { citizen ->
+                            SearchProfileItem(
+                                citizen = citizen,
+                                onClick = { onAuthorClick(citizen.citizen_id) }
+                            )
+                        }
+                    }
+                }
+            }
+
+            SearchTab.POSTS -> {
+                val posts = uiState.searchResults?.posts ?: emptyList()
+                if (posts.isEmpty()) {
+                    EmptyResultMessage()
+                } else {
+                    LazyVerticalGrid(
+                        columns = GridCells.Fixed(3),
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        items(posts) { post ->
+                            ProfileGridItem(post = post, onClick = { onPostClick(post.id) })
+                        }
+                    }
+                }
+            }
+
+            SearchTab.HASHTAGS -> {
+                val hashtagPosts = uiState.searchResults?.hashtagPosts ?: emptyList()
+                if (hashtagPosts.isEmpty()) {
+                    EmptyResultMessage()
+                } else {
+                    LazyVerticalGrid(
+                        columns = GridCells.Fixed(3),
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        items(hashtagPosts) { post ->
+                            ProfileGridItem(post = post, onClick = { onPostClick(post.id) })
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SectionHeader(title: String) {
+    Text(
+        text = title,
+        color = Color.White,
+        fontWeight = FontWeight.Bold,
+        fontSize = 20.sp,
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+    )
+}
+
+@Composable
+private fun EmptyResultMessage() {
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Text(
+            text = "Sin resultados",
+            color = Color.Gray,
+            fontSize = 16.sp
+        )
     }
 }

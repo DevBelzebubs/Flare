@@ -119,8 +119,26 @@ public fun MainPostDetail(
                 }
             }
         }
-
-        Spacer(modifier = Modifier.height(8.dp))
+        if (post.sharedPostId != null) {
+            Row(
+                modifier = Modifier.padding(horizontal = 16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    Icons.Outlined.Repeat,
+                    contentDescription = null,
+                    tint = Color(0xFFFF5722),
+                    modifier = Modifier.size(14.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = "Publicación compartida",
+                    color = Color(0xFFFF5722),
+                    fontSize = 12.sp
+                )
+            }
+            Spacer(modifier = Modifier.height(4.dp))
+        }
 
         post.content?.let { content ->
             Text(
@@ -187,11 +205,10 @@ public fun MainPostDetail(
         ) {
             StatColumn("${post.likesCount}", "likes")
             StatColumn("${post.commentsCount}", "comments")
-            StatColumn("89", "shares")
+            StatColumn("${post.sharesCount}", "shares")
         }
 
         HorizontalDivider(color = Color(0xFF1A1A1A), thickness = 1.dp)
-
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
             horizontalArrangement = Arrangement.SpaceBetween
@@ -210,9 +227,9 @@ public fun MainPostDetail(
                     onClick = onCommentClick
                 )
                 IconTextButton(
-                    icon = Icons.Outlined.Repeat,
+                    icon = if (post.isSharedByMe) Icons.Filled.Repeat else Icons.Outlined.Repeat,
                     text = "Repost",
-                    tint = Color.White,
+                    tint = if (post.isSharedByMe) Color(0xFFFF5722) else Color.White,
                     onClick = onShareClick
                 )
             }

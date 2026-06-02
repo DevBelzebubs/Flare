@@ -3,6 +3,7 @@ package com.social.flare.features.notifications.presentation.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.social.flare.features.notifications.domain.usecase.GetNotificationsUseCase
+import com.social.flare.features.notifications.domain.usecase.GetSuggestedAccountsUseCase
 import com.social.flare.features.notifications.domain.usecase.ManageRealtimeNotificationsUseCase
 import com.social.flare.features.notifications.domain.usecase.MarkNotificationReadUseCase
 import com.social.flare.features.profile.domain.usecase.ToggleFollowUseCase
@@ -16,7 +17,8 @@ class NotificationViewModel(
     private val getNotificationsUseCase: GetNotificationsUseCase,
     private val manageRealtimeNotificationsUseCase: ManageRealtimeNotificationsUseCase,
     private val markNotificationReadUseCase: MarkNotificationReadUseCase,
-    private val toggleFollowUseCase: ToggleFollowUseCase
+    private val toggleFollowUseCase: ToggleFollowUseCase,
+    private val getSuggestedAccountsUseCase: GetSuggestedAccountsUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(NotificationUiState())
@@ -35,6 +37,23 @@ class NotificationViewModel(
                     it.copy(notifications = notifications, isLoading = false)
                 }
             }
+        }
+        loadSuggestedAccounts()
+    }
+
+    fun loadSuggestedAccounts() {
+        val userId = activeUserId ?: return
+        viewModelScope.launch {
+            val accounts = getSuggestedAccountsUseCase(userId)
+            _uiState.update { it.copy(suggestedAccounts = accounts) }
+        }
+    }
+
+    fun followSuggested(followedId: String, isCurrentlyFollowing: Boolean) {
+        val followerId = activeUserId ?: return
+        viewModelScope.launch {
+            toggleFollowUseCase(followerId, followedId, isCurrentlyFollowing)
+            loadSuggestedAccounts()
         }
     }
 
@@ -55,4 +74,5 @@ class NotificationViewModel(
         super.onCleared()
         manageRealtimeNotificationsUseCase.disconnect()
     }
+
 }

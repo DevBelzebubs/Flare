@@ -25,7 +25,7 @@ class ProfileRepositoryImpl(
             citizenDao.insertCitizen(remote)
         } catch (e: Exception) {
             if (e !is CancellationException) {
-                e.printStackTrace()
+                e.printStackTrace();
             }
         }
         return citizenDao.observeCitizenById(citizenId)
