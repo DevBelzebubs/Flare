@@ -34,6 +34,52 @@ fun LoginScreen(
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    var showResetPasswordDialog by remember { mutableStateOf(false) }
+    var resetEmail by remember { mutableStateOf("") }
+
+    if (showResetPasswordDialog) {
+        AlertDialog(
+            onDismissRequest = { showResetPasswordDialog = false },
+            containerColor = Color(0xFF1A1A1A),
+            title = { Text("Reset Password", color = Color(0xFFFF5722), fontWeight = FontWeight.Bold) },
+            text = {
+                Column {
+                    Text("Enter your email to receive a reset link:", color = Color.White.copy(alpha = 0.8f))
+                    Spacer(modifier = Modifier.height(16.dp))
+                    OutlinedTextField(
+                        value = resetEmail,
+                        onValueChange = { resetEmail = it },
+                        placeholder = { Text("example@gmail.com", color = Color.Gray) },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedContainerColor = Color(0xFF252525),
+                            unfocusedContainerColor = Color(0xFF252525),
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White,
+                            focusedBorderColor = Color(0xFFFF5722)
+                        )
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = { 
+                        showResetPasswordDialog = false
+                        errorMessage = "If an account exists for $resetEmail, a reset link will be sent."
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF5722))
+                ) {
+                    Text("Send Link", color = Color.White)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showResetPasswordDialog = false }) {
+                    Text("Cancel", color = Color.Gray)
+                }
+            }
+        )
+    }
 
     Box(
         modifier = Modifier
@@ -211,7 +257,10 @@ fun LoginScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(top = 10.dp)
-                            .clickable { /* Lógica */ },
+                            .clickable { 
+                                resetEmail = email
+                                showResetPasswordDialog = true
+                            },
                         textAlign = TextAlign.End
                     )
 
@@ -251,50 +300,6 @@ fun LoginScreen(
                     }
                 }
             }
-
-            Spacer(modifier = Modifier.height(48.dp))
-
-            // Footer (Or continue with)
-            Row(
-                modifier = Modifier.fillMaxWidth(0.9f),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                HorizontalDivider(modifier = Modifier.weight(1f), color = Color.Gray.copy(alpha = 0.3f))
-                Text(
-                    text = " Or continue with ",
-                    color = Color.White.copy(alpha = 0.6f),
-                    fontSize = 12.sp,
-                    modifier = Modifier.padding(horizontal = 12.dp)
-                )
-                HorizontalDivider(modifier = Modifier.weight(1f), color = Color.Gray.copy(alpha = 0.3f))
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Social Buttons
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(24.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                SocialIconPlaceholder(text = "G", color = Color.White)
-                SocialIconPlaceholder(text = "f", color = Color.White)
-            }
-        }
-    }
-}
-
-@Composable
-fun SocialIconPlaceholder(text: String, color: Color) {
-    Surface(
-        modifier = Modifier
-            .size(56.dp)
-            .clickable { },
-        shape = CircleShape,
-        color = Color(0xFF1A1A1A),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color.Gray.copy(alpha = 0.3f))
-    ) {
-        Box(contentAlignment = Alignment.Center) {
-            Text(text = text, color = color, fontWeight = FontWeight.Bold, fontSize = 24.sp)
         }
     }
 }
