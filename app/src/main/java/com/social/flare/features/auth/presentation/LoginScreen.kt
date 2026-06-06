@@ -40,18 +40,40 @@ fun LoginScreen(
             .fillMaxSize()
             .background(Color.Black)
     ) {
-        // Fondo con resplandor naranja superior (estilo Figma)
+        // Fondo con resplandores (estilo Figma)
         Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .height(400.dp)
-                .align(Alignment.TopCenter)
+                .fillMaxSize()
                 .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            Color(0xFFFF9800).copy(alpha = 0.15f),
-                            Color.Transparent
-                        )
+                    Brush.radialGradient(
+                        0.0f to Color(0xFFFF9800).copy(alpha = 0.15f),
+                        0.5f to Color.Transparent,
+                        center = androidx.compose.ui.geometry.Offset(500f, 0f),
+                        radius = 1000f
+                    )
+                )
+        )
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.radialGradient(
+                        0.0f to Color(0xFFFF5722).copy(alpha = 0.1f),
+                        0.6f to Color.Transparent,
+                        center = androidx.compose.ui.geometry.Offset(0f, 1000f),
+                        radius = 800f
+                    )
+                )
+        )
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.radialGradient(
+                        0.0f to Color.White.copy(alpha = 0.08f),
+                        0.5f to Color.Transparent,
+                        center = androidx.compose.ui.geometry.Offset(1000f, 2000f),
+                        radius = 1000f
                     )
                 )
         )
@@ -67,37 +89,36 @@ fun LoginScreen(
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(0.5.dp, Color.Gray.copy(alpha = 0.3f), RoundedCornerShape(28.dp)),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF121212).copy(alpha = 0.95f)),
-                shape = RoundedCornerShape(28.dp)
+                    .border(0.5.dp, Color.Gray.copy(alpha = 0.2f), RoundedCornerShape(32.dp)),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF1A1A1A).copy(alpha = 0.85f)),
+                shape = RoundedCornerShape(32.dp)
             ) {
                 Column(
-                    modifier = Modifier.padding(24.dp),
+                    modifier = Modifier.padding(vertical = 32.dp, horizontal = 24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
                         text = "Welcome to FLARE",
-                        color = Color.White,
+                        color = Color.White.copy(alpha = 0.9f),
                         fontSize = 16.sp,
-                        fontWeight = FontWeight.Medium
+                        fontWeight = FontWeight.SemiBold
                     )
 
-                    Spacer(modifier = Modifier.height(20.dp))
+                    Spacer(modifier = Modifier.height(24.dp))
 
-                    // Logo (Flame icon)
-                    Surface(
-                        modifier = Modifier.size(56.dp),
-                        shape = CircleShape,
-                        color = Color.White
+                    // Logo (Flame icon inside chat bubble style)
+                    Box(
+                        modifier = Modifier
+                            .size(64.dp)
+                            .background(Color.White, RoundedCornerShape(20.dp)),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(
-                                imageVector = Icons.Default.Whatshot,
-                                contentDescription = null,
-                                tint = Color(0xFFFF5722),
-                                modifier = Modifier.size(32.dp)
-                            )
-                        }
+                        Icon(
+                            imageVector = Icons.Default.Whatshot,
+                            contentDescription = null,
+                            tint = Color(0xFFFF5722),
+                            modifier = Modifier.size(38.dp)
+                        )
                     }
 
                     Spacer(modifier = Modifier.height(12.dp))
@@ -105,11 +126,11 @@ fun LoginScreen(
                     Text(
                         text = "Login",
                         color = Color(0xFFFF5722),
-                        fontSize = 36.sp,
+                        fontSize = 42.sp,
                         fontWeight = FontWeight.Bold
                     )
 
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(32.dp))
 
                     // Mostrar error si existe
                     errorMessage?.let {
@@ -124,9 +145,9 @@ fun LoginScreen(
                     // Campo EMAIL
                     Column(modifier = Modifier.fillMaxWidth()) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Email, contentDescription = null, tint = Color(0xFFFF5722), modifier = Modifier.size(16.dp))
+                            Icon(Icons.Default.Email, contentDescription = null, tint = Color(0xFFFF5722), modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("EMAIL", color = Color(0xFFFF5722), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            Text("EMAIL", color = Color(0xFFFF5722), fontSize = 12.sp, fontWeight = FontWeight.ExtraBold)
                         }
                         Spacer(modifier = Modifier.height(8.dp))
                         OutlinedTextField(
@@ -135,13 +156,13 @@ fun LoginScreen(
                                 email = it
                                 errorMessage = null
                             },
-                            placeholder = { Text("example@gmail.com", color = Color.Gray, fontSize = 14.sp) },
+                            placeholder = { Text("example@gmail.com", color = Color.Gray.copy(alpha = 0.6f), fontSize = 14.sp) },
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(16.dp),
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedContainerColor = Color(0xFF1E1E1E),
-                                unfocusedContainerColor = Color(0xFF1E1E1E),
-                                focusedBorderColor = Color.Gray.copy(alpha = 0.5f),
+                                focusedContainerColor = Color(0xFF252525),
+                                unfocusedContainerColor = Color(0xFF252525),
+                                focusedBorderColor = Color.Gray.copy(alpha = 0.4f),
                                 unfocusedBorderColor = Color.Transparent,
                                 focusedTextColor = Color.White,
                                 unfocusedTextColor = Color.White
@@ -150,14 +171,14 @@ fun LoginScreen(
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(20.dp))
 
                     // Campo PASSWORD
                     Column(modifier = Modifier.fillMaxWidth()) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Lock, contentDescription = null, tint = Color(0xFFFF5722), modifier = Modifier.size(16.dp))
+                            Icon(Icons.Default.Lock, contentDescription = null, tint = Color(0xFFFF5722), modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("PASSWORD", color = Color(0xFFFF5722), fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            Text("PASSWORD", color = Color(0xFFFF5722), fontSize = 12.sp, fontWeight = FontWeight.ExtraBold)
                         }
                         Spacer(modifier = Modifier.height(8.dp))
                         OutlinedTextField(
@@ -166,14 +187,14 @@ fun LoginScreen(
                                 password = it
                                 errorMessage = null
                             },
-                            placeholder = { Text("Must have at least 8 characters", color = Color.Gray, fontSize = 14.sp) },
+                            placeholder = { Text("Must have at least 8 characters", color = Color.Gray.copy(alpha = 0.6f), fontSize = 14.sp) },
                             visualTransformation = PasswordVisualTransformation(),
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(16.dp),
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedContainerColor = Color(0xFF1E1E1E),
-                                unfocusedContainerColor = Color(0xFF1E1E1E),
-                                focusedBorderColor = Color.Gray.copy(alpha = 0.5f),
+                                focusedContainerColor = Color(0xFF252525),
+                                unfocusedContainerColor = Color(0xFF252525),
+                                focusedBorderColor = Color.Gray.copy(alpha = 0.4f),
                                 unfocusedBorderColor = Color.Transparent,
                                 focusedTextColor = Color.White,
                                 unfocusedTextColor = Color.White
@@ -185,15 +206,16 @@ fun LoginScreen(
                     Text(
                         text = "Forgot Password?",
                         color = Color(0xFFFF5722),
-                        fontSize = 11.sp,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(top = 8.dp)
+                            .padding(top = 10.dp)
                             .clickable { /* Lógica */ },
                         textAlign = TextAlign.End
                     )
 
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(28.dp))
 
                     // Botón Login
                     Button(
@@ -207,21 +229,22 @@ fun LoginScreen(
                         },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(50.dp),
+                            .height(56.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF5722)),
-                        shape = RoundedCornerShape(16.dp)
+                        shape = RoundedCornerShape(16.dp),
+                        elevation = ButtonDefaults.buttonElevation(defaultElevation = 8.dp)
                     ) {
-                        Text("Login", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                        Text("Login", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
                     }
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(20.dp))
 
                     Row {
-                        Text("Don't have account? ", color = Color.White, fontSize = 12.sp)
+                        Text("Don't have account? ", color = Color.White.copy(alpha = 0.7f), fontSize = 13.sp)
                         Text(
                             text = "Register",
                             color = Color(0xFFFF5722),
-                            fontSize = 12.sp,
+                            fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.clickable { onNavigateToSignUp() }
                         )
@@ -229,21 +252,21 @@ fun LoginScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(48.dp))
 
             // Footer (Or continue with)
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth(0.9f),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                HorizontalDivider(modifier = Modifier.weight(1f), color = Color.Gray.copy(alpha = 0.5f))
+                HorizontalDivider(modifier = Modifier.weight(1f), color = Color.Gray.copy(alpha = 0.3f))
                 Text(
                     text = " Or continue with ",
-                    color = Color.White,
+                    color = Color.White.copy(alpha = 0.6f),
                     fontSize = 12.sp,
-                    modifier = Modifier.padding(horizontal = 8.dp)
+                    modifier = Modifier.padding(horizontal = 12.dp)
                 )
-                HorizontalDivider(modifier = Modifier.weight(1f), color = Color.Gray.copy(alpha = 0.5f))
+                HorizontalDivider(modifier = Modifier.weight(1f), color = Color.Gray.copy(alpha = 0.3f))
             }
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -253,34 +276,25 @@ fun LoginScreen(
                 horizontalArrangement = Arrangement.spacedBy(24.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Placeholder para Google
-                Surface(
-                    modifier = Modifier
-                        .size(50.dp)
-                        .clickable { },
-                    shape = CircleShape,
-                    color = Color(0xFF1E1E1E),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color.Gray.copy(alpha = 0.5f))
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Text("G", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 20.sp)
-                    }
-                }
-
-                // Placeholder para Facebook
-                Surface(
-                    modifier = Modifier
-                        .size(50.dp)
-                        .clickable { },
-                    shape = CircleShape,
-                    color = Color(0xFF1E1E1E),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color.Gray.copy(alpha = 0.5f))
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Text("f", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 22.sp)
-                    }
-                }
+                SocialIconPlaceholder(text = "G", color = Color.White)
+                SocialIconPlaceholder(text = "f", color = Color.White)
             }
+        }
+    }
+}
+
+@Composable
+fun SocialIconPlaceholder(text: String, color: Color) {
+    Surface(
+        modifier = Modifier
+            .size(56.dp)
+            .clickable { },
+        shape = CircleShape,
+        color = Color(0xFF1A1A1A),
+        border = androidx.compose.foundation.BorderStroke(1.dp, Color.Gray.copy(alpha = 0.3f))
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Text(text = text, color = color, fontWeight = FontWeight.Bold, fontSize = 24.sp)
         }
     }
 }
