@@ -12,7 +12,8 @@ sealed interface ProfileUiState {
         val followersCount: Int = 0,
         val followingCount: Int = 0,
         val myPosts: List<Post> = emptyList(),
-        val savedPosts: List<Post> = emptyList()
+        val savedPosts: List<Post> = emptyList(),
+        val sharedPosts: List<Post> = emptyList()
     ) : ProfileUiState
 
     data class Error(val message: String) : ProfileUiState

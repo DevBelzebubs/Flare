@@ -25,6 +25,8 @@ import com.social.flare.FlareApp
 import com.social.flare.core.data.SessionManager
 import com.social.flare.core.navigation.Screen
 import com.social.flare.core.ui.components.AuthDialog
+import com.social.flare.features.auth.data.repository.AuthRepositoryImpl
+import com.social.flare.features.auth.domain.usecase.ChangePasswordUseCase
 import com.social.flare.features.auth.presentation.LoginScreen
 import com.social.flare.features.auth.presentation.SignUpScreen
 import com.social.flare.features.feed.presentation.FeedScreen
@@ -73,6 +75,10 @@ import com.social.flare.features.admin.presentation.AdminUsersScreen
 import com.social.flare.features.admin.presentation.AdminPostsScreen
 import com.social.flare.features.admin.presentation.AdminNewsScreen
 import com.social.flare.features.admin.presentation.viewmodel.AdminViewModel
+import com.social.flare.features.notifications.domain.usecase.GetSuggestedAccountsUseCase
+import com.social.flare.features.profile.presentation.FollowListScreen
+import com.social.flare.features.profile.presentation.viewmodel.FollowListViewModel
+import com.social.flare.features.search.data.repository.SearchRepositoryImpl
 
 @Composable
 fun MainScreen() {
@@ -90,6 +96,7 @@ fun MainScreen() {
     val cloudinaryService = remember { CloudinaryService(context.applicationContext) }
     val followDao = remember { app.database.followDao() }
     val citizenDao = remember { app.database.citizenDao() }
+    val authRepository = remember { AuthRepositoryImpl(citizenDao, app.supabase) }
     val feedRepository = remember {
         FeedRepositoryImpl(
             postDao = app.database.postDao(),
@@ -107,7 +114,7 @@ fun MainScreen() {
             supabase = app.supabase
         )
     }
-    val followRepository = remember { FollowRepositoryImpl(followDao, app.supabase) }
+    val followRepository = remember { FollowRepositoryImpl(followDao, citizenDao, app.supabase) }
 
     val notificationRepository = remember {
         NotificationRepositoryImpl(
@@ -122,6 +129,7 @@ fun MainScreen() {
     val deletePostUseCase = remember { DeletePostUseCase(feedRepository, cloudinaryService) }
     val updatePostUseCase = remember { UpdatePostUseCase(feedRepository) }
     val createPostUseCase = remember { CreatePostUseCase(feedRepository, cloudinaryService) }
+    val changePasswordUseCase = remember { ChangePasswordUseCase(authRepository) }
     val getNotificationsUseCase = remember { GetNotificationsUseCase(notificationRepository) }
     val manageRealtimeNotificationsUseCase = remember {
         ManageRealtimeNotificationsUseCase(
@@ -308,15 +316,31 @@ fun MainScreen() {
                     )
                 }
                 composable(Screen.Search.route) {
+                    val searchRepository = remember {
+                        SearchRepositoryImpl(
+                            postDao = app.database.postDao(),
+                            citizenDao = citizenDao,
+                            searchDao = app.database.searchDao(),
+                            supabase = app.supabase
+                        )
+                    }
                     val searchViewModel: SearchViewModel = viewModel(
                         factory = object : ViewModelProvider.Factory {
                             @Suppress("UNCHECKED_CAST")
                             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                                return SearchViewModel(adminRepository) as T
+                                return SearchViewModel(
+                                    searchRepository = searchRepository,
+                                    adminRepository = adminRepository,
+                                    currentUserId = activeCitizenId ?: ""
+                                ) as T
                             }
                         }
                     )
-                    SearchScreen(viewModel = searchViewModel)
+                    SearchScreen(
+                        viewModel = searchViewModel,
+                        onPostClick = { postId -> navController.navigate("${Screen.PostDetail.route}/$postId") },
+                        onAuthorClick = { authorId -> navController.navigate("${Screen.Profile.route}/$authorId") }
+                    )
                 }
 
                 composable(Screen.AddPost.route) {
@@ -367,6 +391,13 @@ fun MainScreen() {
                     }
                 }
                 composable(Screen.Notifications.route) {
+                    val getSuggestedAccountsUseCase = remember {
+                        GetSuggestedAccountsUseCase(
+                            citizenDao = citizenDao,
+                            followDao = followDao,
+                            supabase = app.supabase
+                        )
+                    }
                     val notificationViewModel: NotificationViewModel = viewModel(
                         factory = object : ViewModelProvider.Factory {
                             @Suppress("UNCHECKED_CAST")
@@ -375,7 +406,8 @@ fun MainScreen() {
                                     getNotificationsUseCase = getNotificationsUseCase,
                                     manageRealtimeNotificationsUseCase = manageRealtimeNotificationsUseCase,
                                     markNotificationReadUseCase = markNotificationReadUseCase,
-                                    toggleFollowUseCase = toggleFollowUseCase
+                                    toggleFollowUseCase = toggleFollowUseCase,
+                                    getSuggestedAccountsUseCase = getSuggestedAccountsUseCase
                                 ) as T
                             }
                         }
@@ -403,6 +435,7 @@ fun MainScreen() {
                                     repository = profileRepository,
                                     getUserPostsUseCase = getPostsUseCase,
                                     postDao = app.database.postDao(),
+                                    feedRepository = feedRepository,
                                     toggleFollowUseCase = toggleFollowUseCase,
                                     getFollowStatsUseCase = getFollowStatsUseCase
                                 ) as T
@@ -418,7 +451,41 @@ fun MainScreen() {
                         citizenId = targetCitizenId, activeCitizenId = activeCitizenId, viewModel = profileViewModel,
                         onNavigateToLogin = { navController.navigate(Screen.Login.route) },
                         onPostClick = { postId -> navController.navigate("${Screen.PostDetail.route}/$postId") },
-                        onNavigateBack = { navController.popBackStack() }
+                        onNavigateBack = { navController.popBackStack() },
+                        onNavigateToFollowers = { userId ->
+                            navController.navigate("${Screen.FollowList.route}/$userId/followers")
+                        },
+                        onNavigateToFollowing = { userId ->
+                            navController.navigate("${Screen.FollowList.route}/$userId/following")
+                        }
+                    )
+                }
+
+                composable("${Screen.FollowList.route}/{userId}/{type}") { backStackEntry ->
+                    val userId = backStackEntry.arguments?.getString("userId") ?: return@composable
+                    val type = backStackEntry.arguments?.getString("type") ?: return@composable
+
+                    val followListViewModel: FollowListViewModel = viewModel(
+                        factory = object : ViewModelProvider.Factory {
+                            @Suppress("UNCHECKED_CAST")
+                            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                                return FollowListViewModel(
+                                    followRepository = followRepository,
+                                    toggleFollowUseCase = toggleFollowUseCase
+                                ) as T
+                            }
+                        }
+                    )
+
+                    FollowListScreen(
+                        userId = userId,
+                        type = type,
+                        activeCitizenId = activeCitizenId,
+                        viewModel = followListViewModel,
+                        onNavigateBack = { navController.popBackStack() },
+                        onNavigateToProfile = { profileId ->
+                            navController.navigate("${Screen.Profile.route}/$profileId")
+                        }
                     )
                 }
 
@@ -445,6 +512,8 @@ fun MainScreen() {
                         onNavigateBack = { navController.popBackStack() },
                         onNavigateToEditProfile = { navController.navigate(Screen.EditProfile.route) },
                         onLogout = { scope.launch { sessionManager.clearSession(); navController.navigate(Screen.Login.route) { popUpTo(0) { inclusive = true } } } },
+                        onLogin = { navController.navigate(Screen.Login.route) },
+                        onChangePassword = { newPassword -> changePasswordUseCase(newPassword) },
                         onNavigateToAdmin = { navController.navigate(Screen.AdminDashboard.route) }
                     )
                 }

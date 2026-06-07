@@ -116,8 +116,9 @@ class FeedViewModel(
 
     private fun handleShare(postId: String) {
         val userId = currentUserId ?: return
+        val post = _uiState.value.posts.find { it.id == postId } ?: return
         viewModelScope.launch {
-            repository.sharePost(authorId = userId, originalPostId = postId)
+            repository.toggleSharePost(authorId = userId, originalPostId = postId, isCurrentlyShared = post.isSharedByMe)
             _uiState.update { it.copy(error = null) }
         }
     }

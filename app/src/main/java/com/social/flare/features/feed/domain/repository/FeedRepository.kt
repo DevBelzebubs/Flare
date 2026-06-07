@@ -29,6 +29,6 @@ interface FeedRepository {
     fun getUserPosts(userId: String): Flow<List<Post>>
     fun getPostDetail(postId: String, currentUserId: String): Flow<PostDetail>
     suspend fun getPostById(PostId: String) : Post?
-    suspend fun sharePost(authorId: String, originalPostId: String)
+    suspend fun toggleSharePost(authorId: String, originalPostId: String, isCurrentlyShared: Boolean)
     fun getSharedPosts(userId: String): Flow<List<Post>>
 }

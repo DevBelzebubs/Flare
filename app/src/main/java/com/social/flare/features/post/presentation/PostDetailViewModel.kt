@@ -70,7 +70,9 @@ class PostDetailViewModel(
 
     fun sharePost(authorId: String, originalPostId: String) {
         viewModelScope.launch {
-            repository.sharePost(authorId, originalPostId)
+            val currentDetail = _uiState.value.postDetail ?: return@launch
+            val isShared = currentDetail.mainPost.isSharedByMe
+            repository.toggleSharePost(authorId, originalPostId, isShared)
         }
     }
 

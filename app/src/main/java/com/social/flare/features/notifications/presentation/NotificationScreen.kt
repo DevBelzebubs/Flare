@@ -1,6 +1,5 @@
 package com.social.flare.features.notifications.presentation
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -10,10 +9,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.social.flare.features.notifications.domain.model.NotificationType
 import com.social.flare.features.notifications.presentation.components.NotificationItem
+import com.social.flare.features.notifications.presentation.components.SuggestedAccountItem
 import com.social.flare.features.notifications.presentation.viewmodel.NotificationViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -53,36 +54,63 @@ fun NotificationScreen(
 
             if (uiState.isLoading) {
                 CircularProgressIndicator(color = Color(0xFFFF5722), modifier = Modifier.align(Alignment.Center))
-            } else if (uiState.notifications.isEmpty()) {
-                Text("No tienes notificaciones aún", color = Color.Gray, modifier = Modifier.align(Alignment.Center))
             } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    items(
-                        items = uiState.notifications,
-                        key = { it.id }
-                    ) { notification ->
-
-                        NotificationItem(
-                            notification = notification,
-                            isFollowingBack = false,
-                            onClick = {
-                                viewModel.onNotificationClick(notification.id)
-                                // Navegamos dependiendo del tipo
-                                if (notification.type == NotificationType.FOLLOW) {
-                                    onNavigateToProfile(notification.actorId)
-                                } else if (notification.referencedPostId != null) {
-                                    onNavigateToPost(notification.referencedPostId)
+                LazyColumn(modifier = Modifier.fillMaxSize()) {
+                    if (uiState.notifications.isEmpty()) {
+                        item {
+                            Text(
+                                "No tienes notificaciones aún",
+                                color = Color.Gray,
+                                modifier = Modifier.padding(16.dp)
+                            )
+                        }
+                    } else {
+                        items(
+                            items = uiState.notifications,
+                            key = { it.id }
+                        ) { notification ->
+                            NotificationItem(
+                                notification = notification,
+                                isFollowingBack = false,
+                                onClick = {
+                                    viewModel.onNotificationClick(notification.id)
+                                    if (notification.type == NotificationType.FOLLOW) {
+                                        onNavigateToProfile(notification.actorId)
+                                    } else if (notification.referencedPostId != null) {
+                                        onNavigateToPost(notification.referencedPostId)
+                                    }
+                                },
+                                onFollowClick = {
+                                    viewModel.toggleFollowBack(notification.actorId, isCurrentlyFollowing = false)
+                                },
+                                onAvatarClick = { authorId ->
+                                    onNavigateToProfile(authorId)
                                 }
-                            },
-                            onFollowClick = {
-                                viewModel.toggleFollowBack(notification.actorId, isCurrentlyFollowing = false)
-                            },
-                            onAvatarClick = { authorId ->
-                                onNavigateToProfile(authorId)
-                            }
-                        )
+                            )
+                        }
+                    }
+
+                    if (uiState.suggestedAccounts.isNotEmpty()) {
+                        item {
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = "Suggested accounts",
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 18.sp,
+                                modifier = Modifier.padding(horizontal = 16.dp)
+                            )
+                        }
+                        items(uiState.suggestedAccounts, key = { it.citizen_id }) { citizen ->
+                            SuggestedAccountItem(
+                                citizen = citizen,
+                                isFollowing = citizen.citizen_id in uiState.suggestedFollowedIds,
+                                onFollowClick = {
+                                    viewModel.followSuggested(citizen.citizen_id)
+                                },
+                                onAvatarClick = { onNavigateToProfile(citizen.citizen_id) }
+                            )
+                        }
                     }
                 }
             }

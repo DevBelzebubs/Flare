@@ -10,6 +10,8 @@ import com.social.flare.features.feed.data.local.dao.PostDao
 import com.social.flare.features.feed.data.local.entity.PostEntity
 import com.social.flare.features.feed.data.local.entity.PostLikeEntity
 import com.social.flare.features.feed.data.local.dao.StoryDao
+import com.social.flare.features.feed.data.local.entity.HashtagEntity
+import com.social.flare.features.feed.data.local.entity.PostHashtagEntity
 import com.social.flare.features.feed.data.local.entity.SavedPostEntity
 import com.social.flare.features.feed.data.local.entity.StoryEntity
 import com.social.flare.features.feed.data.local.entity.StoryCommentEntity
@@ -20,6 +22,7 @@ import com.social.flare.features.notifications.data.local.dao.NotificationDao
 import com.social.flare.features.notifications.data.local.entity.NotificationEntity
 import com.social.flare.features.profile.data.local.dao.FollowDao
 import com.social.flare.features.profile.data.local.entity.FollowEntity
+import com.social.flare.features.search.data.local.dao.SearchDao
 
 @Database(
     entities = [
@@ -34,9 +37,11 @@ import com.social.flare.features.profile.data.local.entity.FollowEntity
         FollowEntity::class,
         NotificationEntity::class,
         NewsItemEntity::class,
-        PostVoteEntity::class
+        PostVoteEntity::class,
+        HashtagEntity::class,
+        PostHashtagEntity::class,
     ],
-    version = 19,
+    version = 20,
     exportSchema = false
 )
 abstract class FlareDatabase : RoomDatabase() {
@@ -47,4 +52,5 @@ abstract class FlareDatabase : RoomDatabase() {
     abstract fun followDao(): FollowDao
     abstract fun notificationDao(): NotificationDao
     abstract fun newsDao(): NewsDao
+    abstract fun searchDao(): SearchDao
 }
