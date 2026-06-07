@@ -32,14 +32,10 @@ class FlareApp : Application(), ImageLoaderFactory, Configuration.Provider {
     @Inject
     lateinit var workerFactory: HiltWorkerFactory
 
-    private val _workManagerConfiguration by lazy {
-        Configuration.Builder()
+    override val workManagerConfiguration: Configuration
+        get() = Configuration.Builder()
             .setWorkerFactory(workerFactory)
             .build()
-    }
-
-    override val workManagerConfiguration: Configuration
-        get() = _workManagerConfiguration
 
     private val initScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val initDeferred = CompletableDeferred<Unit>()

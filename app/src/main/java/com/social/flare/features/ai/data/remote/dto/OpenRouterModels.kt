@@ -4,7 +4,7 @@ import com.google.gson.annotations.SerializedName
 
 data class OpenRouterRequest(
     @SerializedName("model")
-    val model: String = "meta-llama/llama-3.2-3b-instruct:free",
+    val model: String = "meta-llama/llama-3.1-8b-instruct",
     @SerializedName("messages")
     val messages: List<AiMessage>,
     @SerializedName("temperature")
