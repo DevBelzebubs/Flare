@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
     alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.hilt.android)
 }
 val localProperties = Properties()
 val localPropertiesFile = rootProject.file("local.properties")
@@ -33,6 +34,7 @@ android {
         val supabaseUrl = localProperties.getProperty("SUPABASE_URL", "")
         val supabaseAnonKey = localProperties.getProperty("SUPABASE_ANON_KEY", "")
         val supabaseServiceRoleKey = localProperties.getProperty("SUPABASE_SERVICE_ROLE_KEY", "")
+        val llamaApiKey = localProperties.getProperty("LLAMA_API_KEY","")
 
         buildConfigField("String", "CLOUDINARY_CLOUD_NAME", "\"$cloudName\"")
         buildConfigField("String", "CLOUDINARY_API_KEY", "\"$apiKey\"")
@@ -40,6 +42,7 @@ android {
         buildConfigField("String", "SUPABASE_URL", "\"$supabaseUrl\"")
         buildConfigField("String", "SUPABASE_ANON_KEY", "\"$supabaseAnonKey\"")
         buildConfigField("String", "SUPABASE_SERVICE_ROLE_KEY", "\"$supabaseServiceRoleKey\"")
+        buildConfigField("String", "LLAMA_API_KEY", "\"$llamaApiKey\"")
     }
 
     buildTypes {
@@ -77,6 +80,7 @@ dependencies {
     implementation(libs.androidx.compose.foundation)
     implementation(libs.androidx.runtime)
     implementation(libs.androidx.foundation.layout)
+    implementation(libs.transport.runtime)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -101,9 +105,16 @@ dependencies {
     implementation("io.github.jan-tennert.supabase:postgrest-kt")
     implementation("io.github.jan-tennert.supabase:auth-kt")
     implementation("io.github.jan-tennert.supabase:realtime-kt")
-
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
     implementation(libs.ktor.client.core)
     implementation(libs.ktor.client.android)
     implementation(libs.kotlinx.serialization.json)
+    implementation("com.google.dagger:hilt-android:2.59.2")
+    implementation("androidx.work:work-runtime-ktx:2.9.1")
+    implementation("androidx.hilt:hilt-work:1.2.0")
+    implementation(libs.ktor.client.okhttp)
+    ksp("com.google.dagger:hilt-compiler:2.59.2")
     ksp("androidx.room:room-compiler:$room_version")
 }

@@ -14,6 +14,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.social.flare.features.admin.presentation.components.AddAiProfileDialog
 import com.social.flare.features.admin.presentation.components.AdminStatCard
 import com.social.flare.features.admin.presentation.viewmodel.AdminViewModel
 
@@ -27,9 +28,20 @@ fun AdminDashboardScreen(
     onNavigateBack: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    var showAddAiDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         viewModel.loadDashboard()
+    }
+
+    if (showAddAiDialog) {
+        AddAiProfileDialog(
+            onDismiss = { showAddAiDialog = false },
+            onConfirm = { username, displayName, prompt, temp ->
+                viewModel.createAiProfile(username, displayName, prompt, temp)
+                showAddAiDialog = false
+            }
+        )
     }
 
     Scaffold(
@@ -140,6 +152,12 @@ fun AdminDashboardScreen(
                 title = "Noticias",
                 subtitle = "Administrar sección de noticias",
                 onClick = onNavigateToNews
+            )
+            AdminMenuItem(
+                icon = Icons.Default.Build,
+                title = "Agentes IA",
+                subtitle = "Crear y configurar vecinos virtuales",
+                onClick = { showAddAiDialog = true }
             )
         }
     }

@@ -2,17 +2,20 @@ package com.social.flare.features.admin.data.repository
 
 import com.social.flare.features.admin.data.local.dao.NewsDao
 import com.social.flare.features.admin.data.local.entity.NewsItemEntity
+import com.social.flare.features.admin.data.remote.dto.CreateBotRpcRequest
 import com.social.flare.features.admin.domain.model.AdminDashboardData
 import com.social.flare.features.admin.domain.model.AdminPost
 import com.social.flare.features.admin.domain.model.AdminUser
 import com.social.flare.features.admin.domain.model.NewsItem
 import com.social.flare.features.admin.domain.repository.AdminRepository
+import com.social.flare.features.ai.domain.model.AiPersona
 import com.social.flare.features.auth.data.local.dao.CitizenDao
 import com.social.flare.features.auth.data.local.entity.CitizenEntity
 import com.social.flare.features.feed.data.local.dao.PostDao
 import com.social.flare.features.feed.data.local.entity.PostEntity
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.postgrest.rpc
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -20,6 +23,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.UUID
 
 class AdminRepositoryImpl(
@@ -44,6 +48,24 @@ class AdminRepositoryImpl(
             totalPosts = totalPosts.size,
             totalNews = totalNews
         )
+    }
+
+    override suspend fun createAiPersona(persona: AiPersona): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
+            val request = CreateBotRpcRequest(
+                bot_username = persona.username,
+                bot_display_name = persona.displayName,
+                bot_system_prompt = persona.systemPrompt,
+                bot_temperature = persona.temperature
+            )
+
+            supabase.postgrest.rpc("create_ai_bot", request)
+
+            Result.success(Unit)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Result.failure(e)
+        }
     }
 
     override suspend fun getAllUsers(): List<AdminUser> {

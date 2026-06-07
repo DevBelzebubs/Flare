@@ -70,6 +70,7 @@ import com.social.flare.features.profile.presentation.ProfileViewModelFactory
 import com.social.flare.features.profile.presentation.viewmodel.EditProfileViewModel
 import com.social.flare.features.profile.presentation.viewmodel.ProfileUiState
 import com.social.flare.features.admin.data.repository.AdminRepositoryImpl
+import com.social.flare.features.admin.domain.usecase.CreateAiProfileUseCase
 import com.social.flare.features.admin.presentation.AdminDashboardScreen
 import com.social.flare.features.admin.presentation.AdminUsersScreen
 import com.social.flare.features.admin.presentation.AdminPostsScreen
@@ -544,7 +545,8 @@ fun MainScreen() {
                         factory = object : ViewModelProvider.Factory {
                             @Suppress("UNCHECKED_CAST")
                             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                                return AdminViewModel(adminRepository) as T
+                                val createAiProfileUseCase = CreateAiProfileUseCase(adminRepository)
+                                return AdminViewModel(adminRepository, createAiProfileUseCase) as T
                             }
                         }
                     )
@@ -562,7 +564,8 @@ fun MainScreen() {
                         factory = object : ViewModelProvider.Factory {
                             @Suppress("UNCHECKED_CAST")
                             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                                return AdminViewModel(adminRepository) as T
+                                val createAiProfileUseCase = CreateAiProfileUseCase(adminRepository)
+                                return AdminViewModel(adminRepository, createAiProfileUseCase) as T
                             }
                         }
                     )
@@ -577,7 +580,8 @@ fun MainScreen() {
                         factory = object : ViewModelProvider.Factory {
                             @Suppress("UNCHECKED_CAST")
                             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                                return AdminViewModel(adminRepository) as T
+                                val createAiProfileUseCase = CreateAiProfileUseCase(adminRepository)
+                                return AdminViewModel(adminRepository, createAiProfileUseCase) as T
                             }
                         }
                     )
@@ -592,7 +596,8 @@ fun MainScreen() {
                         factory = object : ViewModelProvider.Factory {
                             @Suppress("UNCHECKED_CAST")
                             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                                return AdminViewModel(adminRepository) as T
+                                val createAiProfileUseCase = CreateAiProfileUseCase(adminRepository)
+                                return AdminViewModel(adminRepository, createAiProfileUseCase) as T
                             }
                         }
                     )

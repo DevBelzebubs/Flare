@@ -7,13 +7,13 @@ import com.social.flare.features.admin.domain.model.AdminPost
 import com.social.flare.features.admin.domain.model.AdminUser
 import com.social.flare.features.admin.domain.model.NewsItem
 import com.social.flare.features.admin.domain.repository.AdminRepository
+import com.social.flare.features.admin.domain.usecase.CreateAiProfileUseCase
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-
 data class AdminUiState(
     val isLoading: Boolean = false,
     val dashboard: AdminDashboardData? = null,
@@ -25,7 +25,8 @@ data class AdminUiState(
 )
 
 class AdminViewModel(
-    private val adminRepository: AdminRepository
+    private val adminRepository: AdminRepository,
+    private val createAiProfileUseCase: CreateAiProfileUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AdminUiState())
@@ -165,6 +166,34 @@ class AdminViewModel(
                 _uiState.update { it.copy(successMessage = "Noticia eliminada") }
             } catch (e: Exception) {
                 _uiState.update { it.copy(errorMessage = e.message) }
+            }
+        }
+    }
+
+    // --- NUEVA FUNCIÓN PARA GESTIONAR LA IA ---
+    fun createAiProfile(username: String, displayName: String, prompt: String, temp: Double) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+
+            val result = createAiProfileUseCase.execute(username, displayName, prompt, temp)
+
+            if (result.isSuccess) {
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        successMessage = "Agente IA '$username' creado exitosamente"
+                    )
+                }
+                // Recargar el dashboard para actualizar el contador de usuarios totales
+                loadDashboard()
+            } else {
+                val error = result.exceptionOrNull()
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = error?.message ?: "Error al crear el Agente IA"
+                    )
+                }
             }
         }
     }
