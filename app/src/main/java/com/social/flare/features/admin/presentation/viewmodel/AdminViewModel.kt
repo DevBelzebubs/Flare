@@ -202,16 +202,42 @@ class AdminViewModel(
     }
 
 
+
     fun toggleBotStatus(citizenId: String, isActive: Boolean) {
+        loadJob?.cancel()
         viewModelScope.launch {
             try {
-                adminRepository.toggleBotStatus(citizenId, isActive)
-                loadDashboard()
-                _uiState.update {
-                    it.copy(successMessage = if (isActive) "Bot activado" else "Bot desactivado")
+                _uiState.update { currentState ->
+                    val updatedBots = currentState.bots.map { bot ->
+                        if (bot.citizenId == citizenId) bot.copy(isActive = isActive) else bot
+                    }
+                    currentState.copy(bots = updatedBots)
+                }
+
+                val result = adminRepository.toggleBotStatus(citizenId, isActive)
+
+                if (result.isSuccess) {
+                    _uiState.update {
+                        it.copy(successMessage = if (isActive) "Bot activado" else "Bot desactivado")
+                    }
+                } else {
+                    _uiState.update { currentState ->
+                        val revertedBots = currentState.bots.map { bot ->
+                            if (bot.citizenId == citizenId) bot.copy(isActive = !isActive) else bot
+                        }
+                        currentState.copy(
+                            bots = revertedBots,
+                            errorMessage = result.exceptionOrNull()?.message
+                        )
+                    }
                 }
             } catch (e: Exception) {
-                _uiState.update { it.copy(errorMessage = e.message) }
+                _uiState.update { currentState ->
+                    val revertedBots = currentState.bots.map { bot ->
+                        if (bot.citizenId == citizenId) bot.copy(isActive = !isActive) else bot
+                    }
+                    currentState.copy(bots = revertedBots, errorMessage = e.message)
+                }
             }
         }
     }

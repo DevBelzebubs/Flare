@@ -45,7 +45,16 @@ fun AdminDashboardScreen(
         )
     }
 
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    LaunchedEffect(uiState.errorMessage, uiState.successMessage) {
+        uiState.errorMessage?.let { snackbarHostState.showSnackbar(it) }
+        uiState.successMessage?.let { snackbarHostState.showSnackbar(it) }
+        viewModel.clearMessages()
+    }
+
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = Color.Black,
         topBar = {
             TopAppBar(

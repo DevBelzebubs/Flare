@@ -7,7 +7,5 @@ interface AiAgentRepository {
     suspend fun generatePost(persona: AiPersona, topicContext: String): Result<String>
     suspend fun generateComment(persona: AiPersona, targetPostContent: String): Result<String>
     suspend fun getActiveBots(): Result<List<AiPersona>>
-    suspend fun likePost(citizenId: String, postId: String): Result<Unit>
-    suspend fun sharePost(citizenId: String, originalPost: Post): Result<Unit>
     suspend fun decideAction(persona: AiPersona, targetPostContent: String): Result<String>
 }

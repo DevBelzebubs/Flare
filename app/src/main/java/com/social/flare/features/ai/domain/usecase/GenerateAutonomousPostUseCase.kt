@@ -14,12 +14,16 @@ class GenerateAutonomousPostUseCase @Inject constructor(
 
         return if (generationResult.isSuccess) {
             val postContent = generationResult.getOrThrow()
-            feedRepository.createPost(
-                authorId = persona.citizenId,
-                content = postContent,
-                mediaUrls = emptyList()
-            )
-            Result.success(Unit)
+            try {
+                feedRepository.createPost(
+                    authorId = persona.citizenId,
+                    content = postContent,
+                    mediaUrls = emptyList()
+                )
+                Result.success(Unit)
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
         } else {
             Result.failure(
                 generationResult.exceptionOrNull() ?: Exception("Unknown AI generation error")

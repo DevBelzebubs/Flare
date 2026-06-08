@@ -27,7 +27,6 @@ class GenerateAutonomousCommentUseCase @Inject constructor(
             } catch (e: Exception) {
                 Result.failure(e)
             }
-            Result.success(Unit)
         } else {
             Result.failure(commentResult.exceptionOrNull() ?: Exception("Unknown AI comment error"))
         }

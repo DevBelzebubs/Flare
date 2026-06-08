@@ -4,9 +4,9 @@ import com.google.gson.Gson
 import com.social.flare.features.ai.data.remote.OpenRouterApi
 import com.social.flare.features.ai.data.remote.dto.AiMessage
 import com.social.flare.features.ai.data.remote.dto.OpenRouterRequest
+import com.social.flare.features.ai.data.repository.dto.AiPersonaFetchDto
 import com.social.flare.features.ai.domain.model.AiPersona
 import com.social.flare.features.ai.domain.repository.AiAgentRepository
-import com.social.flare.features.feed.domain.model.Post
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Columns
@@ -15,19 +15,6 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import javax.inject.Inject
 
-@Serializable
-private data class AiPersonaFetchDto(
-    val citizen_id: String,
-    val system_prompt: String,
-    val temperature: Double,
-    val citizens: CitizenMinimalDto? = null
-)
-
-@Serializable
-private data class CitizenMinimalDto(
-    val username: String,
-    val display_name: String
-)
 
 class AiAgentRepositoryImpl @Inject constructor(
     private val openRouterApi: OpenRouterApi,
@@ -103,9 +90,13 @@ class AiAgentRepositoryImpl @Inject constructor(
 
     override suspend fun getActiveBots(): Result<List<AiPersona>> = withContext(Dispatchers.IO) {
         try {
-            // Hacemos la consulta a ai_personas y traemos las columnas anidadas de citizens
             val response = supabase.postgrest["ai_personas"]
-                .select(columns = Columns.raw("citizen_id, system_prompt, temperature, citizens(username, display_name)"))
+                .select(columns = Columns.raw("citizen_id, system_prompt, temperature, is_active, citizens(username, display_name)"))
+                {
+                    filter {
+                        eq("is_active", true)
+                    }
+                }
                 .decodeList<AiPersonaFetchDto>()
 
             val bots = response.map { dto ->
@@ -114,42 +105,13 @@ class AiAgentRepositoryImpl @Inject constructor(
                     username = dto.citizens?.username ?: "unknown_bot",
                     displayName = dto.citizens?.display_name ?: "Bot",
                     systemPrompt = dto.system_prompt,
-                    temperature = dto.temperature
+                    temperature = dto.temperature,
+                    isActive = dto.is_active ?: true
                 )
             }
             Result.success(bots)
         } catch (e: Exception) {
             e.printStackTrace()
-            Result.failure(e)
-        }
-    }
-
-    override suspend fun likePost(
-        citizenId: String,
-        postId: String
-    ): Result<Unit> = withContext(Dispatchers.IO) {
-        try {
-            supabase.postgrest["post_likes"].insert(mapOf("post_id" to postId, "citizen_id" to citizenId))
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Result.failure(e);
-        }
-    }
-
-    override suspend fun sharePost(
-        citizenId: String,
-        originalPost: Post
-    ): Result<Unit> = withContext(Dispatchers.IO) {
-        try {
-            val sharedPostData = mapOf(
-                "author_id" to citizenId,
-                "content" to "Compartió una publicación: ${originalPost.content?.take(50)}...",
-                "shared_post_id" to originalPost.id,
-                "created_at" to System.currentTimeMillis()
-            )
-            supabase.postgrest["posts"].insert(sharedPostData)
-            Result.success(Unit)
-        } catch (e: Exception){
             Result.failure(e)
         }
     }
@@ -178,7 +140,7 @@ class AiAgentRepositoryImpl @Inject constructor(
                 val rawText = response.body()?.choices?.firstOrNull()?.message?.content ?: ""
                 val cleanJson = extractJson(rawText)
                 val parsed = gson.fromJson(cleanJson, AiDecisionResponse::class.java)
-                Result.success(parsed.action.uppercase())
+                Result.success(parsed.action?.uppercase() ?: "NONE")
             } else {
                 Result.failure(Exception("Error de API OpenRouter: ${response.code()}"))
             }
@@ -194,6 +156,12 @@ class AiAgentRepositoryImpl @Inject constructor(
             json = json.substringAfter("```json").substringBeforeLast("```").trim()
         } else if (json.startsWith("```")) {
             json = json.substringAfter("```").substringBeforeLast("```").trim()
+        } else {
+            val start = json.indexOf('{')
+            val end = json.lastIndexOf('}')
+            if (start != -1 && end > start) {
+                json = json.substring(start, end + 1)
+            }
         }
         return json
     }

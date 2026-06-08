@@ -61,11 +61,8 @@ class MainActivity : ComponentActivity() {
             }
 
             LaunchedEffect(Unit) {
-                //Descomentar la linea de abajo para habilitar IA
                 scheduleAiBots(applicationContext)
                 //forceAiTest(applicationContext)
-                //Comentar la linea de abajo para habilitar IA
-                WorkManager.getInstance(applicationContext).cancelUniqueWork("AiBotInteractionWork")
             }
 
             val settingsManager = remember { SettingsManager(applicationContext) }

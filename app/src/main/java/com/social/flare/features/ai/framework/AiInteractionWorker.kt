@@ -5,11 +5,9 @@ import android.util.Log
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
-import com.social.flare.features.ai.domain.model.AiPersona
 import com.social.flare.features.ai.domain.repository.AiAgentRepository
 import com.social.flare.features.ai.domain.usecase.GenerateAutonomousCommentUseCase
 import com.social.flare.features.ai.domain.usecase.GenerateAutonomousPostUseCase
-import com.social.flare.features.feed.domain.model.Post
 import com.social.flare.features.feed.domain.repository.FeedRepository
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
@@ -31,15 +29,25 @@ class AiInteractionWorker @AssistedInject constructor(
 
         return try {
             val botsResult = aiRepository.getActiveBots()
-            val activePersonas = botsResult.getOrNull() ?: emptyList()
+            if (botsResult.isFailure) {
+                Log.e("AiBot", "Error obteniendo bots: ${botsResult.exceptionOrNull()?.message}")
+                return Result.retry()
+            }
 
+            val activePersonas = botsResult.getOrNull()?.filter { it.isActive } ?: emptyList()
             if (activePersonas.isEmpty()) {
-                Log.d("AiBot", "⏸No hay bots activos. Durmiendo...")
+                Log.d("AiBot", "No hay bots activos. Durmiendo...")
                 return Result.success()
             }
 
-            val persona = activePersonas.random()
-            executeAiAction(persona)
+            Log.d("AiBot", "Ejecutando acciones para ${activePersonas.size} bots")
+            for (persona in activePersonas) {
+                try {
+                    executeAiAction(persona)
+                } catch (e: Exception) {
+                    Log.e("AiBot", "Error en acción para ${persona.username}: ${e.message}")
+                }
+            }
 
             Result.success()
         } catch (e: Exception) {
@@ -47,9 +55,10 @@ class AiInteractionWorker @AssistedInject constructor(
             Result.retry()
         }
     }
-    private suspend fun executeAiAction(persona: AiPersona) {
+
+    private suspend fun executeAiAction(persona: com.social.flare.features.ai.domain.model.AiPersona) {
         val actionDice = Random.nextInt(1, 100)
-        Log.d("AiBot", "Dado de acción: $actionDice para ${persona.displayName}")
+        Log.d("AiBot", "Dado de accion: $actionDice para ${persona.displayName}")
 
         if (actionDice <= 30) {
             performPostAction(persona)
@@ -57,15 +66,20 @@ class AiInteractionWorker @AssistedInject constructor(
             performSocialInteraction(persona)
         }
     }
-    private suspend fun performPostAction(persona: AiPersona) {
-        val topics = listOf("tráfico en Lima", "clima", "comida barata", "seguridad")
+
+    private suspend fun performPostAction(persona: com.social.flare.features.ai.domain.model.AiPersona) {
+        val topics = listOf("trafico en Lima", "clima", "comida barata", "seguridad")
         val result = generatePostUseCase.execute(persona, topics.random())
 
-        if (result.isSuccess) Log.d("AiBot", "Post publicado.")
-        else Log.e("AiBot", "Error publicando: ${result.exceptionOrNull()?.message}")
+        if (result.isSuccess) {
+            Log.d("AiBot", "Post publicado por ${persona.username}")
+        } else {
+            Log.e("AiBot", "Error publicando post de ${persona.username}: ${result.exceptionOrNull()?.message}")
+        }
     }
-    private suspend fun performSocialInteraction(persona: AiPersona) {
-        Log.d("AiBot", "Buscando publicaciones para interactuar...")
+
+    private suspend fun performSocialInteraction(persona: com.social.flare.features.ai.domain.model.AiPersona) {
+        Log.d("AiBot", "Buscando publicaciones para ${persona.username}...")
 
         val posts = feedRepository.getFeedPosts(persona.citizenId).firstOrNull()
         val targetPost = posts?.filter {
@@ -73,36 +87,51 @@ class AiInteractionWorker @AssistedInject constructor(
         }?.randomOrNull()
 
         if (targetPost == null) {
-            Log.d("AiBot", "No se encontró un post válido en el feed.")
+            Log.d("AiBot", "No se encontro un post valido en el feed para ${persona.username}.")
             return
         }
 
-        Log.d("AiBot", "Post encontrado. Consultando a la IA qué hacer...")
-        val decisionResult = aiRepository.decideAction(persona, targetPost.content ?: "")
+        val actionRoll = Random.nextInt(1, 100)
+        val decision = when {
+            actionRoll <= 40 -> "LIKE"
+            actionRoll <= 70 -> "COMMENT"
+            else -> "SHARE"
+        }
+        Log.d("AiBot", "Decision aleatoria para ${persona.username}: $decision (roll=$actionRoll)")
 
-        if (decisionResult.isSuccess) {
-            val decision = decisionResult.getOrNull()
-            Log.d("AiBot", "Decisión de la IA: $decision")
-
-            when (decision) {
-                "LIKE" -> {
-                    aiRepository.likePost(persona.citizenId, targetPost.id)
-                    Log.d("AiBot", "Like dado al post: ${targetPost.id}")
+        when (decision) {
+            "LIKE" -> {
+                if (targetPost.isLikedByMe) {
+                    Log.d("AiBot", "Like ya existe, saltando: ${targetPost.id}")
+                } else {
+                    val result = feedRepository.toggleLike(targetPost.id, persona.citizenId, false)
+                    if (result.isSuccess) {
+                        Log.d("AiBot", "Like dado al post: ${targetPost.id}")
+                    } else {
+                        Log.e("AiBot", "Error al dar like: ${result.exceptionOrNull()?.message}")
+                    }
                 }
-                "SHARE" -> {
-                    aiRepository.sharePost(persona.citizenId, targetPost)
-                    Log.d("AiBot", "Post compartido: ${targetPost.id}")
-                }
-                "COMMENT" -> {
-                    val result = generateCommentUseCase.execute(persona, targetPost.id, targetPost.content ?: "")
-                    if (result.isSuccess) Log.d("AiBot", "Comentario publicado.")
-                    else Log.e("AiBot", "Error al comentar.")
-                }
-                "NONE" -> Log.d("AiBot", "La IA decidió ignorar el post.")
-                else -> Log.w("AiBot", "⚠Decisión desconocida: $decision")
             }
-        } else {
-            Log.e("AiBot", "Error al decidir acción: ${decisionResult.exceptionOrNull()?.message}")
+            "SHARE" -> {
+                if (targetPost.isSharedByMe) {
+                    Log.d("AiBot", "Post ya compartido, saltando: ${targetPost.id}")
+                } else {
+                    try {
+                        feedRepository.toggleSharePost(persona.citizenId, targetPost.id, false)
+                        Log.d("AiBot", "Post compartido: ${targetPost.id}")
+                    } catch (e: Exception) {
+                        Log.e("AiBot", "Error al compartir: ${e.message}")
+                    }
+                }
+            }
+            "COMMENT" -> {
+                val result = generateCommentUseCase.execute(persona, targetPost.id, targetPost.content ?: "")
+                if (result.isSuccess) {
+                    Log.d("AiBot", "Comentario publicado por ${persona.username}")
+                } else {
+                    Log.e("AiBot", "Error al comentar de ${persona.username}: ${result.exceptionOrNull()?.message}")
+                }
+            }
         }
     }
 }
