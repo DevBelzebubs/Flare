@@ -8,6 +8,7 @@ import com.social.flare.features.admin.domain.model.AdminUser
 import com.social.flare.features.admin.domain.model.NewsItem
 import com.social.flare.features.admin.domain.repository.AdminRepository
 import com.social.flare.features.admin.domain.usecase.CreateAiProfileUseCase
+import com.social.flare.features.ai.domain.model.AiPersona
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -20,6 +21,7 @@ data class AdminUiState(
     val users: List<AdminUser> = emptyList(),
     val posts: List<AdminPost> = emptyList(),
     val news: List<NewsItem> = emptyList(),
+    val bots: List<AiPersona> = emptyList(),
     val errorMessage: String? = null,
     val successMessage: String? = null
 )
@@ -39,7 +41,8 @@ class AdminViewModel(
             _uiState.update { it.copy(isLoading = true) }
             try {
                 val data = adminRepository.getDashboardData()
-                _uiState.update { it.copy(dashboard = data, isLoading = false) }
+                val bots = adminRepository.getAllBots()
+                _uiState.update { it.copy(dashboard = data, bots = bots, isLoading = false) }
             } catch (e: Exception) {
                 _uiState.update { it.copy(errorMessage = e.message, isLoading = false) }
             }
@@ -198,6 +201,20 @@ class AdminViewModel(
         }
     }
 
+
+    fun toggleBotStatus(citizenId: String, isActive: Boolean) {
+        viewModelScope.launch {
+            try {
+                adminRepository.toggleBotStatus(citizenId, isActive)
+                loadDashboard()
+                _uiState.update {
+                    it.copy(successMessage = if (isActive) "Bot activado" else "Bot desactivado")
+                }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(errorMessage = e.message) }
+            }
+        }
+    }
     fun clearMessages() {
         _uiState.update { it.copy(errorMessage = null, successMessage = null) }
     }

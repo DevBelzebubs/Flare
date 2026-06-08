@@ -193,6 +193,21 @@ class AdminRepositoryImpl(
         newsDao.deleteNews(newsId)
     }
 
+    override suspend fun toggleBotStatus(
+        citizenId: String,
+        isActive: Boolean
+    ): Result<Unit> {
+        return try {
+            supabase.postgrest["ai_personas"]
+                .update({ set("is_active", isActive) }) {
+                    filter { eq("citizen_id", citizenId) }
+                }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     private suspend fun syncAllData() {
         try {
             syncAllUsers()

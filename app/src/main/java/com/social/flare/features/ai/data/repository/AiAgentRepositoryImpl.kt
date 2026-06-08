@@ -6,6 +6,7 @@ import com.social.flare.features.ai.data.remote.dto.AiMessage
 import com.social.flare.features.ai.data.remote.dto.OpenRouterRequest
 import com.social.flare.features.ai.domain.model.AiPersona
 import com.social.flare.features.ai.domain.repository.AiAgentRepository
+import com.social.flare.features.feed.domain.model.Post
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Columns
@@ -123,6 +124,69 @@ class AiAgentRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun likePost(
+        citizenId: String,
+        postId: String
+    ): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
+            supabase.postgrest["post_likes"].insert(mapOf("post_id" to postId, "citizen_id" to citizenId))
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e);
+        }
+    }
+
+    override suspend fun sharePost(
+        citizenId: String,
+        originalPost: Post
+    ): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
+            val sharedPostData = mapOf(
+                "author_id" to citizenId,
+                "content" to "Compartió una publicación: ${originalPost.content?.take(50)}...",
+                "shared_post_id" to originalPost.id,
+                "created_at" to System.currentTimeMillis()
+            )
+            supabase.postgrest["posts"].insert(sharedPostData)
+            Result.success(Unit)
+        } catch (e: Exception){
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun decideAction(
+        persona: AiPersona,
+        targetPostContent: String
+    ): Result<String> = withContext(Dispatchers.IO) {
+        try {
+            val systemMessage = AiMessage(
+                role = "system",
+                content = "${persona.systemPrompt} Analiza la siguiente publicación. Decide si quieres darle me gusta ('LIKE'), compartirla ('SHARE'), comentarla ('COMMENT') o ignorarla ('NONE'). Responde ÚNICAMENTE con un objeto JSON plano con la estructura: {\"action\": \"TU_DECISION\"}."
+            )
+            val userMessage = AiMessage(
+                role = "user",
+                content = "Publicación: '$targetPostContent'"
+            )
+
+            // Bajamos un poco la temperatura para que sea más lógico y menos creativo al decidir
+            val request = OpenRouterRequest(
+                messages = listOf(systemMessage, userMessage),
+                temperature = 0.4
+            )
+            val response = openRouterApi.generateCompletion(request)
+            if (response.isSuccessful) {
+                val rawText = response.body()?.choices?.firstOrNull()?.message?.content ?: ""
+                val cleanJson = extractJson(rawText)
+                val parsed = gson.fromJson(cleanJson, AiDecisionResponse::class.java)
+                Result.success(parsed.action.uppercase())
+            } else {
+                Result.failure(Exception("Error de API OpenRouter: ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     //Helpers
     private fun extractJson(rawText: String): String {
         var json = rawText.trim()
@@ -134,4 +198,7 @@ class AiAgentRepositoryImpl @Inject constructor(
         return json
     }
     private data class AiPostResponse(val content: String)
+
+    @Serializable
+    private data class AiDecisionResponse(val action: String)
 }

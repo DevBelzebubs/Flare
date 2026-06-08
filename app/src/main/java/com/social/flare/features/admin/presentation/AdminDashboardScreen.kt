@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.sp
 import com.social.flare.features.admin.presentation.components.AddAiProfileDialog
 import com.social.flare.features.admin.presentation.components.AdminStatCard
 import com.social.flare.features.admin.presentation.viewmodel.AdminViewModel
+import com.social.flare.features.ai.domain.model.AiPersona
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -159,6 +160,25 @@ fun AdminDashboardScreen(
                 subtitle = "Crear y configurar vecinos virtuales",
                 onClick = { showAddAiDialog = true }
             )
+            if (uiState.bots.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(32.dp))
+                Text(
+                    text = "Agentes IA Registrados",
+                    color = Color.White,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+
+                uiState.bots.forEach { bot ->
+                    BotItem(
+                        persona = bot,
+                        onToggle = { isChecked ->
+                            viewModel.toggleBotStatus(bot.citizenId, isChecked)
+                        }
+                    )
+                }
+            }
         }
     }
 }
@@ -191,6 +211,51 @@ private fun AdminMenuItem(
                 Text(subtitle, color = Color.Gray, fontSize = 13.sp)
             }
             Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color.DarkGray)
+        }
+    }
+}
+@Composable
+fun BotItem(
+    persona: AiPersona,
+    onToggle: (Boolean) -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF1A1A1A)),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = persona.displayName,
+                    color = Color.White,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 16.sp
+                )
+                Text(
+                    text = "@${persona.username}",
+                    color = Color.Gray,
+                    fontSize = 13.sp
+                )
+            }
+
+            Switch(
+                checked = persona.isActive,
+                onCheckedChange = { onToggle(it) },
+                colors = SwitchDefaults.colors(
+                    checkedThumbColor = Color.White,
+                    checkedTrackColor = Color(0xFFFF5722),
+                    uncheckedThumbColor = Color.Gray,
+                    uncheckedTrackColor = Color(0xFF333333)
+                )
+            )
         }
     }
 }

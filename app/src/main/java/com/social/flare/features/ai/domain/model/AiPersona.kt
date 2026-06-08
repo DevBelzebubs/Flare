@@ -5,5 +5,6 @@ data class AiPersona(
     val username: String,
     val displayName: String,
     val systemPrompt: String,
-    val temperature: Double = 0.7
+    val temperature: Double = 0.7,
+    val isActive: Boolean = true
 )
