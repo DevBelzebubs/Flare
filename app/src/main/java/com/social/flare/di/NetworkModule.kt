@@ -1,6 +1,7 @@
 package com.social.flare.di
 
 import com.social.flare.BuildConfig
+import com.social.flare.features.ai.data.remote.HuggingFaceApi
 import com.social.flare.features.ai.data.remote.OpenRouterApi
 import dagger.Module
 import dagger.Provides
@@ -24,7 +25,6 @@ object NetworkModule {
         val logging = HttpLoggingInterceptor().apply {
             level = HttpLoggingInterceptor.Level.BODY
         }
-
         val headerInterceptor = Interceptor { chain ->
             val request = chain.request().newBuilder()
                 .addHeader("Authorization", "Bearer ${BuildConfig.LLAMA_API_KEY}")
@@ -48,5 +48,14 @@ object NetworkModule {
             .addConverterFactory(GsonConverterFactory.create())
             .build()
             .create(OpenRouterApi::class.java)
+    }
+    @Provides
+    @Singleton
+    fun provideHuggingFaceApi(): HuggingFaceApi {
+        val retrofit = Retrofit.Builder()
+            .baseUrl("https://api-inference.huggingface.co/")
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+        return retrofit.create(HuggingFaceApi::class.java)
     }
 }

@@ -249,7 +249,7 @@ fun BotItem(
                     fontSize = 16.sp
                 )
                 Text(
-                    text = "@${persona.username}",
+                    text = "${persona.username}",
                     color = Color.Gray,
                     fontSize = 13.sp
                 )

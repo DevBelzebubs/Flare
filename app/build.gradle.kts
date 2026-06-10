@@ -35,6 +35,7 @@ android {
         val supabaseAnonKey = localProperties.getProperty("SUPABASE_ANON_KEY", "")
         val supabaseServiceRoleKey = localProperties.getProperty("SUPABASE_SERVICE_ROLE_KEY", "")
         val llamaApiKey = localProperties.getProperty("LLAMA_API_KEY","")
+        val huggingFaceKey = localProperties.getProperty("HUGGING_FACE_API_KEY", "")
 
         buildConfigField("String", "CLOUDINARY_CLOUD_NAME", "\"$cloudName\"")
         buildConfigField("String", "CLOUDINARY_API_KEY", "\"$apiKey\"")
@@ -43,6 +44,7 @@ android {
         buildConfigField("String", "SUPABASE_ANON_KEY", "\"$supabaseAnonKey\"")
         buildConfigField("String", "SUPABASE_SERVICE_ROLE_KEY", "\"$supabaseServiceRoleKey\"")
         buildConfigField("String", "LLAMA_API_KEY", "\"$llamaApiKey\"")
+        buildConfigField("String", "HUGGING_FACE_API_KEY", "\"$huggingFaceKey\"")
     }
 
     buildTypes {

@@ -25,4 +25,5 @@ interface AdminRepository {
     suspend fun deleteNews(newsId: String)
     suspend fun getAllBots(): List<AiPersona>
     suspend fun toggleBotStatus(citizenId: String, isActive: Boolean): Result<Unit>
+    suspend fun updateBotAvatar(citizenId: String, avatarUrl: String): Result<Unit>
 }

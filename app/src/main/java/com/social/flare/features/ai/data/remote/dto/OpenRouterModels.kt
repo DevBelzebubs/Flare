@@ -27,3 +27,8 @@ data class Choice(
     @SerializedName("message") val message: AiMessage,
     @SerializedName("finish_reason") val finishReason: String?
 )
+
+data class HuggingFaceRequest(
+    @SerializedName("inputs")
+    val inputs: String
+)

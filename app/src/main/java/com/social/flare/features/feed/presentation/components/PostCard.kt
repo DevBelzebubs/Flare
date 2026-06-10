@@ -70,7 +70,7 @@ fun PostCard(
             modifier = Modifier.padding(16.dp)
         ) {
             PostHeader(
-                post = post, // <-- Pasamos el post entero al Header
+                post = post,
                 isOwner = isOwner,
                 menuExpanded = menuExpanded,
                 onMenuExpandedChange = { menuExpanded = it },

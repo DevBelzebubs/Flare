@@ -255,6 +255,22 @@ class AdminRepositoryImpl(
         }
     }
 
+    override suspend fun updateBotAvatar(
+        citizenId: String,
+        avatarUrl: String
+    ): Result<Unit> {
+        return try {
+            supabase.postgrest["citizens"].update({
+                set("avatar_url", avatarUrl)
+            }) {
+                filter { eq("citizen_id", citizenId) }
+            }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     private suspend fun syncAllData() {
         try {
             syncAllUsers()

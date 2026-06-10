@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import com.social.flare.features.ai.domain.model.AiPersona
 import com.social.flare.features.ai.domain.repository.AiAgentRepository
 import com.social.flare.features.ai.domain.usecase.GenerateAutonomousCommentUseCase
 import com.social.flare.features.ai.domain.usecase.GenerateAutonomousPostUseCase
@@ -67,10 +68,18 @@ class AiInteractionWorker @AssistedInject constructor(
         }
     }
 
-    private suspend fun performPostAction(persona: com.social.flare.features.ai.domain.model.AiPersona) {
-        val topics = listOf("trafico en Lima", "clima", "comida barata", "seguridad")
-        val result = generatePostUseCase.execute(persona, topics.random())
-
+    private suspend fun performPostAction(persona: AiPersona) {
+        val topics = listOf("trafico en Lima", "el clima raro de estos días",
+            "la comida peruana",
+            "la seguridad en el transporte público"
+        )
+        val selectedTopic = topics.random()
+        val wantsImage = Random.nextInt(1, 100) <= 30
+        val result = generatePostUseCase.execute(
+            persona = persona,
+            contextTopic = selectedTopic,
+            shouldIncludeImage = wantsImage
+        )
         if (result.isSuccess) {
             Log.d("AiBot", "Post publicado por ${persona.username}")
         } else {
@@ -78,7 +87,7 @@ class AiInteractionWorker @AssistedInject constructor(
         }
     }
 
-    private suspend fun performSocialInteraction(persona: com.social.flare.features.ai.domain.model.AiPersona) {
+    private suspend fun performSocialInteraction(persona: AiPersona) {
         Log.d("AiBot", "Buscando publicaciones para ${persona.username}...")
 
         val posts = feedRepository.getFeedPosts(persona.citizenId).firstOrNull()
@@ -107,6 +116,12 @@ class AiInteractionWorker @AssistedInject constructor(
                     val result = feedRepository.toggleLike(targetPost.id, persona.citizenId, false)
                     if (result.isSuccess) {
                         Log.d("AiBot", "Like dado al post: ${targetPost.id}")
+                        if (Random.nextInt(1, 100) <= 20) {
+                            val followResult = aiRepository.followUser(persona.citizenId, targetPost.authorId)
+                            if (followResult.isSuccess) {
+                                Log.d("AiBot", "¡A ${persona.username} le gustó y decidió seguir a ${targetPost.authorId}!")
+                            }
+                        }
                     } else {
                         Log.e("AiBot", "Error al dar like: ${result.exceptionOrNull()?.message}")
                     }

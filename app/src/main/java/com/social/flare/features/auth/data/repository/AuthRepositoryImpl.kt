@@ -16,6 +16,9 @@ import io.ktor.client.request.setBody
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -32,25 +35,51 @@ class AuthRepositoryImpl(
         BuildConfig.SUPABASE_URL.substringBefore("/rest/v1")
     }
 
-    override suspend fun login(username: String, pass: String): Result<String> {
-        return try {
-            val citizen = supabase.postgrest["citizens"]
-                .select { filter { eq("username", username) } }
-                .decodeSingle<CitizenEntity>()
+    override suspend fun login(username: String, pass: String): Result<String> = withContext(Dispatchers.IO) {
+        try {
+            val isEmail = username.contains("@")
 
-            supabase.auth.signInWith(Email) {
-                email = citizen.email
-                password = pass
+            val finalEmailToLogin = if (isEmail) {
+                username
+            } else {
+                val citizenResult = supabase.postgrest["citizens"]
+                    .select {
+                        filter { eq("username", username) }
+                    }
+
+                val citizenList = citizenResult.decodeList<CitizenEntity>()
+                if (citizenList.isEmpty()) {
+                    throw Exception("Usuario no encontrado")
+                }
+                citizenList.first().email
             }
 
-            val userId = supabase.auth.currentUserOrNull()?.id
-                ?: return Result.failure(Exception("Error al iniciar sesión"))
+            supabase.auth.signInWith(Email) {
+                this.email = finalEmailToLogin
+                this.password = pass
+            }
 
-            citizenDao.insertCitizen(citizen.copy(citizen_id = userId))
+            val session = supabase.auth.currentSessionOrNull()
+                ?: throw Exception("Error al iniciar sesión: No se generó sesión")
+            val user = session.user ?: throw Exception("Error al obtener datos del usuario")
 
-            Result.success(userId)
-        } catch (e: Throwable) {
-            Result.failure(e)
+            val citizen = citizenDao.getCitizenById(user.id)
+            if (citizen == null) {
+                val supabaseCitizen = supabase.postgrest["citizens"]
+                    .select { filter { eq("citizen_id", user.id) } }
+                    .decodeSingleOrNull<CitizenEntity>()
+
+                if (supabaseCitizen != null) {
+                    citizenDao.insertCitizen(supabaseCitizen)
+                } else {
+                    throw Exception("Perfil de ciudadano no encontrado")
+                }
+            }
+
+            Result.success(user.id)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Result.failure(Exception(e.message ?: "Error desconocido en login"))
         }
     }
 
