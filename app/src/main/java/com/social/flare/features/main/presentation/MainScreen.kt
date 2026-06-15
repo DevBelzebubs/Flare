@@ -70,11 +70,13 @@ import com.social.flare.features.profile.presentation.ProfileViewModelFactory
 import com.social.flare.features.profile.presentation.viewmodel.EditProfileViewModel
 import com.social.flare.features.profile.presentation.viewmodel.ProfileUiState
 import com.social.flare.features.admin.data.repository.AdminRepositoryImpl
+import com.social.flare.features.admin.domain.usecase.CreateAiProfileUseCase
 import com.social.flare.features.admin.presentation.AdminDashboardScreen
 import com.social.flare.features.admin.presentation.AdminUsersScreen
 import com.social.flare.features.admin.presentation.AdminPostsScreen
 import com.social.flare.features.admin.presentation.AdminNewsScreen
 import com.social.flare.features.admin.presentation.viewmodel.AdminViewModel
+import com.social.flare.features.ai.data.repository.AiAgentRepositoryImpl
 import com.social.flare.features.notifications.domain.usecase.GetSuggestedAccountsUseCase
 import com.social.flare.features.profile.presentation.FollowListScreen
 import com.social.flare.features.profile.presentation.viewmodel.FollowListViewModel
@@ -143,6 +145,29 @@ fun MainScreen() {
             postDao = app.database.postDao(),
             newsDao = app.database.newsDao(),
             supabase = app.supabase
+        )
+    }
+    val aiAgentRepository = remember {
+        val gson = com.google.gson.Gson()
+
+        val openRouterRetrofit = retrofit2.Retrofit.Builder()
+            .baseUrl("https://openrouter.ai/api/v1/")
+            .addConverterFactory(retrofit2.converter.gson.GsonConverterFactory.create())
+            .build()
+        val openRouterApi = openRouterRetrofit.create(com.social.flare.features.ai.data.remote.OpenRouterApi::class.java)
+
+        val huggingFaceRetrofit = retrofit2.Retrofit.Builder()
+            .baseUrl("https://api-inference.huggingface.co/")
+            .addConverterFactory(retrofit2.converter.gson.GsonConverterFactory.create())
+            .build()
+        val huggingFaceApi = huggingFaceRetrofit.create(com.social.flare.features.ai.data.remote.HuggingFaceApi::class.java)
+
+        AiAgentRepositoryImpl(
+            openRouterApi = openRouterApi,
+            huggingFaceApi = huggingFaceApi,
+            gson = gson,
+            supabase = app.supabase,
+            context = context.applicationContext
         )
     }
 
@@ -544,7 +569,8 @@ fun MainScreen() {
                         factory = object : ViewModelProvider.Factory {
                             @Suppress("UNCHECKED_CAST")
                             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                                return AdminViewModel(adminRepository) as T
+                                val createAiProfileUseCase = CreateAiProfileUseCase(adminRepository, aiAgentRepository)
+                                return AdminViewModel(adminRepository, createAiProfileUseCase) as T
                             }
                         }
                     )
@@ -562,7 +588,8 @@ fun MainScreen() {
                         factory = object : ViewModelProvider.Factory {
                             @Suppress("UNCHECKED_CAST")
                             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                                return AdminViewModel(adminRepository) as T
+                                val createAiProfileUseCase = CreateAiProfileUseCase(adminRepository, aiAgentRepository)
+                                return AdminViewModel(adminRepository, createAiProfileUseCase) as T
                             }
                         }
                     )
@@ -577,7 +604,8 @@ fun MainScreen() {
                         factory = object : ViewModelProvider.Factory {
                             @Suppress("UNCHECKED_CAST")
                             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                                return AdminViewModel(adminRepository) as T
+                                val createAiProfileUseCase = CreateAiProfileUseCase(adminRepository, aiAgentRepository)
+                                return AdminViewModel(adminRepository, createAiProfileUseCase) as T
                             }
                         }
                     )
@@ -592,7 +620,8 @@ fun MainScreen() {
                         factory = object : ViewModelProvider.Factory {
                             @Suppress("UNCHECKED_CAST")
                             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                                return AdminViewModel(adminRepository) as T
+                                val createAiProfileUseCase = CreateAiProfileUseCase(adminRepository, aiAgentRepository)
+                                return AdminViewModel(adminRepository, createAiProfileUseCase) as T
                             }
                         }
                     )

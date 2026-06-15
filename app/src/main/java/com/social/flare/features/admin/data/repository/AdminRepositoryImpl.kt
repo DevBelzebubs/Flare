@@ -2,17 +2,21 @@ package com.social.flare.features.admin.data.repository
 
 import com.social.flare.features.admin.data.local.dao.NewsDao
 import com.social.flare.features.admin.data.local.entity.NewsItemEntity
+import com.social.flare.features.admin.data.remote.dto.CreateBotRpcRequest
 import com.social.flare.features.admin.domain.model.AdminDashboardData
 import com.social.flare.features.admin.domain.model.AdminPost
 import com.social.flare.features.admin.domain.model.AdminUser
 import com.social.flare.features.admin.domain.model.NewsItem
 import com.social.flare.features.admin.domain.repository.AdminRepository
+import com.social.flare.features.ai.domain.model.AiPersona
 import com.social.flare.features.auth.data.local.dao.CitizenDao
 import com.social.flare.features.auth.data.local.entity.CitizenEntity
 import com.social.flare.features.feed.data.local.dao.PostDao
 import com.social.flare.features.feed.data.local.entity.PostEntity
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.postgrest.query.Columns
+import io.github.jan.supabase.postgrest.rpc
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -20,8 +24,27 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.UUID
+import kotlin.collections.map
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 
+@Serializable
+private data class AiPersonaFetchDto(
+    val citizen_id: String,
+    val system_prompt: String,
+    val temperature: Double,
+    val is_active: Boolean? = null,
+    val citizens: CitizenMinimalDto? = null
+)
+
+@Serializable
+private data class CitizenMinimalDto(
+    val username: String,
+    val display_name: String
+)
 class AdminRepositoryImpl(
     private val citizenDao: CitizenDao,
     private val postDao: PostDao,
@@ -44,6 +67,24 @@ class AdminRepositoryImpl(
             totalPosts = totalPosts.size,
             totalNews = totalNews
         )
+    }
+
+    override suspend fun createAiPersona(persona: AiPersona): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
+            val request = CreateBotRpcRequest(
+                bot_username = persona.username,
+                bot_display_name = persona.displayName,
+                bot_system_prompt = persona.systemPrompt,
+                bot_temperature = persona.temperature
+            )
+
+            supabase.postgrest.rpc("create_ai_bot", request)
+
+            Result.success(Unit)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Result.failure(e)
+        }
     }
 
     override suspend fun getAllUsers(): List<AdminUser> {
@@ -169,6 +210,65 @@ class AdminRepositoryImpl(
             supabase.postgrest["news"].delete { filter { eq("news_id", newsId) } }
         } catch (e: Throwable) { e.printStackTrace() }
         newsDao.deleteNews(newsId)
+    }
+
+    override suspend fun getAllBots(): List<AiPersona> {
+        return try {
+            supabase.postgrest["ai_personas"]
+                .select(
+                    columns = Columns.raw(
+                        "citizen_id, system_prompt, temperature, is_active, citizens(username, display_name)"
+                    )
+                )
+                .decodeList<AiPersonaFetchDto>()
+                .map { dto ->
+                    AiPersona(
+                        citizenId = dto.citizen_id,
+                        username = dto.citizens?.username ?: "unknown_bot",
+                        displayName = dto.citizens?.display_name ?: "Bot",
+                        systemPrompt = dto.system_prompt,
+                        temperature = dto.temperature,
+                        isActive = dto.is_active ?: true
+                    )
+                }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            emptyList()
+        }
+    }
+
+    override suspend fun toggleBotStatus(
+        citizenId: String,
+        isActive: Boolean
+    ): Result<Unit> {
+        return try {
+            supabase.postgrest.rpc(
+                "toggle_bot_status",
+                buildJsonObject {
+                    put("p_citizen_id", citizenId)
+                    put("p_is_active", isActive)
+                }
+            )
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun updateBotAvatar(
+        citizenId: String,
+        avatarUrl: String
+    ): Result<Unit> {
+        return try {
+            supabase.postgrest["citizens"].update({
+                set("avatar_url", avatarUrl)
+            }) {
+                filter { eq("citizen_id", citizenId) }
+            }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 
     private suspend fun syncAllData() {

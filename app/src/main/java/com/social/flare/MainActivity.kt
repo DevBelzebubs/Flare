@@ -1,33 +1,71 @@
 package com.social.flare
 
+import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.work.Constraints
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
 import com.social.flare.core.data.SettingsManager
 import com.social.flare.core.ui.theme.FlareTheme
-import com.social.flare.features.feed.presentation.FeedScreen
+import com.social.flare.features.ai.framework.AiInteractionWorker
 import com.social.flare.features.main.presentation.MainScreen
+import dagger.hilt.android.AndroidEntryPoint
+import java.util.concurrent.TimeUnit
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        val settingsManager = SettingsManager(applicationContext)
-
         setContent {
+            val app = (LocalContext.current.applicationContext as FlareApp)
+            var initialized by remember { mutableStateOf(app.isInitialized) }
+
+            LaunchedEffect(Unit) {
+                app.awaitInitialization()
+                initialized = true
+            }
+
+            if (!initialized) {
+                FlareTheme(darkTheme = true) {
+                    Surface(
+                        modifier = Modifier.fillMaxSize(),
+                        color = MaterialTheme.colorScheme.background
+                    ) {
+                        Box(modifier = Modifier.fillMaxSize().background(Color.Black))
+                    }
+                }
+                return@setContent
+            }
+
+            LaunchedEffect(Unit) {
+                scheduleAiBots(applicationContext)
+                //forceAiTest(applicationContext)
+            }
+
+            val settingsManager = remember { SettingsManager(applicationContext) }
             val darkModeEnabled by settingsManager.darkModeEnabledFlow.collectAsState(initial = true)
 
             FlareTheme(darkTheme = darkModeEnabled) {
@@ -39,18 +77,23 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
+fun scheduleAiBots(context: Context) {
+    val constraints = Constraints.Builder()
+        .setRequiredNetworkType(NetworkType.CONNECTED)
+        .build()
+
+    val aiWorkRequest = PeriodicWorkRequestBuilder<AiInteractionWorker>(15, TimeUnit.MINUTES)
+        .setConstraints(constraints)
+        .build()
+
+    WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+        "AiBotInteractionWork",
+        ExistingPeriodicWorkPolicy.KEEP,
+        aiWorkRequest
     )
 }
 
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    FlareTheme {
-        Greeting("Android")
-    }
+fun forceAiTest(context: Context) {
+    val testRequest = OneTimeWorkRequestBuilder<AiInteractionWorker>().build()
+    WorkManager.getInstance(context).enqueue(testRequest)
 }

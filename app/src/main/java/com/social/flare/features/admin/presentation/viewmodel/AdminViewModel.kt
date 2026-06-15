@@ -7,25 +7,28 @@ import com.social.flare.features.admin.domain.model.AdminPost
 import com.social.flare.features.admin.domain.model.AdminUser
 import com.social.flare.features.admin.domain.model.NewsItem
 import com.social.flare.features.admin.domain.repository.AdminRepository
+import com.social.flare.features.admin.domain.usecase.CreateAiProfileUseCase
+import com.social.flare.features.ai.domain.model.AiPersona
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-
 data class AdminUiState(
     val isLoading: Boolean = false,
     val dashboard: AdminDashboardData? = null,
     val users: List<AdminUser> = emptyList(),
     val posts: List<AdminPost> = emptyList(),
     val news: List<NewsItem> = emptyList(),
+    val bots: List<AiPersona> = emptyList(),
     val errorMessage: String? = null,
     val successMessage: String? = null
 )
 
 class AdminViewModel(
-    private val adminRepository: AdminRepository
+    private val adminRepository: AdminRepository,
+    private val createAiProfileUseCase: CreateAiProfileUseCase
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AdminUiState())
@@ -38,7 +41,8 @@ class AdminViewModel(
             _uiState.update { it.copy(isLoading = true) }
             try {
                 val data = adminRepository.getDashboardData()
-                _uiState.update { it.copy(dashboard = data, isLoading = false) }
+                val bots = adminRepository.getAllBots()
+                _uiState.update { it.copy(dashboard = data, bots = bots, isLoading = false) }
             } catch (e: Exception) {
                 _uiState.update { it.copy(errorMessage = e.message, isLoading = false) }
             }
@@ -169,6 +173,74 @@ class AdminViewModel(
         }
     }
 
+    // --- NUEVA FUNCIÓN PARA GESTIONAR LA IA ---
+    fun createAiProfile(username: String, displayName: String, prompt: String, temp: Double) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+
+            val result = createAiProfileUseCase.execute(username, displayName, prompt, temp)
+
+            if (result.isSuccess) {
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        successMessage = "Agente IA '$username' creado exitosamente"
+                    )
+                }
+                // Recargar el dashboard para actualizar el contador de usuarios totales
+                loadDashboard()
+            } else {
+                val error = result.exceptionOrNull()
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        errorMessage = error?.message ?: "Error al crear el Agente IA"
+                    )
+                }
+            }
+        }
+    }
+
+
+
+    fun toggleBotStatus(citizenId: String, isActive: Boolean) {
+        loadJob?.cancel()
+        viewModelScope.launch {
+            try {
+                _uiState.update { currentState ->
+                    val updatedBots = currentState.bots.map { bot ->
+                        if (bot.citizenId == citizenId) bot.copy(isActive = isActive) else bot
+                    }
+                    currentState.copy(bots = updatedBots)
+                }
+
+                val result = adminRepository.toggleBotStatus(citizenId, isActive)
+
+                if (result.isSuccess) {
+                    _uiState.update {
+                        it.copy(successMessage = if (isActive) "Bot activado" else "Bot desactivado")
+                    }
+                } else {
+                    _uiState.update { currentState ->
+                        val revertedBots = currentState.bots.map { bot ->
+                            if (bot.citizenId == citizenId) bot.copy(isActive = !isActive) else bot
+                        }
+                        currentState.copy(
+                            bots = revertedBots,
+                            errorMessage = result.exceptionOrNull()?.message
+                        )
+                    }
+                }
+            } catch (e: Exception) {
+                _uiState.update { currentState ->
+                    val revertedBots = currentState.bots.map { bot ->
+                        if (bot.citizenId == citizenId) bot.copy(isActive = !isActive) else bot
+                    }
+                    currentState.copy(bots = revertedBots, errorMessage = e.message)
+                }
+            }
+        }
+    }
     fun clearMessages() {
         _uiState.update { it.copy(errorMessage = null, successMessage = null) }
     }
