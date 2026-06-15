@@ -11,6 +11,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Wallpaper
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -33,7 +34,7 @@ public fun ProfileHeaderSection(citizen: CitizenEntity) {
             contentDescription = "Banner",
             placeholder = rememberVectorPainter(image = Icons.Default.Wallpaper),
             error = rememberVectorPainter(image = Icons.Default.Wallpaper),
-            modifier = Modifier.fillMaxWidth().height(bannerHeight.dp).background(Color.DarkGray),
+            modifier = Modifier.fillMaxWidth().height(bannerHeight.dp).background(MaterialTheme.colorScheme.surfaceVariant),
             contentScale = ContentScale.Crop
         )
         Box(modifier = Modifier.fillMaxWidth().height(bannerHeight.dp).background(
@@ -53,8 +54,8 @@ public fun ProfileHeaderSection(citizen: CitizenEntity) {
                     clip = true
                 }
                 .clip(CircleShape)
-                .background(Color.Gray)
-                .border(4.dp, Color.Black, CircleShape),
+                .background(MaterialTheme.colorScheme.surfaceVariant)
+                .border(4.dp, MaterialTheme.colorScheme.background, CircleShape),
             contentScale = ContentScale.Crop
         )
     }

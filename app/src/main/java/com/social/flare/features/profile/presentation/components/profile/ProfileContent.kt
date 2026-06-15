@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.ViewList
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -29,8 +30,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -77,7 +76,16 @@ fun ProfileContent(
                     Button(
                         onClick = onToggleFollow,
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = if (isFollowingByMe) Color.DarkGray else Color(0xFFFF5722)
+                            containerColor = if (isFollowingByMe) {
+                                MaterialTheme.colorScheme.surfaceVariant
+                            } else {
+                                MaterialTheme.colorScheme.primary
+                            },
+                            contentColor = if (isFollowingByMe) {
+                                MaterialTheme.colorScheme.onSurface
+                            } else {
+                                MaterialTheme.colorScheme.onPrimary
+                            }
                         ),
                         shape = RoundedCornerShape(12.dp),
                         modifier = Modifier
@@ -87,7 +95,6 @@ fun ProfileContent(
                     ) {
                         Text(
                             text = if (isFollowingByMe) "Siguiendo" else "Seguir",
-                            color = Color.White,
                             fontWeight = FontWeight.Bold,
                             fontSize = 14.sp
                         )
@@ -172,13 +179,13 @@ private fun EmptyTabPlaceholder(icon: androidx.compose.ui.graphics.vector.ImageV
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = Color(0xFF3A3A3A),
+                tint = MaterialTheme.colorScheme.outline,
                 modifier = Modifier.size(48.dp)
             )
             Spacer(modifier = Modifier.height(12.dp))
             Text(
                 text = text,
-                color = Color(0xFF666666),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Medium
             )
