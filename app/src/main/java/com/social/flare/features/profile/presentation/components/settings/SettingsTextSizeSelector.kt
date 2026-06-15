@@ -9,13 +9,13 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.TextFields
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -28,20 +28,25 @@ fun SettingsTextSizeSelector(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(Icons.Default.TextFields, contentDescription = null, tint = Color.LightGray, modifier = Modifier.size(20.dp))
+        Icon(
+            Icons.Default.TextFields,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(20.dp)
+        )
         Spacer(modifier = Modifier.width(16.dp))
-        Text("A", color = Color.Gray, fontSize = 12.sp)
+        Text("A", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
         Slider(
             value = value,
             onValueChange = onValueChange,
             modifier = Modifier.weight(1f).padding(horizontal = 8.dp),
             steps = 1,
             colors = SliderDefaults.colors(
-                thumbColor = Color(0xFFFF5722),
-                activeTrackColor = Color(0xFFFF5722),
-                inactiveTrackColor = Color(0xFF333333)
+                thumbColor = MaterialTheme.colorScheme.primary,
+                activeTrackColor = MaterialTheme.colorScheme.primary,
+                inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant
             )
         )
-        Text("A", color = Color.White, fontSize = 18.sp)
+        Text("A", color = MaterialTheme.colorScheme.onBackground, fontSize = 18.sp)
     }
 }

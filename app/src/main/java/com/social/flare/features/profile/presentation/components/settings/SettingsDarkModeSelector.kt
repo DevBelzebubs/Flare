@@ -13,6 +13,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -32,25 +33,35 @@ fun SettingsDarkModeSelector(
         modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(Icons.Default.DarkMode, contentDescription = null, tint = Color.LightGray, modifier = Modifier.size(20.dp))
+        Icon(
+            Icons.Default.DarkMode,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(20.dp)
+        )
         Spacer(modifier = Modifier.width(16.dp))
-        Text("Dark Mode", color = Color.White, fontSize = 16.sp, modifier = Modifier.weight(1f))
+        Text(
+            "Dark Mode",
+            color = MaterialTheme.colorScheme.onBackground,
+            fontSize = 16.sp,
+            modifier = Modifier.weight(1f)
+        )
         Row(
             modifier = Modifier
                 .clip(RoundedCornerShape(8.dp))
-                .background(Color(0xFF121212))
+                .background(MaterialTheme.colorScheme.surfaceVariant)
                 .padding(2.dp)
         ) {
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(6.dp))
-                    .background(if (checked) Color(0xFFFF5722) else Color.Transparent)
+                    .background(if (checked) MaterialTheme.colorScheme.primary else Color.Transparent)
                     .clickable { onCheckedChange(true) }
                     .padding(horizontal = 12.dp, vertical = 4.dp)
             ) {
                 Text(
                     "ON",
-                    color = if (checked) Color.Black else Color.Gray,
+                    color = if (checked) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -58,13 +69,13 @@ fun SettingsDarkModeSelector(
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(6.dp))
-                    .background(if (!checked) Color(0xFFFF5722) else Color.Transparent)
+                    .background(if (!checked) MaterialTheme.colorScheme.primary else Color.Transparent)
                     .clickable { onCheckedChange(false) }
                     .padding(horizontal = 12.dp, vertical = 4.dp)
             ) {
                 Text(
                     "OFF",
-                    color = if (!checked) Color.Black else Color.Gray,
+                    color = if (!checked) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Bold
                 )

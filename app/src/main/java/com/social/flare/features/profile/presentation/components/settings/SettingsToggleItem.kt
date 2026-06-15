@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
@@ -17,7 +18,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -38,9 +38,19 @@ fun SettingsToggleItem(
             .padding(horizontal = 24.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(icon, contentDescription = null, tint = Color.LightGray, modifier = Modifier.size(20.dp))
+        Icon(
+            icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(20.dp)
+        )
         Spacer(modifier = Modifier.width(16.dp))
-        Text(title, color = Color.White, fontSize = 16.sp, modifier = Modifier.weight(1f))
+        Text(
+            title,
+            color = MaterialTheme.colorScheme.onBackground,
+            fontSize = 16.sp,
+            modifier = Modifier.weight(1f)
+        )
         Switch(
             checked = currentChecked,
             onCheckedChange = { newValue ->
@@ -51,10 +61,11 @@ fun SettingsToggleItem(
                 }
             },
             colors = SwitchDefaults.colors(
-                checkedThumbColor = Color.White,
-                checkedTrackColor = Color(0xFFFF5722),
-                uncheckedThumbColor = Color.Gray,
-                uncheckedTrackColor = Color(0xFF333333)
+                checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
+                checkedTrackColor = MaterialTheme.colorScheme.primary,
+                uncheckedThumbColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant,
+                uncheckedBorderColor = MaterialTheme.colorScheme.outline
             )
         )
     }

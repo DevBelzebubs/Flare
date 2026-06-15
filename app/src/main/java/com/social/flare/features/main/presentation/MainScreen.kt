@@ -8,7 +8,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -216,7 +215,7 @@ fun MainScreen() {
                 )
             }
         },
-        containerColor = Color.Black
+        containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
 
         Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
@@ -267,7 +266,7 @@ fun MainScreen() {
                     if (userStories.isNotEmpty()) {
                         StoryViewerScreen(userStories = userStories, activeCitizenId = activeCitizenId, viewModel = storyViewerViewModel, onClose = { navController.popBackStack() })
                     } else {
-                        Box(modifier = Modifier.fillMaxSize().background(Color.Black))
+                        Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background))
                     }
                 }
 

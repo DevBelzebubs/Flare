@@ -8,6 +8,7 @@ import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
@@ -31,8 +32,8 @@ fun FlareBottomNavigation(
     }
 
     NavigationBar(
-        containerColor = Color.Black,
-        contentColor = Color.White,
+        containerColor = MaterialTheme.colorScheme.surface,
+        contentColor = MaterialTheme.colorScheme.onSurface,
         tonalElevation = 0.dp
     ) {
         NavigationBarItem(
@@ -40,8 +41,8 @@ fun FlareBottomNavigation(
             onClick = { handleNavigate(Screen.Feed.route) },
             icon = { Icon(Icons.Default.Home, contentDescription = "Home") },
             colors = NavigationBarItemDefaults.colors(
-                selectedIconColor = Color(0xFFFF5722),
-                unselectedIconColor = Color.Gray,
+                selectedIconColor = MaterialTheme.colorScheme.primary,
+                unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
                 indicatorColor = Color.Transparent
             )
         )
@@ -50,8 +51,8 @@ fun FlareBottomNavigation(
             onClick = { handleNavigate(Screen.Search.route) },
             icon = { Icon(Icons.Default.Search, contentDescription = "Search") },
             colors = NavigationBarItemDefaults.colors(
-                selectedIconColor = Color(0xFFFF5722),
-                unselectedIconColor = Color.Gray,
+                selectedIconColor = MaterialTheme.colorScheme.primary,
+                unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
                 indicatorColor = Color.Transparent
             )
         )
@@ -62,7 +63,7 @@ fun FlareBottomNavigation(
                 Icon(
                     Icons.Default.AddCircle,
                     contentDescription = "Add",
-                    tint = Color(0xFFFF5722),
+                    tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(36.dp)
                 )
             },
@@ -73,8 +74,8 @@ fun FlareBottomNavigation(
             onClick = { handleNavigate(Screen.Notifications.route) },
             icon = { Icon(Icons.Default.Notifications, contentDescription = "Activity") },
             colors = NavigationBarItemDefaults.colors(
-                selectedIconColor = Color(0xFFFF5722),
-                unselectedIconColor = Color.Gray,
+                selectedIconColor = MaterialTheme.colorScheme.primary,
+                unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
                 indicatorColor = Color.Transparent
             )
         )
@@ -83,8 +84,8 @@ fun FlareBottomNavigation(
             onClick = { handleNavigate(Screen.Profile.route) },
             icon = { Icon(Icons.Default.Person, contentDescription = "Profile") },
             colors = NavigationBarItemDefaults.colors(
-                selectedIconColor = Color(0xFFFF5722),
-                unselectedIconColor = Color.Gray,
+                selectedIconColor = MaterialTheme.colorScheme.primary,
+                unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
                 indicatorColor = Color.Transparent
             )
         )

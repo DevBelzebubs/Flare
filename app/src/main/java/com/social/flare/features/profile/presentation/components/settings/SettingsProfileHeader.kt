@@ -16,12 +16,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -46,7 +46,7 @@ fun SettingsProfileHeader(
                 modifier = Modifier
                     .size(80.dp)
                     .clip(CircleShape)
-                    .background(Color.DarkGray)
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
                     .let {
                         if (showEditButton) {
                             it.clickable { onEditClick() }
@@ -67,7 +67,7 @@ fun SettingsProfileHeader(
                         imageVector = Icons.Default.Person,
                         contentDescription = null,
                         modifier = Modifier.fillMaxSize().padding(15.dp),
-                        tint = Color.Gray
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -77,13 +77,18 @@ fun SettingsProfileHeader(
                     modifier = Modifier
                         .size(24.dp)
                         .clip(CircleShape)
-                        .background(Color(0xFFFF5722))
+                        .background(MaterialTheme.colorScheme.primary)
                         .align(Alignment.BottomEnd)
-                        .border(2.dp, Color.Black, CircleShape)
+                        .border(2.dp, MaterialTheme.colorScheme.background, CircleShape)
                         .clickable { onEditClick() },
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(Icons.Default.Edit, contentDescription = "Edit Profile", modifier = Modifier.size(12.dp), tint = Color.Black)
+                    Icon(
+                        Icons.Default.Edit,
+                        contentDescription = "Edit Profile",
+                        modifier = Modifier.size(12.dp),
+                        tint = MaterialTheme.colorScheme.onPrimary
+                    )
                 }
             }
         }
@@ -93,13 +98,13 @@ fun SettingsProfileHeader(
         Column {
             Text(
                 text = displayName ?: "User",
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onBackground,
                 fontSize = 22.sp,
                 fontWeight = FontWeight.Bold
             )
             Text(
                 text = username?.let { "$it" } ?: "",
-                color = Color.Gray,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 14.sp
             )
         }
