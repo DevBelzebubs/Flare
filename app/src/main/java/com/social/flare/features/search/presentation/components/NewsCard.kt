@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -23,19 +24,21 @@ import androidx.compose.ui.unit.sp
 
 @Composable
 fun NewsCard(title: String, description: String) {
+    val cardColor = MaterialTheme.colorScheme.surfaceVariant
+
     Box(
         modifier = Modifier
             .width(280.dp)
             .height(160.dp)
             .clip(RoundedCornerShape(12.dp))
-            .background(Color(0xFF2A2A2A))
+            .background(cardColor)
     ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(
                     Brush.verticalGradient(
-                        colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.8f)),
+                        colors = listOf(Color.Transparent, cardColor.copy(alpha = 0.92f)),
                         startY = 100f
                     )
                 )
@@ -45,11 +48,16 @@ fun NewsCard(title: String, description: String) {
             modifier = Modifier
                 .padding(12.dp)
                 .clip(RoundedCornerShape(4.dp))
-                .background(Color(0xFFFF5722))
+                .background(MaterialTheme.colorScheme.primary)
                 .padding(horizontal = 8.dp, vertical = 4.dp)
                 .align(Alignment.TopStart)
         ) {
-            Text(text = "News", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+            Text(
+                text = "News",
+                color = MaterialTheme.colorScheme.onPrimary,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold
+            )
         }
 
         Column(
@@ -59,7 +67,7 @@ fun NewsCard(title: String, description: String) {
         ) {
             Text(
                 text = title,
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.Bold,
                 fontSize = 16.sp,
                 maxLines = 1,
@@ -68,7 +76,7 @@ fun NewsCard(title: String, description: String) {
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = description,
-                color = Color.LightGray,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 12.sp,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis

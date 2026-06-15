@@ -31,10 +31,16 @@ fun NotificationItem(
     onFollowClick: () -> Unit,
     onAvatarClick: (String) -> Unit
 ) {
+    val rowBackground = if (!notification.isRead) {
+        MaterialTheme.colorScheme.surfaceVariant
+    } else {
+        MaterialTheme.colorScheme.background
+    }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(if (!notification.isRead) Color(0xFF121212) else Color.Black) // Fondo ligerísimamente gris si no está leída
+            .background(rowBackground)
             .clickable { onClick() }
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -47,7 +53,7 @@ fun NotificationItem(
                 modifier = Modifier
                     .fillMaxSize()
                     .clip(CircleShape)
-                    .background(Color.DarkGray)
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
                     .clickable { onAvatarClick(notification.actorId) }
             )
             if (!notification.isRead) {
@@ -64,17 +70,17 @@ fun NotificationItem(
         Spacer(modifier = Modifier.width(12.dp))
 
         val text = buildAnnotatedString {
-            withStyle(style = SpanStyle(fontWeight = FontWeight.Bold, color = Color.White)) {
+            withStyle(style = SpanStyle(fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)) {
                 append(notification.actorUsername)
             }
-            withStyle(style = SpanStyle(color = Color.LightGray)) {
+            withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.onSurface)) {
                 when (notification.type) {
                     NotificationType.LIKE -> append(" le gusta tu post.")
                     NotificationType.FOLLOW -> append(" empezó a seguirte.")
                     NotificationType.COMMENT -> append(" comentó tu post: ${notification.extraText ?: ""}")
                 }
             }
-            withStyle(style = SpanStyle(color = Color.Gray)) {
+            withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.onSurfaceVariant)) {
                 val timeAgo = TimeUtils.getTimeAgo(notification.createdAt)
                 append(" · $timeAgo")
             }
@@ -93,7 +99,16 @@ fun NotificationItem(
             Button(
                 onClick = onFollowClick,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isFollowingBack) Color.DarkGray else Color(0xFFFF5722)
+                    containerColor = if (isFollowingBack) {
+                        MaterialTheme.colorScheme.surfaceVariant
+                    } else {
+                        MaterialTheme.colorScheme.primary
+                    },
+                    contentColor = if (isFollowingBack) {
+                        MaterialTheme.colorScheme.onSurface
+                    } else {
+                        MaterialTheme.colorScheme.onPrimary
+                    }
                 ),
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
                 modifier = Modifier.height(32.dp)
@@ -101,8 +116,7 @@ fun NotificationItem(
                 Text(
                     text = if (isFollowingBack) "Siguiendo" else "Seguir",
                     fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    fontWeight = FontWeight.Bold
                 )
             }
         } else if (notification.referencedPostMediaUrl != null) {
@@ -113,7 +127,7 @@ fun NotificationItem(
                 modifier = Modifier
                     .size(44.dp)
                     .clip(RoundedCornerShape(4.dp))
-                    .background(Color.DarkGray)
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
             )
         }
     }

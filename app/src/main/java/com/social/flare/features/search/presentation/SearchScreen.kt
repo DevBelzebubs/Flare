@@ -1,5 +1,6 @@
 package com.social.flare.features.search.presentation
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -12,7 +13,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -36,7 +36,11 @@ fun SearchScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
         Spacer(modifier = Modifier.height(16.dp))
         SearchBar(
             query = uiState.query,
@@ -84,12 +88,12 @@ private fun ExploreContent(
         item(span = { GridItemSpan(maxLineSpan) }) {
             if (isLoading) {
                 Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = Color(0xFFFF5722), modifier = Modifier.size(24.dp))
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
                 }
             } else if (news.isEmpty()) {
                 Text(
                     text = "No hay noticias disponibles",
-                    color = Color.Gray,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 14.sp,
                     modifier = Modifier.padding(horizontal = 16.dp)
                 )
@@ -113,7 +117,7 @@ private fun ExploreContent(
             if (trendingHashtags.isEmpty()) {
                 Text(
                     text = "No hay tendencias",
-                    color = Color.Gray,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 14.sp,
                     modifier = Modifier.padding(horizontal = 16.dp)
                 )
@@ -156,8 +160,8 @@ private fun SearchResultsContent(
     Column(modifier = Modifier.fillMaxSize()) {
         TabRow(
             selectedTabIndex = uiState.selectedTab.ordinal,
-            containerColor = Color.Black,
-            contentColor = Color(0xFFFF5722),
+            containerColor = MaterialTheme.colorScheme.background,
+            contentColor = MaterialTheme.colorScheme.primary,
             modifier = Modifier.padding(horizontal = 16.dp)
         ) {
             SearchTab.entries.forEach { tab ->
@@ -171,7 +175,11 @@ private fun SearchResultsContent(
                                 SearchTab.POSTS -> "Posts"
                                 SearchTab.HASHTAGS -> "Hashtags"
                             },
-                            color = if (uiState.selectedTab == tab) Color(0xFFFF5722) else Color.Gray,
+                            color = if (uiState.selectedTab == tab) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            },
                             fontWeight = if (uiState.selectedTab == tab) FontWeight.Bold else FontWeight.Normal
                         )
                     }
@@ -235,7 +243,7 @@ private fun SearchResultsContent(
 private fun SectionHeader(title: String) {
     Text(
         text = title,
-        color = Color.White,
+        color = MaterialTheme.colorScheme.onBackground,
         fontWeight = FontWeight.Bold,
         fontSize = 20.sp,
         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
@@ -247,7 +255,7 @@ private fun EmptyResultMessage() {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Text(
             text = "Sin resultados",
-            color = Color.Gray,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 16.sp
         )
     }
