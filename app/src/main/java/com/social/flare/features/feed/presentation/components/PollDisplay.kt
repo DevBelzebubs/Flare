@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Poll
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -28,7 +29,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -47,20 +47,20 @@ fun PollDisplay(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .background(Color(0xFF1A1A1A), RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(12.dp))
             .padding(12.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(
                 Icons.Default.Poll,
                 contentDescription = null,
-                tint = Color(0xFFFF5722),
+                tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(18.dp)
             )
             Spacer(modifier = Modifier.width(6.dp))
             Text(
                 text = question,
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.SemiBold
             )
@@ -93,7 +93,7 @@ fun PollDisplay(
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = "$totalVotes votos",
-                color = Color.Gray,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 12.sp
             )
         }
@@ -111,8 +111,8 @@ private fun PollOptionRow(
     modifier: Modifier = Modifier
 ) {
     val bgColor by animateColorAsState(
-        targetValue = if (isUserSelection) Color(0xFFFF5722).copy(alpha = 0.15f)
-        else Color(0xFF262626),
+        targetValue = if (isUserSelection) MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+        else MaterialTheme.colorScheme.surface,
         animationSpec = tween(300),
         label = "optionBg"
     )
@@ -139,7 +139,7 @@ private fun PollOptionRow(
                     .fillMaxWidth(animatedPercentage)
                     .height(44.dp)
                     .clip(RoundedCornerShape(8.dp))
-                    .background(Color(0xFFFF5722).copy(alpha = 0.3f))
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
             )
         }
         Row(
@@ -156,8 +156,8 @@ private fun PollOptionRow(
                         .size(18.dp)
                         .clip(CircleShape)
                         .background(
-                            if (isUserSelection) Color(0xFFFF5722)
-                            else Color(0xFFFF5722).copy(alpha = 0.3f)
+                            if (isUserSelection) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
                         ),
                     contentAlignment = Alignment.Center
                 ) {
@@ -166,28 +166,28 @@ private fun PollOptionRow(
                             modifier = Modifier
                                 .size(6.dp)
                                 .clip(CircleShape)
-                                .background(Color.White)
+                                .background(MaterialTheme.colorScheme.onPrimary)
                         )
                     } else if (!hasVoted) {
                         Box(
                             modifier = Modifier
                                 .size(8.dp)
                                 .clip(CircleShape)
-                                .background(Color(0xFFFF5722))
+                                .background(MaterialTheme.colorScheme.primary)
                         )
                     }
                 }
                 Spacer(modifier = Modifier.width(10.dp))
                 Text(
                     text = text,
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontSize = 14.sp
                 )
             }
             if (hasVoted) {
                 Text(
                     text = "${percentage.toInt()}%",
-                    color = if (isUserSelection) Color(0xFFFF5722) else Color.Gray,
+                    color = if (isUserSelection) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 13.sp,
                     fontWeight = if (isUserSelection) FontWeight.Bold else FontWeight.Normal
                 )

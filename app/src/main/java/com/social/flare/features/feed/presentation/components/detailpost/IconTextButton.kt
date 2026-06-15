@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -29,6 +30,6 @@ public fun IconTextButton(icon: ImageVector, text: String, tint: Color, onClick:
     ) {
         Icon(icon, contentDescription = text, tint = tint, modifier = Modifier.size(24.dp))
         Spacer(modifier = Modifier.width(8.dp))
-        Text(text, color = Color.White, fontSize = 14.sp)
+        Text(text, color = MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
     }
 }

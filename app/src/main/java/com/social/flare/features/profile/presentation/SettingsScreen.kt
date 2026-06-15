@@ -98,7 +98,8 @@ fun SettingsScreen(
                             Icon(Icons.Default.ArrowBack, contentDescription = null, tint = colorScheme.onBackground)
                         }
                     },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = colorScheme.background)
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = colorScheme.background),
+                    windowInsets = WindowInsets(0, 0, 0, 0)
                 )
             }
         ) { padding ->

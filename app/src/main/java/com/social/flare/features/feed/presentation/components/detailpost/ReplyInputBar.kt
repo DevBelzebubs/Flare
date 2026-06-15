@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
@@ -49,7 +50,7 @@ public fun ReplyInputBar(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color(0xFF121212))
+            .background(MaterialTheme.colorScheme.surface)
             .padding(horizontal = 16.dp, vertical = 8.dp)
             .navigationBarsPadding()
     ) {
@@ -60,12 +61,12 @@ public fun ReplyInputBar(
             ) {
                 Text(
                     text = "Replying to ",
-                    color = Color.Gray,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 12.sp
                 )
                 Text(
                     text = replyingToUsername,
-                    color = Color(0xFFFF5722),
+                    color = MaterialTheme.colorScheme.primary,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -73,7 +74,7 @@ public fun ReplyInputBar(
                 Icon(
                     imageVector = Icons.Default.Close,
                     contentDescription = "Clear target",
-                    tint = Color.Gray,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier
                         .size(14.dp)
                         .clip(CircleShape)
@@ -113,21 +114,24 @@ public fun ReplyInputBar(
                 Icon(
                     imageVector = Icons.Outlined.Image,
                     contentDescription = "Add image",
-                    tint = Color(0xFFFF5722)
+                    tint = MaterialTheme.colorScheme.primary
                 )
             }
 
             TextField(
                 value = replyText,
                 onValueChange = onTextChange,
-                placeholder = { Text("Post your reply...", color = Color.Gray) },
+                placeholder = {
+                    Text("Post your reply...", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                },
                 colors = TextFieldDefaults.colors(
                     focusedContainerColor = Color.Transparent,
                     unfocusedContainerColor = Color.Transparent,
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White,
+                    focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                    unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
                     focusedIndicatorColor = Color.Transparent,
-                    unfocusedIndicatorColor = Color.Transparent
+                    unfocusedIndicatorColor = Color.Transparent,
+                    cursorColor = MaterialTheme.colorScheme.primary
                 ),
                 modifier = Modifier.weight(1f),
                 maxLines = 4
@@ -141,7 +145,7 @@ public fun ReplyInputBar(
                 Icon(
                     imageVector = Icons.Default.Send,
                     contentDescription = "Send",
-                    tint = if (isEnabled) Color(0xFFFF5722) else Color.DarkGray
+                    tint = if (isEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
                 )
             }
         }

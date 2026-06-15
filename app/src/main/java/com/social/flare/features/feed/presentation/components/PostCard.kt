@@ -31,7 +31,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -63,7 +62,7 @@ fun PostCard(
             .clickable { onEvent(FeedEvent.OnPostClick(post.id)) },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color(0xFF121212)
+            containerColor = MaterialTheme.colorScheme.surface
         )
     ) {
         Column(
@@ -93,7 +92,7 @@ fun PostCard(
             post.content?.let { contentText ->
                 Text(
                     text = contentText,
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontSize = 15.sp,
                     lineHeight = 22.sp
                 )
@@ -155,7 +154,7 @@ fun PostCard(
             )
 
             Spacer(modifier = Modifier.height(12.dp))
-            HorizontalDivider(color = Color.DarkGray, thickness = 0.5.dp)
+            HorizontalDivider(color = MaterialTheme.colorScheme.outline, thickness = 0.5.dp)
             Spacer(modifier = Modifier.height(4.dp))
 
             PostActionButtons(
@@ -173,17 +172,19 @@ fun PostCard(
     if (showEditDialog) {
         AlertDialog(
             onDismissRequest = { showEditDialog = false },
-            containerColor = Color(0xFF1E1E1E),
-            title = { Text("Editar Publicación", color = Color.White) },
+            containerColor = MaterialTheme.colorScheme.surface,
+            title = { Text("Editar Publicación", color = MaterialTheme.colorScheme.onSurface) },
             text = {
                 OutlinedTextField(
                     value = editContentText,
                     onValueChange = { if (it.length <= 500) editContentText = it },
                     modifier = Modifier.fillMaxWidth(),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
-                        focusedBorderColor = Color(0xFFFF5722)
+                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                        cursorColor = MaterialTheme.colorScheme.primary
                     )
                 )
             },
@@ -192,12 +193,12 @@ fun PostCard(
                     onEvent(FeedEvent.OnEditPost(post.id, editContentText))
                     showEditDialog = false
                 }) {
-                    Text("Guardar", color = Color(0xFFFF5722))
+                    Text("Guardar", color = MaterialTheme.colorScheme.primary)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showEditDialog = false }) {
-                    Text("Cancelar", color = Color.Gray)
+                    Text("Cancelar", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         )
@@ -206,12 +207,12 @@ fun PostCard(
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
-            containerColor = Color(0xFF1E1E1E),
-            title = { Text("Eliminar Publicación", color = Color.White) },
+            containerColor = MaterialTheme.colorScheme.surface,
+            title = { Text("Eliminar Publicación", color = MaterialTheme.colorScheme.onSurface) },
             text = {
                 Text(
                     text = "¿Estás seguro de que deseas eliminar esta publicación? Esta acción no se puede deshacer.",
-                    color = Color.LightGray
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             },
             confirmButton = {
@@ -219,12 +220,12 @@ fun PostCard(
                     onEvent(FeedEvent.OnDeletePost(post.id))
                     showDeleteDialog = false
                 }) {
-                    Text("Eliminar", color = Color.Red, fontWeight = FontWeight.Bold)
+                    Text("Eliminar", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteDialog = false }) {
-                    Text("Cancelar", color = Color.Gray)
+                    Text("Cancelar", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         )
@@ -252,7 +253,7 @@ private fun PostHeader(
             modifier = Modifier
                 .size(44.dp)
                 .clip(CircleShape)
-                .background(Color.DarkGray)
+                .background(MaterialTheme.colorScheme.surfaceVariant)
                 .clickable { onAuthorClick() }
         )
 
@@ -265,13 +266,13 @@ private fun PostHeader(
         ) {
             Text(
                 text = post.authorDisplayName,
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.Bold,
                 fontSize = 16.sp
             )
             Text(
                 text = post.authorUsername,
-                color = Color.Gray,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 12.sp
             )
         }
@@ -282,22 +283,22 @@ private fun PostHeader(
                     Icon(
                         imageVector = Icons.Default.MoreVert,
                         contentDescription = "Opciones",
-                        tint = Color.Gray
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
                 DropdownMenu(
                     expanded = menuExpanded,
                     onDismissRequest = { onMenuExpandedChange(false) },
-                    modifier = Modifier.background(Color(0xFF1E1E1E))
+                    modifier = Modifier.background(MaterialTheme.colorScheme.surface)
                 ) {
                     DropdownMenuItem(
-                        text = { Text("Editar", color = Color.White) },
-                        leadingIcon = { Icon(Icons.Outlined.Edit, contentDescription = null, tint = Color.White) },
+                        text = { Text("Editar", color = MaterialTheme.colorScheme.onSurface) },
+                        leadingIcon = { Icon(Icons.Outlined.Edit, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface) },
                         onClick = onEditClick
                     )
                     DropdownMenuItem(
-                        text = { Text("Eliminar", color = Color.Red) },
-                        leadingIcon = { Icon(Icons.Outlined.Delete, contentDescription = null, tint = Color.Red) },
+                        text = { Text("Eliminar", color = MaterialTheme.colorScheme.error) },
+                        leadingIcon = { Icon(Icons.Outlined.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
                         onClick = onDeleteClick
                     )
                 }
@@ -317,13 +318,13 @@ private fun PostStats(likesCount: Int, commentsCount: Int, isLikedByMe: Boolean)
         Icon(
             imageVector = Icons.Filled.Favorite,
             contentDescription = "Likes",
-            tint = if (isLikedByMe) Color(0xFFFF5722) else Color.Gray,
+            tint = if (isLikedByMe) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.size(16.dp)
         )
         Spacer(modifier = Modifier.width(6.dp))
         Text(
             text = "$likesCount",
-            color = if (isLikedByMe) Color(0xFFFF5722) else Color.Gray,
+            color = if (isLikedByMe) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 13.sp
         )
 
@@ -332,13 +333,13 @@ private fun PostStats(likesCount: Int, commentsCount: Int, isLikedByMe: Boolean)
         Icon(
             imageVector = Icons.Outlined.ChatBubbleOutline,
             contentDescription = "Comentarios",
-            tint = Color.Gray,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.size(16.dp)
         )
         Spacer(modifier = Modifier.width(6.dp))
         Text(
             text = "$commentsCount",
-            color = Color.Gray,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 13.sp
         )
     }
@@ -369,7 +370,7 @@ private fun PostActionButtons(
                 Icon(
                     Icons.Outlined.ChatBubbleOutline,
                     contentDescription = "Comment",
-                    tint = Color.White
+                    tint = MaterialTheme.colorScheme.onSurface
                 )
             }
 
@@ -377,7 +378,7 @@ private fun PostActionButtons(
                 Icon(
                     imageVector = if (isSharedByMe) Icons.Filled.Repeat else Icons.Outlined.Repeat,
                     contentDescription = "Repost",
-                    tint = if (isSharedByMe) Color(0xFFFF5722) else Color.White
+                    tint = if (isSharedByMe) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                 )
             }
         }
@@ -387,7 +388,7 @@ private fun PostActionButtons(
             Icon(
                 imageVector = if (isSavedByMe) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
                 contentDescription = "Save Post",
-                tint = if (isSavedByMe) Color(0xFFFF5722) else Color.White
+                tint = if (isSavedByMe) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
             )
         }
     }
@@ -399,7 +400,7 @@ fun AnimatedLikeButton(
     onClick: () -> Unit
 ) {
     val tint by animateColorAsState(
-        targetValue = if (isLiked) Color(0xFFFF5722) else Color.White,
+        targetValue = if (isLiked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
         animationSpec = tween(durationMillis = 200),
         label = "colorAnimation"
     )
