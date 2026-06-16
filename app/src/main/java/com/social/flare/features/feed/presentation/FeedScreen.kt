@@ -11,7 +11,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -44,12 +43,12 @@ fun FeedScreen(
     when {
         uiState.isLoading -> {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = Color(0xFFFF5722))
+                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
             }
         }
         uiState.error != null -> {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(text = "Error: ${uiState.error}", color = Color.Red)
+                Text(text = "Error: ${uiState.error}", color = MaterialTheme.colorScheme.error)
             }
         }
         else -> {
@@ -69,7 +68,7 @@ fun FeedScreen(
                                 requireAuth { onStoryClick(username) }
                             }
                         )
-                        HorizontalDivider(color = Color(0xFF1A1A1A), thickness = 1.dp)
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outline, thickness = 1.dp)
                     }
                     if (uiState.posts.isEmpty()) {
                         item {
@@ -82,13 +81,13 @@ fun FeedScreen(
                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                     Text(
                                         text = "No hay posts por ahora",
-                                        color = Color.White,
+                                        color = MaterialTheme.colorScheme.onBackground,
                                         style = MaterialTheme.typography.titleMedium
                                     )
                                     Spacer(modifier = Modifier.height(8.dp))
                                     Text(
                                         text = "Sigue a otros ciudadanos o sé el primero en publicar.",
-                                        color = Color.Gray,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         style = MaterialTheme.typography.bodyMedium
                                     )
                                 }

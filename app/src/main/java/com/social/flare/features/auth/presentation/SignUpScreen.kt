@@ -42,6 +42,7 @@ fun SignUpScreen(
     var password by remember { mutableStateOf("") }
     var repeatPassword by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    val colorScheme = MaterialTheme.colorScheme
 
     val passwordStrengthLevel by remember(password) {
         derivedStateOf {
@@ -68,17 +69,17 @@ fun SignUpScreen(
     }
 
     val strengthColor = when (passwordStrengthLevel) {
-        1 -> Color.Red.copy(alpha = 0.7f)
+        1 -> colorScheme.error.copy(alpha = 0.85f)
         2 -> Color(0xFFFF9800) // Orange
         3 -> Color(0xFFFF7043) // Deep Orange
-        4 -> Color(0xFFFF5722) // Flare Orange
+        4 -> colorScheme.primary // Flare Orange
         else -> Color.Transparent
     }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black)
+            .background(colorScheme.background)
     ) {
         // Fondo con resplandores (estilo Figma)
         Box(
@@ -86,7 +87,7 @@ fun SignUpScreen(
                 .fillMaxSize()
                 .background(
                     Brush.radialGradient(
-                        0.0f to Color(0xFFFF9800).copy(alpha = 0.15f),
+                        0.0f to colorScheme.primary.copy(alpha = 0.16f),
                         0.5f to Color.Transparent,
                         center = androidx.compose.ui.geometry.Offset(500f, 0f),
                         radius = 1000f
@@ -98,7 +99,7 @@ fun SignUpScreen(
                 .fillMaxSize()
                 .background(
                     Brush.radialGradient(
-                        0.0f to Color(0xFFFF5722).copy(alpha = 0.1f),
+                        0.0f to colorScheme.primary.copy(alpha = 0.1f),
                         0.6f to Color.Transparent,
                         center = androidx.compose.ui.geometry.Offset(0f, 1000f),
                         radius = 800f
@@ -120,12 +121,12 @@ fun SignUpScreen(
                 IconButton(
                     onClick = onNavigateBack,
                     modifier = Modifier
-                        .background(Color.White.copy(alpha = 0.1f), CircleShape)
+                        .background(colorScheme.surfaceVariant, CircleShape)
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Regresar",
-                        tint = Color.White
+                        tint = colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -136,8 +137,8 @@ fun SignUpScreen(
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(0.5.dp, Color.Gray.copy(alpha = 0.2f), RoundedCornerShape(32.dp)),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF1A1A1A).copy(alpha = 0.85f)),
+                    .border(0.5.dp, colorScheme.outline.copy(alpha = 0.35f), RoundedCornerShape(32.dp)),
+                colors = CardDefaults.cardColors(containerColor = colorScheme.surface.copy(alpha = 0.92f)),
                 shape = RoundedCornerShape(32.dp)
             ) {
                 Column(
@@ -148,13 +149,13 @@ fun SignUpScreen(
                     Box(
                         modifier = Modifier
                             .size(64.dp)
-                            .background(Color.White, RoundedCornerShape(20.dp)),
+                            .background(colorScheme.onPrimary, RoundedCornerShape(20.dp)),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.Default.Whatshot,
                             contentDescription = null,
-                            tint = Color(0xFFFF5722),
+                            tint = colorScheme.primary,
                             modifier = Modifier.size(38.dp)
                         )
                     }
@@ -163,7 +164,7 @@ fun SignUpScreen(
 
                     Text(
                         text = "Register",
-                        color = Color(0xFFFF5722),
+                        color = colorScheme.primary,
                         fontSize = 32.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -174,7 +175,7 @@ fun SignUpScreen(
                     errorMessage?.let {
                         Text(
                             text = it,
-                            color = Color.Red,
+                            color = colorScheme.error,
                             fontSize = 12.sp,
                             modifier = Modifier.padding(bottom = 8.dp)
                         )
@@ -226,7 +227,7 @@ fun SignUpScreen(
                     if (password.isNotEmpty()) {
                         Column(modifier = Modifier.fillMaxWidth()) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text("PASSWORD STRENGTH: ", color = Color.White.copy(alpha = 0.6f), fontSize = 10.sp)
+                                Text("PASSWORD STRENGTH: ", color = colorScheme.onSurfaceVariant, fontSize = 10.sp)
                                 Text(strengthText, color = strengthColor, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                             }
                             Spacer(modifier = Modifier.height(4.dp))
@@ -237,7 +238,7 @@ fun SignUpScreen(
                                             .weight(1f)
                                             .height(3.dp)
                                             .background(
-                                                if (index < passwordStrengthLevel) strengthColor else Color.Gray.copy(alpha = 0.3f),
+                                                if (index < passwordStrengthLevel) strengthColor else colorScheme.outline.copy(alpha = 0.35f),
                                                 RoundedCornerShape(2.dp)
                                             )
                                     )
@@ -282,11 +283,14 @@ fun SignUpScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(50.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF5722)),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = colorScheme.primary,
+                            contentColor = colorScheme.onPrimary
+                        ),
                         shape = RoundedCornerShape(16.dp),
                         elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
                     ) {
-                        Text("Create Account", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                        Text("Create Account", fontSize = 16.sp, fontWeight = FontWeight.Bold)
                     }
 
 
@@ -294,10 +298,10 @@ fun SignUpScreen(
                     Spacer(modifier = Modifier.height(20.dp))
 
                     Row {
-                        Text("Already have an account? ", color = Color.White.copy(alpha = 0.7f), fontSize = 13.sp)
+                        Text("Already have an account? ", color = colorScheme.onSurfaceVariant, fontSize = 13.sp)
                         Text(
                             text = "Sign In",
-                            color = Color(0xFFFF5722),
+                            color = colorScheme.primary,
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.clickable { onNavigateToLogin() }
@@ -320,27 +324,32 @@ fun SignUpField(
     placeholder: String,
     isPassword: Boolean = false
 ) {
+    val colorScheme = MaterialTheme.colorScheme
+
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(icon, contentDescription = null, tint = Color(0xFFFF5722), modifier = Modifier.size(16.dp))
+            Icon(icon, contentDescription = null, tint = colorScheme.primary, modifier = Modifier.size(16.dp))
             Spacer(modifier = Modifier.width(8.dp))
-            Text(label, color = Color(0xFFFF5722), fontSize = 11.sp, fontWeight = FontWeight.ExtraBold)
+            Text(label, color = colorScheme.primary, fontSize = 11.sp, fontWeight = FontWeight.ExtraBold)
         }
         Spacer(modifier = Modifier.height(6.dp))
         OutlinedTextField(
             value = value,
             onValueChange = onValueChange,
-            placeholder = { Text(placeholder, color = Color.Gray.copy(alpha = 0.6f), fontSize = 13.sp) },
+            placeholder = { Text(placeholder, fontSize = 13.sp) },
             visualTransformation = if (isPassword) PasswordVisualTransformation() else androidx.compose.ui.text.input.VisualTransformation.None,
             modifier = Modifier.fillMaxWidth().height(52.dp),
             shape = RoundedCornerShape(14.dp),
             colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = Color(0xFF252525),
-                unfocusedContainerColor = Color(0xFF252525),
-                focusedBorderColor = Color.Gray.copy(alpha = 0.4f),
-                unfocusedBorderColor = Color.Transparent,
-                focusedTextColor = Color.White,
-                unfocusedTextColor = Color.White
+                focusedContainerColor = colorScheme.surfaceVariant,
+                unfocusedContainerColor = colorScheme.surfaceVariant,
+                focusedBorderColor = colorScheme.primary,
+                unfocusedBorderColor = colorScheme.outline.copy(alpha = 0.5f),
+                focusedTextColor = colorScheme.onSurface,
+                unfocusedTextColor = colorScheme.onSurface,
+                cursorColor = colorScheme.primary,
+                focusedPlaceholderColor = colorScheme.onSurfaceVariant,
+                unfocusedPlaceholderColor = colorScheme.onSurfaceVariant
             ),
             singleLine = true
         )

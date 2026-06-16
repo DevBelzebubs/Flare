@@ -10,6 +10,7 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -17,7 +18,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -37,6 +37,8 @@ fun CommentItem(
     onBodyClick: () -> Unit = {},
     onAuthorClick: (String) -> Unit
 ) {
+    val outlineColor = MaterialTheme.colorScheme.outline
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -47,7 +49,7 @@ fun CommentItem(
                     val lineBottom = size.height - 12.dp.toPx()
 
                     drawLine(
-                        color = Color(0xFF2A2A2A),
+                        color = outlineColor,
                         start = Offset(x = lineX, y = lineTop),
                         end = Offset(x = lineX, y = lineBottom),
                         strokeWidth = 2.dp.toPx()
@@ -70,7 +72,7 @@ fun CommentItem(
             modifier = Modifier
                 .size(if (isNestedReply) 32.dp else 40.dp)
                 .clip(CircleShape)
-                .background(Color.DarkGray)
+                .background(MaterialTheme.colorScheme.surfaceVariant)
                 .clickable { onAuthorClick(post.authorId) }
         )
         Spacer(modifier = Modifier.width(12.dp))
@@ -80,13 +82,27 @@ fun CommentItem(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.clickable { onAuthorClick(post.authorId) }
             ) {
-                Text(post.authorDisplayName, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                Text(
+                    post.authorDisplayName,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp
+                )
                 Spacer(modifier = Modifier.width(6.dp))
-                Text("• ${formatRelativeTime(post.createdAt)}", color = Color.Gray, fontSize = 13.sp)
+                Text(
+                    "• ${formatRelativeTime(post.createdAt)}",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 13.sp
+                )
             }
-            Text(post.authorUsername, color = Color.Gray, fontSize = 12.sp)
+            Text(post.authorUsername, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
             Spacer(modifier = Modifier.height(4.dp))
-            Text(post.content ?: "", color = Color.White, fontSize = 14.sp, lineHeight = 18.sp)
+            Text(
+                post.content ?: "",
+                color = MaterialTheme.colorScheme.onBackground,
+                fontSize = 14.sp,
+                lineHeight = 18.sp
+            )
 
             if (post.mediaUrls.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(8.dp))
@@ -129,11 +145,11 @@ fun CommentItem(
                     Icon(
                         imageVector = if (post.isLikedByMe) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
                         contentDescription = "Like",
-                        tint = if (post.isLikedByMe) Color(0xFFFF5722) else Color.White,
+                        tint = if (post.isLikedByMe) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.size(16.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("${post.likesCount}", color = Color.Gray, fontSize = 12.sp)
+                    Text("${post.likesCount}", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                 }
 
                 Spacer(modifier = Modifier.width(16.dp))
@@ -145,16 +161,21 @@ fun CommentItem(
                         .clickable(onClick = { onReplyClick() })
                         .padding(end = 4.dp)
                 ) {
-                    Icon(Icons.Outlined.ChatBubbleOutline, contentDescription = "Reply", tint = Color.Gray, modifier = Modifier.size(16.dp))
+                    Icon(
+                        Icons.Outlined.ChatBubbleOutline,
+                        contentDescription = "Reply",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(16.dp)
+                    )
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("${post.commentsCount}", color = Color.Gray, fontSize = 12.sp)
+                    Text("${post.commentsCount}", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp)
                 }
 
                 Spacer(modifier = Modifier.width(16.dp))
 
                 Text(
                     text = "Reply",
-                    color = Color(0xFFFF5722),
+                    color = MaterialTheme.colorScheme.primary,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier

@@ -8,6 +8,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -31,7 +32,7 @@ fun ProfileGridItem(post: Post, onClick: () -> Unit) {
             .padding(1.dp)
             .clip(RoundedCornerShape(4.dp))
             .clickable { onClick() }
-            .background(Color(0xFF262626)),
+            .background(MaterialTheme.colorScheme.surfaceVariant),
         contentAlignment = Alignment.Center
     ) {
         if (post.mediaUrls.isNotEmpty()) {
@@ -91,7 +92,7 @@ fun ProfileGridItem(post: Post, onClick: () -> Unit) {
         } else if (!post.content.isNullOrBlank()) {
             Text(
                 text = post.content,
-                color = Color(0xFFCCCCCC),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 13.sp,
                 maxLines = 5,
                 overflow = TextOverflow.Ellipsis,

@@ -7,7 +7,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -36,11 +35,18 @@ fun NotificationScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Notificaciones", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 20.sp) },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Black)
+                title = {
+                    Text(
+                        "Notificaciones",
+                        color = MaterialTheme.colorScheme.onBackground,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 20.sp
+                    )
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
             )
         },
-        containerColor = Color.Black
+        containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         Box(
             modifier = Modifier
@@ -48,19 +54,26 @@ fun NotificationScreen(
                 .padding(paddingValues)
         ) {
             if (activeCitizenId == null) {
-                Text("Inicia sesión para ver notificaciones", color = Color.Gray, modifier = Modifier.align(Alignment.Center))
+                Text(
+                    "Inicia sesión para ver notificaciones",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.align(Alignment.Center)
+                )
                 return@Scaffold
             }
 
             if (uiState.isLoading) {
-                CircularProgressIndicator(color = Color(0xFFFF5722), modifier = Modifier.align(Alignment.Center))
+                CircularProgressIndicator(
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.align(Alignment.Center)
+                )
             } else {
                 LazyColumn(modifier = Modifier.fillMaxSize()) {
                     if (uiState.notifications.isEmpty()) {
                         item {
                             Text(
                                 "No tienes notificaciones aún",
-                                color = Color.Gray,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.padding(16.dp)
                             )
                         }
@@ -95,7 +108,7 @@ fun NotificationScreen(
                             Spacer(modifier = Modifier.height(16.dp))
                             Text(
                                 text = "Suggested accounts",
-                                color = Color.White,
+                                color = MaterialTheme.colorScheme.onBackground,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 18.sp,
                                 modifier = Modifier.padding(horizontal = 16.dp)

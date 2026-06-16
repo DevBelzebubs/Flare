@@ -17,12 +17,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -61,7 +61,7 @@ fun ParentPostItem(
                 modifier = Modifier
                     .size(40.dp)
                     .clip(CircleShape)
-                    .background(Color.DarkGray)
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
                     .clickable { onAuthorClick(post.authorId) }
             )
             Spacer(modifier = Modifier.height(8.dp))
@@ -69,7 +69,7 @@ fun ParentPostItem(
                 modifier = Modifier
                     .width(2.dp)
                     .fillMaxHeight()
-                    .background(Color(0xFF2A2A2A))
+                    .background(MaterialTheme.colorScheme.outline)
             )
         }
 
@@ -81,14 +81,28 @@ fun ParentPostItem(
                 .padding(top = 16.dp, bottom = 12.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(post.authorUsername, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                Text(
+                    post.authorUsername,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 15.sp
+                )
                 Spacer(modifier = Modifier.width(6.dp))
-                Text("• ${formatRelativeTime(post.createdAt)}", color = Color.Gray, fontSize = 13.sp)
+                Text(
+                    "• ${formatRelativeTime(post.createdAt)}",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 13.sp
+                )
             }
 
             Spacer(modifier = Modifier.height(4.dp))
 
-            Text(post.content ?: "", color = Color.White, fontSize = 15.sp, lineHeight = 20.sp)
+            Text(
+                post.content ?: "",
+                color = MaterialTheme.colorScheme.onBackground,
+                fontSize = 15.sp,
+                lineHeight = 20.sp
+            )
 
             if (post.mediaUrls.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(8.dp))

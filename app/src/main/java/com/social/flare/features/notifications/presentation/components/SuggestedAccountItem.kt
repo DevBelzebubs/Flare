@@ -1,5 +1,6 @@
 package com.social.flare.features.notifications.presentation.components
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -14,12 +15,12 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -50,12 +51,13 @@ fun SuggestedAccountItem(
             modifier = Modifier
                 .size(48.dp)
                 .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.surfaceVariant)
         )
         Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = citizen.display_name,
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onBackground,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
                 maxLines = 1,
@@ -63,7 +65,7 @@ fun SuggestedAccountItem(
             )
             Text(
                 text = citizen.username,
-                color = Color.Gray,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 12.sp,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
@@ -73,7 +75,16 @@ fun SuggestedAccountItem(
         Button(
             onClick = onFollowClick,
             colors = ButtonDefaults.buttonColors(
-                containerColor = if (isFollowing) Color.DarkGray else Color(0xFFFF5722)
+                containerColor = if (isFollowing) {
+                    MaterialTheme.colorScheme.surfaceVariant
+                } else {
+                    MaterialTheme.colorScheme.primary
+                },
+                contentColor = if (isFollowing) {
+                    MaterialTheme.colorScheme.onSurface
+                } else {
+                    MaterialTheme.colorScheme.onPrimary
+                }
             ),
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
             shape = RoundedCornerShape(8.dp),
@@ -82,8 +93,7 @@ fun SuggestedAccountItem(
             Text(
                 text = if (isFollowing) "Siguiendo" else "Seguir",
                 fontSize = 12.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.White
+                fontWeight = FontWeight.Bold
             )
         }
     }

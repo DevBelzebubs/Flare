@@ -31,7 +31,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -71,7 +70,7 @@ public fun MainPostDetail(
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 if (hasParent) {
-                    Box(modifier = Modifier.width(2.dp).height(12.dp).background(Color(0xFF2A2A2A)))
+                    Box(modifier = Modifier.width(2.dp).height(12.dp).background(MaterialTheme.colorScheme.outline))
                 } else {
                     Spacer(modifier = Modifier.height(16.dp))
                 }
@@ -80,39 +79,47 @@ public fun MainPostDetail(
                     model = post.authorAvatarUrl,
                     contentDescription = "Avatar",
                     contentScale = ContentScale.Crop,
-                    modifier = Modifier.size(42.dp).clip(CircleShape).background(Color.DarkGray)
+                    modifier = Modifier.size(42.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant)
                 )
             }
 
             Spacer(modifier = Modifier.width(12.dp))
 
             Column(modifier = Modifier.weight(1f).padding(top = if (hasParent) 12.dp else 16.dp)) {
-                Text(post.authorDisplayName, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                Text(post.authorDisplayName, color = MaterialTheme.colorScheme.onBackground, fontWeight = FontWeight.Bold, fontSize = 15.sp)
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(post.authorUsername, color = Color.Gray, fontSize = 13.sp)
+                    Text(post.authorUsername, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("• ${formatRelativeTime(post.createdAt)}", color = Color.Gray, fontSize = 13.sp)
+                    Text("• ${formatRelativeTime(post.createdAt)}", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
                 }
             }
 
             if (isOwner) {
                 Box {
                     IconButton(onClick = { menuExpanded = true }) {
-                        Icon(Icons.Default.MoreVert, contentDescription = "Opciones", tint = Color.Gray)
+                        Icon(
+                            Icons.Default.MoreVert,
+                            contentDescription = "Opciones",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                     DropdownMenu(
                         expanded = menuExpanded,
                         onDismissRequest = { menuExpanded = false },
-                        modifier = Modifier.background(Color(0xFF1E1E1E))
+                        modifier = Modifier.background(MaterialTheme.colorScheme.surface)
                     ) {
                         DropdownMenuItem(
-                            text = { Text("Editar", color = Color.White) },
-                            leadingIcon = { Icon(Icons.Outlined.Edit, contentDescription = null, tint = Color.White) },
+                            text = { Text("Editar", color = MaterialTheme.colorScheme.onSurface) },
+                            leadingIcon = {
+                                Icon(Icons.Outlined.Edit, contentDescription = null, tint = MaterialTheme.colorScheme.onSurface)
+                            },
                             onClick = { menuExpanded = false; showEditDialog = true }
                         )
                         DropdownMenuItem(
-                            text = { Text("Eliminar", color = Color.Red) },
-                            leadingIcon = { Icon(Icons.Outlined.Delete, contentDescription = null, tint = Color.Red) },
+                            text = { Text("Eliminar", color = MaterialTheme.colorScheme.error) },
+                            leadingIcon = {
+                                Icon(Icons.Outlined.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+                            },
                             onClick = { menuExpanded = false; showDeleteDialog = true }
                         )
                     }
@@ -127,13 +134,13 @@ public fun MainPostDetail(
                 Icon(
                     Icons.Outlined.Repeat,
                     contentDescription = null,
-                    tint = Color(0xFFFF5722),
+                    tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(14.dp)
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
                     text = "Publicación compartida",
-                    color = Color(0xFFFF5722),
+                    color = MaterialTheme.colorScheme.primary,
                     fontSize = 12.sp
                 )
             }
@@ -143,7 +150,7 @@ public fun MainPostDetail(
         post.content?.let { content ->
             Text(
                 text = content,
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier.padding(horizontal = 16.dp),
                 fontSize = 15.sp,
                 lineHeight = 20.sp
@@ -208,7 +215,7 @@ public fun MainPostDetail(
             StatColumn("${post.sharesCount}", "shares")
         }
 
-        HorizontalDivider(color = Color(0xFF1A1A1A), thickness = 1.dp)
+        HorizontalDivider(color = MaterialTheme.colorScheme.outline, thickness = 1.dp)
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
             horizontalArrangement = Arrangement.SpaceBetween
@@ -217,19 +224,19 @@ public fun MainPostDetail(
                 IconTextButton(
                     icon = if (post.isLikedByMe) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
                     text = "Like",
-                    tint = if (post.isLikedByMe) Color(0xFFFF5722) else Color.White,
+                    tint = if (post.isLikedByMe) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
                     onClick = onLikeClick
                 )
                 IconTextButton(
                     icon = Icons.Outlined.ChatBubbleOutline,
                     text = "Comment",
-                    tint = Color.White,
+                    tint = MaterialTheme.colorScheme.onSurface,
                     onClick = onCommentClick
                 )
                 IconTextButton(
                     icon = if (post.isSharedByMe) Icons.Filled.Repeat else Icons.Outlined.Repeat,
                     text = "Repost",
-                    tint = if (post.isSharedByMe) Color(0xFFFF5722) else Color.White,
+                    tint = if (post.isSharedByMe) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
                     onClick = onShareClick
                 )
             }
@@ -237,7 +244,7 @@ public fun MainPostDetail(
                 Icon(
                     imageVector = if (post.isSavedByMe) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
                     contentDescription = "Save",
-                    tint = if (post.isSavedByMe) Color(0xFFFF5722) else Color.White,
+                    tint = if (post.isSavedByMe) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.size(24.dp)
                 )
             }
@@ -247,22 +254,32 @@ public fun MainPostDetail(
     if (showEditDialog) {
         AlertDialog(
             onDismissRequest = { showEditDialog = false },
-            title = { Text("Editar Publicación") },
+            containerColor = MaterialTheme.colorScheme.surface,
+            title = { Text("Editar Publicación", color = MaterialTheme.colorScheme.onSurface) },
             text = {
                 OutlinedTextField(
                     value = editContentText,
                     onValueChange = { if (it.length <= 500) editContentText = it },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                        cursorColor = MaterialTheme.colorScheme.primary
+                    )
                 )
             },
             confirmButton = {
                 TextButton(onClick = {
                     onEditClick(editContentText)
                     showEditDialog = false
-                }) { Text("Guardar") }
+                }) { Text("Guardar", color = MaterialTheme.colorScheme.primary) }
             },
             dismissButton = {
-                TextButton(onClick = { showEditDialog = false }) { Text("Cancelar") }
+                TextButton(onClick = { showEditDialog = false }) {
+                    Text("Cancelar", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
             }
         )
     }
@@ -270,18 +287,24 @@ public fun MainPostDetail(
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
-            title = { Text("Eliminar Publicación") },
+            containerColor = MaterialTheme.colorScheme.surface,
+            title = { Text("Eliminar Publicación", color = MaterialTheme.colorScheme.onSurface) },
             text = {
-                Text("¿Estás seguro de que deseas eliminar esta publicación? Esta acción no se puede deshacer.")
+                Text(
+                    "¿Estás seguro de que deseas eliminar esta publicación? Esta acción no se puede deshacer.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             },
             confirmButton = {
                 TextButton(onClick = {
                     onDeleteClick()
                     showDeleteDialog = false
-                }) { Text("Eliminar") }
+                }) { Text("Eliminar", color = MaterialTheme.colorScheme.error) }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) { Text("Cancelar") }
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text("Cancelar", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
             }
         )
     }

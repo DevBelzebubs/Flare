@@ -11,10 +11,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.social.flare.features.profile.presentation.viewmodel.ProfileUiState
 
@@ -29,7 +29,7 @@ fun ProfileStatsSection(
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 12.dp)
             .clip(RoundedCornerShape(12.dp))
-            .background(Color(0xFF121212))
+            .background(MaterialTheme.colorScheme.surface)
     ) {
         Row(
             modifier = Modifier
@@ -40,11 +40,11 @@ fun ProfileStatsSection(
             Box(modifier = Modifier.clickable { }) {
                 StatItem(state.postsCount.toString(), "Posts")
             }
-            HorizontalDivider(modifier = Modifier.height(36.dp).width(1.dp), color = Color(0xFF2A2A2A))
+            HorizontalDivider(modifier = Modifier.height(36.dp).width(1.dp), color = MaterialTheme.colorScheme.outline)
             Box(modifier = Modifier.clickable { onFollowersClick() }) {
                 StatItem(state.followersCount.toString(), "Followers")
             }
-            HorizontalDivider(modifier = Modifier.height(36.dp).width(1.dp), color = Color(0xFF2A2A2A))
+            HorizontalDivider(modifier = Modifier.height(36.dp).width(1.dp), color = MaterialTheme.colorScheme.outline)
             Box(modifier = Modifier.clickable { onFollowingClick() }) {
                 StatItem(state.followingCount.toString(), "Following")
             }

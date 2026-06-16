@@ -15,7 +15,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
@@ -82,6 +81,7 @@ fun SettingsScreen(
         }
     }
     val profileState by profileViewModel.uiState.collectAsState()
+    val colorScheme = MaterialTheme.colorScheme
     CompositionLocalProvider(
         LocalDensity provides Density(
             density = currentDensity.density,
@@ -89,16 +89,17 @@ fun SettingsScreen(
         )
     ) {
         Scaffold(
-            containerColor = Color.Black,
+            containerColor = colorScheme.background,
             topBar = {
                 TopAppBar(
-                    title = { Text("Settings", color = Color.White, fontWeight = FontWeight.Bold) },
+                    title = { Text("Settings", color = colorScheme.onBackground, fontWeight = FontWeight.Bold) },
                     navigationIcon = {
                         IconButton(onClick = onNavigateBack) {
-                            Icon(Icons.Default.ArrowBack, contentDescription = null, tint = Color.White)
+                            Icon(Icons.Default.ArrowBack, contentDescription = null, tint = colorScheme.onBackground)
                         }
                     },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Black)
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = colorScheme.background),
+                    windowInsets = WindowInsets(0, 0, 0, 0)
                 )
             }
         ) { padding ->
@@ -119,7 +120,7 @@ fun SettingsScreen(
                     when (profileState) {
                         is ProfileUiState.Loading -> {
                             Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                                CircularProgressIndicator(color = Color(0xFFFF5722))
+                                CircularProgressIndicator(color = colorScheme.primary)
                             }
                         }
 
@@ -251,14 +252,14 @@ fun SettingsScreen(
                         .padding(horizontal = 24.dp)
                         .height(50.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = if (isGuest) Color(0xFFFF5722) else Color(0xFF1A0000)
+                        containerColor = if (isGuest) colorScheme.primary else colorScheme.error.copy(alpha = 0.10f),
+                        contentColor = if (isGuest) colorScheme.onPrimary else colorScheme.error
                     ),
                     shape = RoundedCornerShape(12.dp),
-                    border = if (isGuest) null else BorderStroke(1.dp, Color(0xFF440000))
+                    border = if (isGuest) null else BorderStroke(1.dp, colorScheme.error.copy(alpha = 0.35f))
                 ) {
                     Text(
                         text = if (isGuest) "Log In" else "Log Out",
-                        color = if (isGuest) Color.White else Color.Red,
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -337,16 +338,16 @@ private fun SettingsSupportDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = Color(0xFF121212),
+        containerColor = MaterialTheme.colorScheme.surface,
         title = {
-            Text(title, color = Color.White, fontWeight = FontWeight.Bold)
+            Text(title, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
         },
         text = {
-            Text(message, color = Color.LightGray)
+            Text(message, color = MaterialTheme.colorScheme.onSurfaceVariant)
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text("OK", color = Color(0xFFFF5722), fontWeight = FontWeight.Bold)
+                Text("OK", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
             }
         }
     )
@@ -370,9 +371,9 @@ private fun ChangePasswordDialog(
                 onDismiss()
             }
         },
-        containerColor = Color(0xFF121212),
+        containerColor = MaterialTheme.colorScheme.surface,
         title = {
-            Text("Change Password", color = Color.White, fontWeight = FontWeight.Bold)
+            Text("Change Password", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
         },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -387,13 +388,13 @@ private fun ChangePasswordDialog(
                     visualTransformation = PasswordVisualTransformation(),
                     enabled = !isSaving,
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Color(0xFFFF5722),
-                        unfocusedBorderColor = Color.DarkGray,
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
-                        cursorColor = Color(0xFFFF5722),
-                        focusedLabelColor = Color(0xFFFF5722),
-                        unfocusedLabelColor = Color.Gray
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        cursorColor = MaterialTheme.colorScheme.primary,
+                        focusedLabelColor = MaterialTheme.colorScheme.primary,
+                        unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 )
                 OutlinedTextField(
@@ -407,23 +408,23 @@ private fun ChangePasswordDialog(
                     visualTransformation = PasswordVisualTransformation(),
                     enabled = !isSaving,
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Color(0xFFFF5722),
-                        unfocusedBorderColor = Color.DarkGray,
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
-                        cursorColor = Color(0xFFFF5722),
-                        focusedLabelColor = Color(0xFFFF5722),
-                        unfocusedLabelColor = Color.Gray
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        cursorColor = MaterialTheme.colorScheme.primary,
+                        focusedLabelColor = MaterialTheme.colorScheme.primary,
+                        unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 )
                 errorMessage?.let { message ->
-                    Text(message, color = Color.Red)
+                    Text(message, color = MaterialTheme.colorScheme.error)
                 }
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss, enabled = !isSaving) {
-                Text("Cancel", color = Color.Gray, fontWeight = FontWeight.Bold)
+                Text("Cancel", color = MaterialTheme.colorScheme.onSurfaceVariant, fontWeight = FontWeight.Bold)
             }
         },
         confirmButton = {
@@ -451,7 +452,7 @@ private fun ChangePasswordDialog(
             ) {
                 Text(
                     text = if (isSaving) "Saving..." else "Update Password",
-                    color = Color(0xFFFF5722),
+                    color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Bold
                 )
             }
@@ -481,9 +482,9 @@ private fun PrivacySettingsDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = Color(0xFF121212),
+        containerColor = MaterialTheme.colorScheme.surface,
         title = {
-            Text("Privacy Settings", color = Color.White, fontWeight = FontWeight.Bold)
+            Text("Privacy Settings", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
         },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -504,14 +505,14 @@ private fun PrivacySettingsDialog(
                 )
                 Text(
                     text = "These privacy preferences are saved on this device. Backend enforcement can be added when remote privacy fields are available.",
-                    color = Color.Gray,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     style = MaterialTheme.typography.bodySmall
                 )
             }
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text("Close", color = Color(0xFFFF5722), fontWeight = FontWeight.Bold)
+                Text("Close", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
             }
         }
     )
@@ -529,17 +530,18 @@ private fun PrivacySettingSwitchRow(
     ) {
         Text(
             text = title,
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.weight(1f)
         )
         Switch(
             checked = checked,
             onCheckedChange = onCheckedChange,
             colors = SwitchDefaults.colors(
-                checkedThumbColor = Color.White,
-                checkedTrackColor = Color(0xFFFF5722),
-                uncheckedThumbColor = Color.Gray,
-                uncheckedTrackColor = Color(0xFF333333)
+                checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
+                checkedTrackColor = MaterialTheme.colorScheme.primary,
+                uncheckedThumbColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                uncheckedTrackColor = MaterialTheme.colorScheme.surfaceVariant,
+                uncheckedBorderColor = MaterialTheme.colorScheme.outline
             )
         )
     }

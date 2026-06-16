@@ -6,11 +6,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -27,20 +27,20 @@ fun ProfileInfoSection(citizen: CitizenEntity) {
     ) {
         Text(
             text = citizen.display_name,
-            color = Color.White,
+            color = MaterialTheme.colorScheme.onBackground,
             fontWeight = FontWeight.Bold,
             fontSize = 22.sp
         )
         Text(
             text = citizen.username,
-            color = Color(0xFFFF5722),
+            color = MaterialTheme.colorScheme.primary,
             fontSize = 14.sp
         )
         if (!citizen.bio.isNullOrBlank()) {
             Spacer(modifier = Modifier.height(10.dp))
             Text(
                 text = citizen.bio,
-                color = Color(0xFFB0B0B0),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 14.sp,
                 textAlign = TextAlign.Center,
                 lineHeight = 20.sp,
@@ -49,7 +49,7 @@ fun ProfileInfoSection(citizen: CitizenEntity) {
         }
         Spacer(modifier = Modifier.height(12.dp))
         HorizontalDivider(
-            color = Color(0xFF2A2A2A),
+            color = MaterialTheme.colorScheme.outline,
             thickness = 1.5.dp,
             modifier = Modifier.padding(horizontal = 48.dp)
         )

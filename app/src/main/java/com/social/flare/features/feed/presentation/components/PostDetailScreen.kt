@@ -19,7 +19,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -60,20 +59,29 @@ fun PostDetailScreen(
         viewModel.loadPostDetail(postId, activeCitizenId ?: "")
     }
 
-    Box(modifier = Modifier.fillMaxSize().background(Color.Black)) {
+    Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         Scaffold(
             topBar = {
                 TopAppBar(
                     title = {
-                        Text("Post", color = Color.White, fontWeight = FontWeight.Bold, modifier = Modifier.fillMaxWidth().wrapContentWidth(Alignment.CenterHorizontally))
+                        Text(
+                            "Post",
+                            color = MaterialTheme.colorScheme.onBackground,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.fillMaxWidth().wrapContentWidth(Alignment.CenterHorizontally)
+                        )
                     },
                     navigationIcon = {
                         IconButton(onClick = onNavigateBack) {
-                            Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.White)
+                            Icon(
+                                Icons.Default.ArrowBack,
+                                contentDescription = "Back",
+                                tint = MaterialTheme.colorScheme.onBackground
+                            )
                         }
                     },
                     actions = { Spacer(modifier = Modifier.width(48.dp)) },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Black),
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
                     windowInsets = WindowInsets(0, 0, 0, 0)
                 )
             },
@@ -105,18 +113,18 @@ fun PostDetailScreen(
                     }
                 )
             },
-            containerColor = Color.Black,
+            containerColor = MaterialTheme.colorScheme.background,
             contentWindowInsets = WindowInsets(0, 0, 0, 0)
         ) { paddingValues ->
             when {
                 uiState.isLoading -> {
                     Box(modifier = Modifier.fillMaxSize().padding(paddingValues), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(color = Color(0xFFFF5722))
+                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                     }
                 }
                 uiState.errorMessage != null -> {
                     Box(modifier = Modifier.fillMaxSize().padding(paddingValues), contentAlignment = Alignment.Center) {
-                        Text(text = "Error: ${uiState.errorMessage}", color = Color.Red)
+                        Text(text = "Error: ${uiState.errorMessage}", color = MaterialTheme.colorScheme.error)
                     }
                 }
                 uiState.postDetail != null -> {
@@ -170,10 +178,10 @@ fun PostDetailScreen(
                             )
                         }
                         item {
-                            HorizontalDivider(color = Color(0xFF1A1A1A), thickness = 1.dp)
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outline, thickness = 1.dp)
                             Text(
                                 text = "Comments (${detail.replies.size})",
-                                color = Color.White,
+                                color = MaterialTheme.colorScheme.onBackground,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 16.sp,
                                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
@@ -195,7 +203,11 @@ fun PostDetailScreen(
                             )
 
                             if (!isNestedReply) {
-                                HorizontalDivider(color = Color(0xFF1A1A1A), thickness = 0.5.dp, modifier = Modifier.padding(vertical = 4.dp))
+                                HorizontalDivider(
+                                    color = MaterialTheme.colorScheme.outline,
+                                    thickness = 0.5.dp,
+                                    modifier = Modifier.padding(vertical = 4.dp)
+                                )
                             }
                         }
                     }

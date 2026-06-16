@@ -2,6 +2,7 @@ package com.social.flare
 
 import android.content.Context
 import android.os.Bundle
+import androidx.activity.SystemBarStyle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -18,7 +19,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
@@ -27,6 +28,10 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.social.flare.core.data.SettingsManager
+import com.social.flare.core.ui.theme.FlareDarkBackground
+import com.social.flare.core.ui.theme.FlareDarkSurface
+import com.social.flare.core.ui.theme.FlareLightBackground
+import com.social.flare.core.ui.theme.FlareLightSurface
 import com.social.flare.core.ui.theme.FlareTheme
 import com.social.flare.features.ai.framework.AiInteractionWorker
 import com.social.flare.features.main.presentation.MainScreen
@@ -41,7 +46,13 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val app = (LocalContext.current.applicationContext as FlareApp)
+            val settingsManager = remember { SettingsManager(applicationContext) }
+            val darkModeEnabled by settingsManager.darkModeEnabledFlow.collectAsState(initial = true)
             var initialized by remember { mutableStateOf(app.isInitialized) }
+
+            LaunchedEffect(darkModeEnabled) {
+                configureSystemBars(darkModeEnabled)
+            }
 
             LaunchedEffect(Unit) {
                 app.awaitInitialization()
@@ -49,12 +60,16 @@ class MainActivity : ComponentActivity() {
             }
 
             if (!initialized) {
-                FlareTheme(darkTheme = true) {
+                FlareTheme(darkTheme = darkModeEnabled) {
                     Surface(
                         modifier = Modifier.fillMaxSize(),
                         color = MaterialTheme.colorScheme.background
                     ) {
-                        Box(modifier = Modifier.fillMaxSize().background(Color.Black))
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(MaterialTheme.colorScheme.background)
+                        )
                     }
                 }
                 return@setContent
@@ -65,15 +80,32 @@ class MainActivity : ComponentActivity() {
                 //forceAiTest(applicationContext)
             }
 
-            val settingsManager = remember { SettingsManager(applicationContext) }
-            val darkModeEnabled by settingsManager.darkModeEnabledFlow.collectAsState(initial = true)
-
             FlareTheme(darkTheme = darkModeEnabled) {
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                     MainScreen()
                 }
             }
         }
+    }
+}
+
+private fun MainActivity.configureSystemBars(darkModeEnabled: Boolean) {
+    if (darkModeEnabled) {
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.dark(FlareDarkBackground.toArgb()),
+            navigationBarStyle = SystemBarStyle.dark(FlareDarkSurface.toArgb())
+        )
+    } else {
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.light(
+                FlareLightBackground.toArgb(),
+                FlareDarkBackground.toArgb()
+            ),
+            navigationBarStyle = SystemBarStyle.light(
+                FlareLightSurface.toArgb(),
+                FlareDarkSurface.toArgb()
+            )
+        )
     }
 }
 

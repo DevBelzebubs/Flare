@@ -36,28 +36,33 @@ fun LoginScreen(
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var showResetPasswordDialog by remember { mutableStateOf(false) }
     var resetEmail by remember { mutableStateOf("") }
+    val colorScheme = MaterialTheme.colorScheme
 
     if (showResetPasswordDialog) {
         AlertDialog(
             onDismissRequest = { showResetPasswordDialog = false },
-            containerColor = Color(0xFF1A1A1A),
-            title = { Text("Reset Password", color = Color(0xFFFF5722), fontWeight = FontWeight.Bold) },
+            containerColor = colorScheme.surface,
+            title = { Text("Reset Password", color = colorScheme.primary, fontWeight = FontWeight.Bold) },
             text = {
                 Column {
-                    Text("Enter your email to receive a reset link:", color = Color.White.copy(alpha = 0.8f))
+                    Text("Enter your email to receive a reset link:", color = colorScheme.onSurfaceVariant)
                     Spacer(modifier = Modifier.height(16.dp))
                     OutlinedTextField(
                         value = resetEmail,
                         onValueChange = { resetEmail = it },
-                        placeholder = { Text("example@gmail.com", color = Color.Gray) },
+                        placeholder = { Text("example@gmail.com") },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedContainerColor = Color(0xFF252525),
-                            unfocusedContainerColor = Color(0xFF252525),
-                            focusedTextColor = Color.White,
-                            unfocusedTextColor = Color.White,
-                            focusedBorderColor = Color(0xFFFF5722)
+                            focusedContainerColor = colorScheme.surfaceVariant,
+                            unfocusedContainerColor = colorScheme.surfaceVariant,
+                            focusedTextColor = colorScheme.onSurface,
+                            unfocusedTextColor = colorScheme.onSurface,
+                            focusedBorderColor = colorScheme.primary,
+                            unfocusedBorderColor = colorScheme.outline,
+                            cursorColor = colorScheme.primary,
+                            focusedPlaceholderColor = colorScheme.onSurfaceVariant,
+                            unfocusedPlaceholderColor = colorScheme.onSurfaceVariant
                         )
                     )
                 }
@@ -68,14 +73,17 @@ fun LoginScreen(
                         showResetPasswordDialog = false
                         errorMessage = "If an account exists for $resetEmail, a reset link will be sent."
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF5722))
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = colorScheme.primary,
+                        contentColor = colorScheme.onPrimary
+                    )
                 ) {
-                    Text("Send Link", color = Color.White)
+                    Text("Send Link")
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showResetPasswordDialog = false }) {
-                    Text("Cancel", color = Color.Gray)
+                    Text("Cancel", color = colorScheme.onSurfaceVariant)
                 }
             }
         )
@@ -84,7 +92,7 @@ fun LoginScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black)
+            .background(colorScheme.background)
     ) {
         // Fondo con resplandores (estilo Figma)
         Box(
@@ -92,7 +100,7 @@ fun LoginScreen(
                 .fillMaxSize()
                 .background(
                     Brush.radialGradient(
-                        0.0f to Color(0xFFFF9800).copy(alpha = 0.15f),
+                        0.0f to colorScheme.primary.copy(alpha = 0.16f),
                         0.5f to Color.Transparent,
                         center = androidx.compose.ui.geometry.Offset(500f, 0f),
                         radius = 1000f
@@ -104,7 +112,7 @@ fun LoginScreen(
                 .fillMaxSize()
                 .background(
                     Brush.radialGradient(
-                        0.0f to Color(0xFFFF5722).copy(alpha = 0.1f),
+                        0.0f to colorScheme.primary.copy(alpha = 0.1f),
                         0.6f to Color.Transparent,
                         center = androidx.compose.ui.geometry.Offset(0f, 1000f),
                         radius = 800f
@@ -116,7 +124,7 @@ fun LoginScreen(
                 .fillMaxSize()
                 .background(
                     Brush.radialGradient(
-                        0.0f to Color.White.copy(alpha = 0.08f),
+                        0.0f to colorScheme.surfaceVariant.copy(alpha = 0.28f),
                         0.5f to Color.Transparent,
                         center = androidx.compose.ui.geometry.Offset(1000f, 2000f),
                         radius = 1000f
@@ -135,8 +143,8 @@ fun LoginScreen(
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(0.5.dp, Color.Gray.copy(alpha = 0.2f), RoundedCornerShape(32.dp)),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFF1A1A1A).copy(alpha = 0.85f)),
+                    .border(0.5.dp, colorScheme.outline.copy(alpha = 0.35f), RoundedCornerShape(32.dp)),
+                colors = CardDefaults.cardColors(containerColor = colorScheme.surface.copy(alpha = 0.92f)),
                 shape = RoundedCornerShape(32.dp)
             ) {
                 Column(
@@ -145,7 +153,7 @@ fun LoginScreen(
                 ) {
                     Text(
                         text = "Welcome to FLARE",
-                        color = Color.White.copy(alpha = 0.9f),
+                        color = colorScheme.onSurface,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.SemiBold
                     )
@@ -156,13 +164,13 @@ fun LoginScreen(
                     Box(
                         modifier = Modifier
                             .size(64.dp)
-                            .background(Color.White, RoundedCornerShape(20.dp)),
+                            .background(colorScheme.onPrimary, RoundedCornerShape(20.dp)),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.Default.Whatshot,
                             contentDescription = null,
-                            tint = Color(0xFFFF5722),
+                            tint = colorScheme.primary,
                             modifier = Modifier.size(38.dp)
                         )
                     }
@@ -171,7 +179,7 @@ fun LoginScreen(
 
                     Text(
                         text = "Login",
-                        color = Color(0xFFFF5722),
+                        color = colorScheme.primary,
                         fontSize = 42.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -182,7 +190,7 @@ fun LoginScreen(
                     errorMessage?.let {
                         Text(
                             text = it,
-                            color = Color.Red,
+                            color = colorScheme.error,
                             fontSize = 12.sp,
                             modifier = Modifier.padding(bottom = 8.dp)
                         )
@@ -191,9 +199,9 @@ fun LoginScreen(
                     // Campo EMAIL
                     Column(modifier = Modifier.fillMaxWidth()) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Email, contentDescription = null, tint = Color(0xFFFF5722), modifier = Modifier.size(18.dp))
+                            Icon(Icons.Default.Email, contentDescription = null, tint = colorScheme.primary, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("EMAIL", color = Color(0xFFFF5722), fontSize = 12.sp, fontWeight = FontWeight.ExtraBold)
+                            Text("EMAIL", color = colorScheme.primary, fontSize = 12.sp, fontWeight = FontWeight.ExtraBold)
                         }
                         Spacer(modifier = Modifier.height(8.dp))
                         OutlinedTextField(
@@ -202,16 +210,19 @@ fun LoginScreen(
                                 email = it
                                 errorMessage = null
                             },
-                            placeholder = { Text("example@gmail.com", color = Color.Gray.copy(alpha = 0.6f), fontSize = 14.sp) },
+                            placeholder = { Text("example@gmail.com", fontSize = 14.sp) },
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(16.dp),
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedContainerColor = Color(0xFF252525),
-                                unfocusedContainerColor = Color(0xFF252525),
-                                focusedBorderColor = Color.Gray.copy(alpha = 0.4f),
-                                unfocusedBorderColor = Color.Transparent,
-                                focusedTextColor = Color.White,
-                                unfocusedTextColor = Color.White
+                                focusedContainerColor = colorScheme.surfaceVariant,
+                                unfocusedContainerColor = colorScheme.surfaceVariant,
+                                focusedBorderColor = colorScheme.primary,
+                                unfocusedBorderColor = colorScheme.outline.copy(alpha = 0.5f),
+                                focusedTextColor = colorScheme.onSurface,
+                                unfocusedTextColor = colorScheme.onSurface,
+                                cursorColor = colorScheme.primary,
+                                focusedPlaceholderColor = colorScheme.onSurfaceVariant,
+                                unfocusedPlaceholderColor = colorScheme.onSurfaceVariant
                             ),
                             singleLine = true
                         )
@@ -222,9 +233,9 @@ fun LoginScreen(
                     // Campo PASSWORD
                     Column(modifier = Modifier.fillMaxWidth()) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.Lock, contentDescription = null, tint = Color(0xFFFF5722), modifier = Modifier.size(18.dp))
+                            Icon(Icons.Default.Lock, contentDescription = null, tint = colorScheme.primary, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("PASSWORD", color = Color(0xFFFF5722), fontSize = 12.sp, fontWeight = FontWeight.ExtraBold)
+                            Text("PASSWORD", color = colorScheme.primary, fontSize = 12.sp, fontWeight = FontWeight.ExtraBold)
                         }
                         Spacer(modifier = Modifier.height(8.dp))
                         OutlinedTextField(
@@ -233,17 +244,20 @@ fun LoginScreen(
                                 password = it
                                 errorMessage = null
                             },
-                            placeholder = { Text("Must have at least 8 characters", color = Color.Gray.copy(alpha = 0.6f), fontSize = 14.sp) },
+                            placeholder = { Text("Must have at least 8 characters", fontSize = 14.sp) },
                             visualTransformation = PasswordVisualTransformation(),
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(16.dp),
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedContainerColor = Color(0xFF252525),
-                                unfocusedContainerColor = Color(0xFF252525),
-                                focusedBorderColor = Color.Gray.copy(alpha = 0.4f),
-                                unfocusedBorderColor = Color.Transparent,
-                                focusedTextColor = Color.White,
-                                unfocusedTextColor = Color.White
+                                focusedContainerColor = colorScheme.surfaceVariant,
+                                unfocusedContainerColor = colorScheme.surfaceVariant,
+                                focusedBorderColor = colorScheme.primary,
+                                unfocusedBorderColor = colorScheme.outline.copy(alpha = 0.5f),
+                                focusedTextColor = colorScheme.onSurface,
+                                unfocusedTextColor = colorScheme.onSurface,
+                                cursorColor = colorScheme.primary,
+                                focusedPlaceholderColor = colorScheme.onSurfaceVariant,
+                                unfocusedPlaceholderColor = colorScheme.onSurfaceVariant
                             ),
                             singleLine = true
                         )
@@ -251,7 +265,7 @@ fun LoginScreen(
 
                     Text(
                         text = "Forgot Password?",
-                        color = Color(0xFFFF5722),
+                        color = colorScheme.primary,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Medium,
                         modifier = Modifier
@@ -279,20 +293,23 @@ fun LoginScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(56.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF5722)),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = colorScheme.primary,
+                            contentColor = colorScheme.onPrimary
+                        ),
                         shape = RoundedCornerShape(16.dp),
                         elevation = ButtonDefaults.buttonElevation(defaultElevation = 8.dp)
                     ) {
-                        Text("Login", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                        Text("Login", fontSize = 18.sp, fontWeight = FontWeight.Bold)
                     }
 
                     Spacer(modifier = Modifier.height(20.dp))
 
                     Row {
-                        Text("Don't have account? ", color = Color.White.copy(alpha = 0.7f), fontSize = 13.sp)
+                        Text("Don't have account? ", color = colorScheme.onSurfaceVariant, fontSize = 13.sp)
                         Text(
                             text = "Register",
-                            color = Color(0xFFFF5722),
+                            color = colorScheme.primary,
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.clickable { onNavigateToSignUp() }

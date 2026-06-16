@@ -68,16 +68,16 @@ fun EditProfileScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp)
-                    .background(Color.Black),
+                    .background(MaterialTheme.colorScheme.background),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(onClick = onNavigateBack) {
-                    Icon(Icons.Default.ArrowBack, tint = Color.White, contentDescription = null)
+                    Icon(Icons.Default.ArrowBack, tint = MaterialTheme.colorScheme.onBackground, contentDescription = null)
                 }
 
                 Text(
                     text = "Edit Profile",
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onBackground,
                     fontWeight = FontWeight.Bold,
                     fontSize = 18.sp,
                     modifier = Modifier.weight(1f),
@@ -90,14 +90,14 @@ fun EditProfileScreen(
                 ) {
                     Text(
                         "Save",
-                        color = if (isLoading) Color.Gray else Color(0xFFFF5722),
+                        color = if (isLoading) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Bold,
                         fontSize = 14.sp
                     )
                 }
             }
         },
-        containerColor = Color.Black
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Box(modifier = Modifier.fillMaxSize().padding(padding)) {
             LazyColumn(modifier = Modifier.fillMaxSize().padding(bottom = 80.dp)) {
@@ -114,7 +114,7 @@ fun EditProfileScreen(
                                 contentScale = ContentScale.Crop,
                                 modifier = Modifier
                                     .fillMaxSize()
-                                    .background(Color(0xFF262626)) // Placeholder gris oscuro
+                                    .background(MaterialTheme.colorScheme.surfaceVariant)
                                     .clickable {
                                         bannerLauncher.launch(
                                             androidx.activity.result.PickVisualMediaRequest(
@@ -139,8 +139,8 @@ fun EditProfileScreen(
                                 .align(Alignment.BottomCenter)
                                 .size(90.dp) // Tamaño del avatar
                                 .clip(CircleShape)
-                                .background(Color(0xFF262626))
-                                .border(4.dp, Color.Black, CircleShape)
+                                .background(MaterialTheme.colorScheme.surfaceVariant)
+                                .border(4.dp, MaterialTheme.colorScheme.background, CircleShape)
                                 .clickable {
                                     avatarLauncher.launch(
                                         androidx.activity.result.PickVisualMediaRequest(
@@ -211,7 +211,12 @@ fun EditProfileScreen(
             Button(
                 onClick = { saveProfile() },
                 enabled = !isLoading,
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF5722)),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                ),
                 modifier = Modifier
                     .fillMaxWidth()
                     .align(Alignment.BottomCenter)
@@ -221,7 +226,6 @@ fun EditProfileScreen(
             ) {
                 Text(
                     "Save",
-                    color = Color.White,
                     fontWeight = FontWeight.ExtraBold,
                     fontSize = 16.sp
                 )
@@ -234,7 +238,7 @@ fun EditProfileScreen(
                         .background(Color.Black.copy(alpha = 0.7f)),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator(color = Color(0xFFFF5722))
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                 }
             }
         }
