@@ -65,9 +65,10 @@ fun AdminPostsScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(uiState.posts, key = { it.postId }) { post ->
+                    val onDelete = remember(post) { { viewModel.deletePost(post.postId) } }
                     AdminPostCard(
                         post = post,
-                        onDelete = { viewModel.deletePost(post.postId) }
+                        onDelete = onDelete
                     )
                 }
             }

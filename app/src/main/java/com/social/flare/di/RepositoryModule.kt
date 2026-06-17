@@ -2,6 +2,8 @@ package com.social.flare.di
 
 import com.social.flare.FlareApp
 import com.social.flare.core.media.CloudinaryService
+import com.social.flare.features.admin.data.repository.AdminRepositoryImpl
+import com.social.flare.features.admin.domain.repository.AdminRepository
 import com.social.flare.features.ai.data.repository.AiAgentRepositoryImpl
 import com.social.flare.features.ai.domain.repository.AiAgentRepository
 import com.social.flare.features.feed.data.repository.FeedRepositoryImpl
@@ -61,6 +63,21 @@ abstract class RepositoryModule {
                 citizenDao = app.database.citizenDao(),
                 cloudinaryService = cloudinaryService,
                 supabase = supabase
+            )
+        }
+        @Provides
+        @Singleton
+        fun provideAdminRepository(
+            app: FlareApp,
+            supabase: SupabaseClient,
+            cloudinaryService: CloudinaryService
+        ): AdminRepository {
+            return AdminRepositoryImpl(
+                citizenDao = app.database.citizenDao(),
+                postDao = app.database.postDao(),
+                newsDao = app.database.newsDao(),
+                supabase = supabase,
+                cloudinaryService = cloudinaryService
             )
         }
     }

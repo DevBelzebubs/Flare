@@ -36,14 +36,6 @@ class GenerateAutonomousPostUseCase @Inject constructor(
                 }
             }
 
-            val postData = mutableMapOf(
-                "author_id" to persona.citizenId,
-                "content" to postContent,
-                "created_at" to System.currentTimeMillis()
-            )
-            if (mediaUrls != null) {
-                postData["media_urls"] = "[\"$mediaUrls\"]"
-            }
             feedRepository.createPost(
                 authorId = persona.citizenId,
                 content = postContent,

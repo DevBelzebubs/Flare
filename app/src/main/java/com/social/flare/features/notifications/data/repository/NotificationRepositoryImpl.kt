@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -121,5 +122,6 @@ class NotificationRepositoryImpl(
         }
         realtimeChannel = null
         realtimeScope = null
+        cleanupScope.cancel()
     }
 }

@@ -106,6 +106,7 @@ fun CustomGalleryScreen(
                 verticalArrangement = Arrangement.spacedBy(2.dp)
             ) {
                 items(galleryImages, key = { it }) { uri ->
+                    val onClick = remember(uri) { { onImageSelected(uri) } }
                     AsyncImage(
                         model = uri,
                         contentDescription = "Gallery Image",
@@ -113,7 +114,7 @@ fun CustomGalleryScreen(
                         modifier = Modifier
                             .aspectRatio(9f / 16f)
                             .background(Color.DarkGray)
-                            .clickable { onImageSelected(uri) }
+                            .clickable(onClick = onClick)
                     )
                 }
             }

@@ -124,9 +124,10 @@ fun ProfileContent(
                     items = myPosts,
                     key = { it.id }
                 ) { post ->
+                    val onClick = remember(post) { { onPostClick(post.id) } }
                     ProfileGridItem(
                         post = post,
-                        onClick = { onPostClick(post.id) }
+                        onClick = onClick
                     )
                 }
             }
@@ -140,9 +141,10 @@ fun ProfileContent(
                     items = savedPosts,
                     key = { it.id }
                 ) { post ->
+                    val onClick = remember(post) { { onPostClick(post.id) } }
                     ProfileGridItem(
                         post = post,
-                        onClick = { onPostClick(post.id) }
+                        onClick = onClick
                     )
                 }
             }
@@ -156,9 +158,10 @@ fun ProfileContent(
                     items = sharedPosts,
                     key = { it.id }
                 ) { post ->
+                    val onClick = remember(post) { { onPostClick(post.id) } }
                     ProfileGridItem(
                         post = post,
-                        onClick = { onPostClick(post.id) }
+                        onClick = onClick
                     )
                 }
             }

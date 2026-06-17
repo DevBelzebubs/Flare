@@ -76,6 +76,7 @@ interface PostDao {
     INNER JOIN citizen_table c ON p.author_id = c.citizen_id
     WHERE p.parent_post_id IS NULL AND p.shared_post_id IS NULL 
     ORDER BY p.created_at DESC
+    LIMIT 100
     """)
     fun getFeedPosts(currentUserId: String): Flow<List<PostWithDetails>>
     @Transaction
@@ -94,6 +95,8 @@ interface PostDao {
     FROM post_table p
     INNER JOIN citizen_table c ON p.author_id = c.citizen_id
     WHERE p.parent_post_id IS NULL AND p.shared_post_id IS NULL
+    ORDER BY p.created_at DESC
+    LIMIT 100
     """)
     fun getFeedPostsGuest(): Flow<List<PostWithDetails>>
 
@@ -130,6 +133,7 @@ interface PostDao {
     INNER JOIN citizen_table c ON p.author_id = c.citizen_id
     WHERE p.parent_post_id = :parentPostId
     ORDER BY p.created_at ASC
+    LIMIT 50
     """)
     fun getPostReplies(parentPostId: String, currentUserId: String): Flow<List<PostWithDetails>>
 
@@ -181,6 +185,7 @@ interface PostDao {
     INNER JOIN citizen_table c ON p.author_id = c.citizen_id
     WHERE p.author_id = :userId AND p.parent_post_id IS NULL AND p.shared_post_id IS NULL
     ORDER BY p.created_at DESC
+    LIMIT 100
 """)
     fun getPostsByAuthor(userId: String): Flow<List<PostWithDetails>>
 
@@ -200,6 +205,7 @@ interface PostDao {
     INNER JOIN citizen_table c ON p.author_id = c.citizen_id
     WHERE p.parent_post_id = :parentId
     ORDER BY p.created_at ASC
+    LIMIT 50
     """)
     fun getRepliesForPost(parentId: String, currentUserId: String): Flow<List<PostWithDetails>>
 
@@ -219,6 +225,7 @@ interface PostDao {
     INNER JOIN citizen_table c ON p.author_id = c.citizen_id
     WHERE sp.citizen_id = :currentUserId
     ORDER BY sp.saved_at DESC
+    LIMIT 100
     """)
     fun getSavedPosts(currentUserId: String): Flow<List<PostWithDetails>>
     @Transaction
@@ -257,6 +264,7 @@ interface PostDao {
     INNER JOIN citizen_table c ON p.author_id = c.citizen_id
     WHERE p.parent_post_id IS NULL
     ORDER BY p.created_at DESC
+    LIMIT 500
     """)
     suspend fun getAllPostsAdmin(): List<PostWithDetails>
 
@@ -290,6 +298,7 @@ interface PostDao {
     INNER JOIN citizen_table c ON p.author_id = c.citizen_id
     WHERE p.author_id = :userId AND p.shared_post_id IS NOT NULL
     ORDER BY p.created_at DESC
+    LIMIT 100
     """)
     fun getSharedPosts(userId: String): Flow<List<PostWithDetails>>
 

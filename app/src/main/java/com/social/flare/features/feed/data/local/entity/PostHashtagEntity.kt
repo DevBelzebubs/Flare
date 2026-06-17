@@ -8,7 +8,7 @@ import kotlinx.serialization.Serializable
 @Entity(
     tableName = "post_hashtags",
     primaryKeys = ["post_id", "tag_id"],
-    indices = [Index("post_id")]
+    indices = [Index("post_id"), Index("tag_id")]
 )
 data class PostHashtagEntity(
     val post_id: String,

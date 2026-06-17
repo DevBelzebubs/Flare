@@ -103,7 +103,8 @@ private fun ExploreContent(
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     items(news, key = { it.newsId }) { item ->
-                        NewsCard(title = item.title, description = item.description)
+                        NewsCard(title = item.title, description = item.description, imageUrl = item.imageUrl
+                        )
                     }
                 }
             }
@@ -127,11 +128,12 @@ private fun ExploreContent(
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(trendingHashtags, key = { it.name }) { tag ->
+                        val onClick = remember(tag) { { onHashtagClick(tag.name) } }
                         TrendingTag(
                             tagName = "#${tag.name}",
                             postCount = tag.postCount.toString(),
                             modifier = Modifier.width(160.dp),
-                            onClick = { onHashtagClick(tag.name) }
+                            onClick = onClick
                         )
                     }
                 }
@@ -145,7 +147,8 @@ private fun ExploreContent(
         }
 
         items(explorePosts, key = { it.id }) { post ->
-            ProfileGridItem(post = post, onClick = { onPostClick(post.id) })
+            val onClick = remember(post) { { onPostClick(post.id) } }
+            ProfileGridItem(post = post, onClick = onClick)
         }
     }
 }
@@ -195,9 +198,10 @@ private fun SearchResultsContent(
                 } else {
                     LazyColumn(modifier = Modifier.fillMaxSize()) {
                         items(profiles, key = { it.citizen_id }) { citizen ->
+                            val onClick = remember(citizen) { { onAuthorClick(citizen.citizen_id) } }
                             SearchProfileItem(
                                 citizen = citizen,
-                                onClick = { onAuthorClick(citizen.citizen_id) }
+                                onClick = onClick
                             )
                         }
                     }
@@ -214,7 +218,8 @@ private fun SearchResultsContent(
                         modifier = Modifier.fillMaxSize()
                     ) {
                         items(posts, key = { it.id }) { post ->
-                            ProfileGridItem(post = post, onClick = { onPostClick(post.id) })
+                            val onClick = remember(post) { { onPostClick(post.id) } }
+                            ProfileGridItem(post = post, onClick = onClick)
                         }
                     }
                 }
@@ -230,7 +235,8 @@ private fun SearchResultsContent(
                         modifier = Modifier.fillMaxSize()
                     ) {
                         items(hashtagPosts, key = { it.id }) { post ->
-                            ProfileGridItem(post = post, onClick = { onPostClick(post.id) })
+                            val onClick = remember(post) { { onPostClick(post.id) } }
+                            ProfileGridItem(post = post, onClick = onClick)
                         }
                     }
                 }

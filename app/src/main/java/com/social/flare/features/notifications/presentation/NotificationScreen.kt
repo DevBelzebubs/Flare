@@ -82,23 +82,22 @@ fun NotificationScreen(
                             items = uiState.notifications,
                             key = { it.id }
                         ) { notification ->
+                            val onClick = remember(notification) { {
+                                viewModel.onNotificationClick(notification.id)
+                                if (notification.type == NotificationType.FOLLOW) {
+                                    onNavigateToProfile(notification.actorId)
+                                } else if (notification.referencedPostId != null) {
+                                    onNavigateToPost(notification.referencedPostId)
+                                }
+                            } }
+                            val onFollowClick = remember(notification) { { viewModel.toggleFollowBack(notification.actorId, isCurrentlyFollowing = false) } }
+                            val onAvatarClick = remember { { authorId: String -> onNavigateToProfile(authorId) } }
                             NotificationItem(
                                 notification = notification,
                                 isFollowingBack = false,
-                                onClick = {
-                                    viewModel.onNotificationClick(notification.id)
-                                    if (notification.type == NotificationType.FOLLOW) {
-                                        onNavigateToProfile(notification.actorId)
-                                    } else if (notification.referencedPostId != null) {
-                                        onNavigateToPost(notification.referencedPostId)
-                                    }
-                                },
-                                onFollowClick = {
-                                    viewModel.toggleFollowBack(notification.actorId, isCurrentlyFollowing = false)
-                                },
-                                onAvatarClick = { authorId ->
-                                    onNavigateToProfile(authorId)
-                                }
+                                onClick = onClick,
+                                onFollowClick = onFollowClick,
+                                onAvatarClick = onAvatarClick
                             )
                         }
                     }
@@ -115,13 +114,13 @@ fun NotificationScreen(
                             )
                         }
                         items(uiState.suggestedAccounts, key = { it.citizen_id }) { citizen ->
+                            val onFollowClick = remember(citizen) { { viewModel.followSuggested(citizen.citizen_id) } }
+                            val onAvatarClick = remember(citizen) { { onNavigateToProfile(citizen.citizen_id) } }
                             SuggestedAccountItem(
                                 citizen = citizen,
                                 isFollowing = citizen.citizen_id in uiState.suggestedFollowedIds,
-                                onFollowClick = {
-                                    viewModel.followSuggested(citizen.citizen_id)
-                                },
-                                onAvatarClick = { onNavigateToProfile(citizen.citizen_id) }
+                                onFollowClick = onFollowClick,
+                                onAvatarClick = onAvatarClick
                             )
                         }
                     }

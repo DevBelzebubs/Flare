@@ -88,7 +88,8 @@ class FollowRepositoryImpl(
                     .forEach { citizenDao.insertCitizen(it) }
             }
         } catch (_: Exception) {}
-        followDao.getFollowerIds(userId).mapNotNull { citizenDao.getCitizenById(it) }
+        val ids = followDao.getFollowerIds(userId)
+        if (ids.isEmpty()) emptyList() else citizenDao.getCitizensByIds(ids)
     }
 
     override suspend fun getFollowing(userId: String): List<CitizenEntity> = withContext(Dispatchers.IO) {
@@ -105,6 +106,7 @@ class FollowRepositoryImpl(
                     .forEach { citizenDao.insertCitizen(it) }
             }
         } catch (_: Exception) {}
-        followDao.getFollowedIds(userId).mapNotNull { citizenDao.getCitizenById(it) }
+        val ids = followDao.getFollowedIds(userId)
+        if (ids.isEmpty()) emptyList() else citizenDao.getCitizensByIds(ids)
     }
 }

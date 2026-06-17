@@ -146,7 +146,8 @@ fun MainScreen() {
             citizenDao = citizenDao,
             postDao = app.database.postDao(),
             newsDao = app.database.newsDao(),
-            supabase = app.supabase
+            supabase = app.supabase,
+            cloudinaryService = cloudinaryService
         )
     }
     val aiAgentRepository = remember {
@@ -171,6 +172,36 @@ fun MainScreen() {
             supabase = app.supabase,
             context = context.applicationContext
         )
+    }
+
+    var unreadCount by remember { mutableIntStateOf(0) }
+
+    LaunchedEffect(activeCitizenId) {
+        val id = activeCitizenId
+        if (id != null) {
+            notificationRepository.getNotifications(id).collect {}
+        } else {
+            unreadCount = 0
+        }
+    }
+
+    DisposableEffect(activeCitizenId) {
+        val id = activeCitizenId
+        if (id != null) {
+            notificationRepository.connectToRealtimeNotifications(id, scope)
+        }
+        onDispose {
+            notificationRepository.disconnectFromRealtimeNotifications()
+        }
+    }
+
+    LaunchedEffect(activeCitizenId) {
+        val id = activeCitizenId
+        if (id != null) {
+            notificationRepository.getUnreadCount(id).collect { count ->
+                unreadCount = count
+            }
+        }
     }
 
     Scaffold(
@@ -200,6 +231,7 @@ fun MainScreen() {
                 FlareBottomNavigation(
                     currentRoute = currentRoute ?: Screen.Feed.route,
                     isGuest = activeCitizenId == null,
+                    unreadCount = unreadCount,
                     onRequireAuth = { showAuthDialog = true },
                     onNavigate = { route ->
                         val privateRoutes = listOf(Screen.AddPost.route, Screen.Profile.route, Screen.Notifications.route)

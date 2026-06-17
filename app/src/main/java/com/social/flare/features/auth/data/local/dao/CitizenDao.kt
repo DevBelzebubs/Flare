@@ -14,6 +14,9 @@ interface CitizenDao {
 
     @Query("SELECT * FROM citizen_table WHERE citizen_id = :id")
     suspend fun getCitizenById(id: String): CitizenEntity?
+
+    @Query("SELECT * FROM citizen_table WHERE citizen_id IN (:ids)")
+    suspend fun getCitizensByIds(ids: List<String>): List<CitizenEntity>
     @Query("SELECT * FROM citizen_table WHERE citizen_id = :id LIMIT 1")
     fun observeCitizenById(id: String): Flow<CitizenEntity?>
 

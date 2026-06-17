@@ -1,5 +1,7 @@
 package com.social.flare.features.admin.data.repository
 
+import android.net.Uri
+import com.social.flare.core.media.CloudinaryService
 import com.social.flare.features.admin.data.local.dao.NewsDao
 import com.social.flare.features.admin.data.local.entity.NewsItemEntity
 import com.social.flare.features.admin.data.remote.dto.CreateBotRpcRequest
@@ -48,7 +50,8 @@ class AdminRepositoryImpl(
     private val citizenDao: CitizenDao,
     private val postDao: PostDao,
     private val newsDao: NewsDao,
-    private val supabase: SupabaseClient
+    private val supabase: SupabaseClient,
+    private val cloudinaryService: CloudinaryService
 ) : AdminRepository {
 
     override suspend fun getDashboardData(): AdminDashboardData = withContext(Dispatchers.IO) {
@@ -160,32 +163,50 @@ class AdminRepositoryImpl(
         })
     }
 
-    override suspend fun createNews(title: String, description: String, imageUrl: String?) = withContext(Dispatchers.IO) {
-        val news = NewsItemEntity(
-            news_id = UUID.randomUUID().toString(),
-            title = title,
-            description = description,
-            image_url = imageUrl,
-            created_at = System.currentTimeMillis(),
-            is_active = true
-        )
-        try {
+    override suspend fun createNews(title: String, description: String, imageUri: Uri): Result<Unit> = withContext(Dispatchers.IO) {
+        return@withContext try {
+            val imageUrl = cloudinaryService.uploadImage(imageUri)
+
+            val news = NewsItemEntity(
+                news_id = UUID.randomUUID().toString(),
+                title = title,
+                description = description,
+                image_url = imageUrl,
+                created_at = System.currentTimeMillis(),
+                is_active = true
+            )
+
             supabase.postgrest["news"].insert(news)
-        } catch (e: Throwable) { e.printStackTrace() }
-        newsDao.insertNews(news)
+            newsDao.insertNews(news)
+
+            Result.success(Unit)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Result.failure(Exception("Error al crear noticia: ${e.message}"))
+        }
     }
 
-    override suspend fun updateNews(newsId: String, title: String, description: String, imageUrl: String?) = withContext(Dispatchers.IO) {
-        try {
+    override suspend fun updateNews(newsId: String, title: String, description: String, imageUri: Uri?, currentImageUrl: String?): Result<Unit> = withContext(Dispatchers.IO) {
+        return@withContext try {
+            val finalImageUrl = if (imageUri != null) {
+                cloudinaryService.uploadImage(imageUri)
+            } else {
+                currentImageUrl ?: ""
+            }
             supabase.postgrest["news"].update({
                 set("title", title)
                 set("description", description)
-                set("image_url", imageUrl ?: "")
+                set("image_url", finalImageUrl)
             }) {
                 filter { eq("news_id", newsId) }
             }
-        } catch (e: Throwable) { e.printStackTrace() }
-        newsDao.updateNews(newsId, title, description, imageUrl)
+            newsDao.updateNews(newsId, title, description, finalImageUrl)
+
+            Result.success(Unit)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Result.failure(Exception("Error al actualizar noticia: ${e.message}"))
+        }
     }
 
     override suspend fun toggleNewsActive(newsId: String, isActive: Boolean) = withContext(Dispatchers.IO) {
@@ -275,14 +296,21 @@ class AdminRepositoryImpl(
 
     private suspend fun syncAllUsers() {
         try {
-            val users = supabase.postgrest["citizens"].select().decodeList<CitizenEntity>()
+            val users = supabase.postgrest["citizens"]
+                .select { limit(500) }
+                .decodeList<CitizenEntity>()
             users.forEach { citizenDao.insertCitizen(it) }
         } catch (e: Throwable) { e.printStackTrace() }
     }
 
     private suspend fun syncAllPosts() {
         try {
-            val posts = supabase.postgrest["posts"].select().decodeList<PostEntity>()
+            val posts = supabase.postgrest["posts"]
+                .select {
+                    order("created_at", io.github.jan.supabase.postgrest.query.Order.DESCENDING)
+                    limit(500)
+                }
+                .decodeList<PostEntity>()
             val authorIds = posts.map { it.author_id }.distinct()
             val authors = supabase.postgrest["citizens"]
                 .select { filter { isIn("citizen_id", authorIds) } }
@@ -294,7 +322,12 @@ class AdminRepositoryImpl(
 
     private suspend fun syncAllNews() {
         try {
-            val news = supabase.postgrest["news"].select().decodeList<NewsItemEntity>()
+            val news = supabase.postgrest["news"]
+                .select {
+                    order("created_at", io.github.jan.supabase.postgrest.query.Order.DESCENDING)
+                    limit(200)
+                }
+                .decodeList<NewsItemEntity>()
             news.forEach { newsDao.insertNews(it) }
         } catch (e: Throwable) { e.printStackTrace() }
     }

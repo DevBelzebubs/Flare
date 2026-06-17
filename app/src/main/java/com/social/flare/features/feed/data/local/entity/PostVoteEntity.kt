@@ -8,7 +8,7 @@ import kotlinx.serialization.Serializable
 @Entity(
     tableName = "post_votes",
     primaryKeys = ["post_id", "citizen_id"],
-    indices = [Index("post_id")]
+    indices = [Index("post_id"), Index("citizen_id")]
 )
 data class PostVoteEntity(
     val post_id: String,

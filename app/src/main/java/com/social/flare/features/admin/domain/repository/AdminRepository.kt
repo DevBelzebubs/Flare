@@ -1,5 +1,6 @@
 package com.social.flare.features.admin.domain.repository
 
+import android.net.Uri
 import com.social.flare.features.admin.domain.model.AdminDashboardData
 import com.social.flare.features.admin.domain.model.AdminPost
 import com.social.flare.features.admin.domain.model.AdminUser
@@ -19,8 +20,8 @@ interface AdminRepository {
 
     fun getActiveNews(): Flow<List<NewsItem>>
     fun getAllNews(): Flow<List<NewsItem>>
-    suspend fun createNews(title: String, description: String, imageUrl: String?)
-    suspend fun updateNews(newsId: String, title: String, description: String, imageUrl: String?)
+    suspend fun createNews(title: String, description: String, imageUri: Uri): Result<Unit>
+    suspend fun updateNews(newsId: String, title: String, description: String, imageUri: Uri?, currentImageUrl: String?): Result<Unit>
     suspend fun toggleNewsActive(newsId: String, isActive: Boolean)
     suspend fun deleteNews(newsId: String)
     suspend fun getAllBots(): List<AiPersona>

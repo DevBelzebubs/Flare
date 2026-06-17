@@ -30,7 +30,6 @@ class NotificationViewModel(
         if (activeUserId == userId) return
         activeUserId = userId
 
-        manageRealtimeNotificationsUseCase.connect(userId, viewModelScope)
         viewModelScope.launch {
             getNotificationsUseCase(userId).collect { notifications ->
                 _uiState.update {
@@ -78,7 +77,6 @@ class NotificationViewModel(
 
     override fun onCleared() {
         super.onCleared()
-        manageRealtimeNotificationsUseCase.disconnect()
     }
 
 }

@@ -86,27 +86,29 @@ fun MusicBottomSheet(
             } else {
                 LazyColumn(modifier = Modifier.weight(1f)) {
                     items(results, key = { it.id }) { track ->
+                        val onPlayPreview = remember(track) { {
+                            if (currentlyPlayingUrl == track.previewUrl) {
+                                mediaPlayer.pause()
+                                currentlyPlayingUrl = null
+                            } else {
+                                mediaPlayer.reset()
+                                mediaPlayer.setDataSource(track.previewUrl)
+                                mediaPlayer.prepareAsync()
+                                mediaPlayer.setOnPreparedListener {
+                                    it.start()
+                                    currentlyPlayingUrl = track.previewUrl
+                                }
+                            }
+                        } }
+                        val onSelect = remember(track) { {
+                            mediaPlayer.stop()
+                            onTrackSelected(track)
+                        } }
                         MusicTrackItem(
                             track = track,
                             isPlaying = currentlyPlayingUrl == track.previewUrl,
-                            onPlayPreview = {
-                                if (currentlyPlayingUrl == track.previewUrl) {
-                                    mediaPlayer.pause()
-                                    currentlyPlayingUrl = null
-                                } else {
-                                    mediaPlayer.reset()
-                                    mediaPlayer.setDataSource(track.previewUrl)
-                                    mediaPlayer.prepareAsync()
-                                    mediaPlayer.setOnPreparedListener {
-                                        it.start()
-                                        currentlyPlayingUrl = track.previewUrl
-                                    }
-                                }
-                            },
-                            onSelect = {
-                                mediaPlayer.stop()
-                                onTrackSelected(track)
-                            }
+                            onPlayPreview = onPlayPreview,
+                            onSelect = onSelect
                         )
                     }
                 }

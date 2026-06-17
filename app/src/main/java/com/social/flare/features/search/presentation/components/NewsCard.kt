@@ -17,28 +17,39 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 
 @Composable
-fun NewsCard(title: String, description: String) {
-    val cardColor = MaterialTheme.colorScheme.surfaceVariant
+fun NewsCard(title: String, description: String, imageUrl: String?) {
+    val fallbackColor = MaterialTheme.colorScheme.surfaceVariant
 
     Box(
         modifier = Modifier
             .width(280.dp)
             .height(160.dp)
             .clip(RoundedCornerShape(12.dp))
-            .background(cardColor)
+            .background(fallbackColor)
     ) {
+        if (!imageUrl.isNullOrBlank()) {
+            AsyncImage(
+                model = imageUrl,
+                contentDescription = title,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(
                     Brush.verticalGradient(
-                        colors = listOf(Color.Transparent, cardColor.copy(alpha = 0.92f)),
+                        colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.9f)),
                         startY = 100f
                     )
                 )
@@ -48,13 +59,13 @@ fun NewsCard(title: String, description: String) {
             modifier = Modifier
                 .padding(12.dp)
                 .clip(RoundedCornerShape(4.dp))
-                .background(MaterialTheme.colorScheme.primary)
+                .background(Color(0xFFFF5722)) // Naranja Flare
                 .padding(horizontal = 8.dp, vertical = 4.dp)
                 .align(Alignment.TopStart)
         ) {
             Text(
                 text = "News",
-                color = MaterialTheme.colorScheme.onPrimary,
+                color = Color.White,
                 fontSize = 10.sp,
                 fontWeight = FontWeight.Bold
             )
@@ -67,7 +78,7 @@ fun NewsCard(title: String, description: String) {
         ) {
             Text(
                 text = title,
-                color = MaterialTheme.colorScheme.onSurface,
+                color = Color.White,
                 fontWeight = FontWeight.Bold,
                 fontSize = 16.sp,
                 maxLines = 1,
@@ -76,7 +87,7 @@ fun NewsCard(title: String, description: String) {
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = description,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = Color.LightGray,
                 fontSize = 12.sp,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis

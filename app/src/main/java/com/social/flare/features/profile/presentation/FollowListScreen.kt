@@ -32,6 +32,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -100,12 +101,14 @@ fun FollowListScreen(
             } else {
                 LazyColumn(modifier = Modifier.fillMaxSize()) {
                     items(users, key = { it.citizen_id }) { citizen ->
+                        val onFollowClick = remember(citizen) { { viewModel.toggleFollow(citizen.citizen_id) } }
+                        val onProfileClick = remember(citizen) { { onNavigateToProfile(citizen.citizen_id) } }
                         FollowUserItem(
                             citizen = citizen,
                             isFollowing = citizen.citizen_id in followedIds,
                             activeCitizenId = activeCitizenId,
-                            onFollowClick = { viewModel.toggleFollow(citizen.citizen_id) },
-                            onProfileClick = { onNavigateToProfile(citizen.citizen_id) }
+                            onFollowClick = onFollowClick,
+                            onProfileClick = onProfileClick
                         )
                     }
                 }

@@ -5,7 +5,8 @@ import androidx.compose.runtime.Immutable
 enum class NotificationType {
     LIKE,
     COMMENT,
-    FOLLOW
+    FOLLOW,
+    MENTION
 }
 
 @Immutable

@@ -95,7 +95,10 @@ class FeedRepositoryImpl(
     private suspend fun syncPostsFromSupabase(currentUserId: String? = null, isGuest: Boolean = false) {
         try {
             val posts = supabase.postgrest["posts"]
-                .select()
+                .select {
+                    order("created_at", io.github.jan.supabase.postgrest.query.Order.DESCENDING)
+                    limit(100)
+                }
                 .decodeList<PostEntity>()
 
             val authorIds = posts.map { it.author_id }.distinct()

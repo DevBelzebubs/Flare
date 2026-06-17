@@ -13,6 +13,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -35,13 +36,11 @@ fun StoryCarousel(
     onAddStoryClick: () -> Unit = {},
     onStoryClick: (String) -> Unit = {}
 ) {
-    val myStories = stories.filter { it.authorUsername == activeUserUsername }
-    val otherStories = stories.filter { it.authorUsername != activeUserUsername }
-
-    val groupedStories = otherStories.groupBy { it.authorUsername }
-
-    val hasStories = myStories.isNotEmpty()
-    val hasUnviewed = myStories.any { !it.isViewedByMe }
+    val myStories = remember(stories, activeUserUsername) { stories.filter { it.authorUsername == activeUserUsername } }
+    val otherStories = remember(stories, activeUserUsername) { stories.filter { it.authorUsername != activeUserUsername } }
+    val groupedStories = remember(otherStories) { otherStories.groupBy { it.authorUsername } }
+    val hasStories = remember(myStories) { myStories.isNotEmpty() }
+    val hasUnviewed = remember(myStories) { myStories.any { !it.isViewedByMe } }
 
     LazyRow(
         modifier = modifier.padding(vertical = 12.dp),
@@ -60,13 +59,14 @@ fun StoryCarousel(
 
         items(groupedStories.keys.toList(), key = { it }) { username ->
             val userStories = groupedStories[username] ?: emptyList()
-            val otherHasUnviewed = userStories.any { !it.isViewedByMe }
+            val otherHasUnviewed = remember(userStories) { userStories.any { !it.isViewedByMe } }
+            val onClick = remember(username) { { onStoryClick(username) } }
 
             StoryItem(
                 username = username,
                 avatarUrl = userStories.firstOrNull()?.authorAvatarUrl,
                 hasUnviewedStory = otherHasUnviewed,
-                onClick = { onStoryClick(username) }
+                onClick = onClick
             )
         }
     }

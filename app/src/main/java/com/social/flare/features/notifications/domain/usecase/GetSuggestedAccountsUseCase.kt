@@ -16,7 +16,7 @@ class GetSuggestedAccountsUseCase(
     suspend operator fun invoke(currentUserId: String): List<CitizenEntity> = withContext(Dispatchers.IO) {
         try {
             val citizens = supabase.postgrest["citizens"]
-                .select()
+                .select { limit(50) }
                 .decodeList<CitizenEntity>()
             citizens.forEach { citizenDao.insertCitizen(it) }
         } catch (_: Exception) {}

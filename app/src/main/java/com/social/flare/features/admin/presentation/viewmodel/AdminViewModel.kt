@@ -1,5 +1,6 @@
 package com.social.flare.features.admin.presentation.viewmodel
 
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.social.flare.features.admin.domain.model.AdminDashboardData
@@ -125,26 +126,30 @@ class AdminViewModel(
         }
     }
 
-    fun createNews(title: String, description: String, imageUrl: String?) {
+    fun createNews(title: String, description: String, imageUri: Uri) {
         viewModelScope.launch {
-            try {
-                adminRepository.createNews(title, description, imageUrl)
+            _uiState.update { it.copy(isLoading = true) }
+            val result = adminRepository.createNews(title, description, imageUri)
+
+            if (result.isSuccess) {
                 loadNews()
-                _uiState.update { it.copy(successMessage = "Noticia creada") }
-            } catch (e: Exception) {
-                _uiState.update { it.copy(errorMessage = e.message) }
+                _uiState.update { it.copy(successMessage = "Noticia creada exitosamente", isLoading = false) }
+            } else {
+                _uiState.update { it.copy(errorMessage = result.exceptionOrNull()?.message, isLoading = false) }
             }
         }
     }
 
-    fun updateNews(newsId: String, title: String, description: String, imageUrl: String?) {
+    fun updateNews(newsId: String, title: String, description: String, imageUri: Uri?, currentImageUrl: String?) {
         viewModelScope.launch {
-            try {
-                adminRepository.updateNews(newsId, title, description, imageUrl)
+            _uiState.update { it.copy(isLoading = true) }
+            val result = adminRepository.updateNews(newsId, title, description, imageUri, currentImageUrl)
+
+            if (result.isSuccess) {
                 loadNews()
-                _uiState.update { it.copy(successMessage = "Noticia actualizada") }
-            } catch (e: Exception) {
-                _uiState.update { it.copy(errorMessage = e.message) }
+                _uiState.update { it.copy(successMessage = "Noticia actualizada", isLoading = false) }
+            } else {
+                _uiState.update { it.copy(errorMessage = result.exceptionOrNull()?.message, isLoading = false) }
             }
         }
     }

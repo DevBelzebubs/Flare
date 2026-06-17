@@ -78,6 +78,7 @@ fun NotificationItem(
                     NotificationType.LIKE -> append(" le gusta tu post.")
                     NotificationType.FOLLOW -> append(" empezó a seguirte.")
                     NotificationType.COMMENT -> append(" comentó tu post: ${notification.extraText ?: ""}")
+                    NotificationType.MENTION -> append(" te mencionó en un post.")
                 }
             }
             withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.onSurfaceVariant)) {

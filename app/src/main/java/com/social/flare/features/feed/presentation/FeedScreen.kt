@@ -99,24 +99,22 @@ fun FeedScreen(
                             val displayPost = remember(post, isGuest) {
                                 if (isGuest) post.copy(isLikedByMe = false) else post
                             }
+                            val onEvent = remember { { event: FeedEvent ->
+                                when (event) {
+                                    is FeedEvent.OnPostClick -> onPostClick(event.postId)
+                                    is FeedEvent.OnCommentClick -> onPostClick(event.postId)
+                                    is FeedEvent.OnAuthorClick -> requireAuth {
+                                        onAuthorClick(event.authorId)
+                                    }
+                                    else -> requireAuth { viewModel.onEvent(event) }
+                                }
+                            } }
+                            val onImageClick = remember { { url: String -> fullScreenImageUrl = url } }
                             PostCard(
                                 post = displayPost,
                                 activeCitizenId = activeCitizenId,
-                                onEvent = { event ->
-                                    when (event) {
-                                        is FeedEvent.OnPostClick -> onPostClick(event.postId)
-                                        is FeedEvent.OnAuthorClick -> requireAuth {
-                                            onAuthorClick(
-                                                event.authorId
-                                            )
-                                        }
-
-                                        else -> requireAuth { viewModel.onEvent(event) }
-                                    }
-                                },
-                                onImageClick = { url ->
-                                    fullScreenImageUrl = url
-                                }
+                                onEvent = onEvent,
+                                onImageClick = onImageClick
                             )
                         }
                     }

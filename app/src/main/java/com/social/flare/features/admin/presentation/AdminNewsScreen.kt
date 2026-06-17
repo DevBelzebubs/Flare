@@ -1,5 +1,11 @@
 package com.social.flare.features.admin.presentation
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -11,11 +17,14 @@ import androidx.compose.runtime.*
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.social.flare.features.admin.domain.model.NewsItem
 import com.social.flare.features.admin.presentation.viewmodel.AdminViewModel
 import java.text.SimpleDateFormat
@@ -78,11 +87,14 @@ fun AdminNewsScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(uiState.news, key = { it.newsId }) { news ->
+                    val onEdit = remember(news) { { editingNews = news } }
+                    val onToggleActive = remember(news) { { viewModel.toggleNewsActive(news.newsId, !news.isActive) } }
+                    val onDelete = remember(news) { { viewModel.deleteNews(news.newsId) } }
                     AdminNewsCard(
                         news = news,
-                        onEdit = { editingNews = news },
-                        onToggleActive = { viewModel.toggleNewsActive(news.newsId, !news.isActive) },
-                        onDelete = { viewModel.deleteNews(news.newsId) }
+                        onEdit = onEdit,
+                        onToggleActive = onToggleActive,
+                        onDelete = onDelete
                     )
                 }
             }
@@ -94,9 +106,12 @@ fun AdminNewsScreen(
             title = "Crear Noticia",
             initialTitle = "",
             initialDescription = "",
+            initialImageUrl = null,
             onDismiss = { showCreateDialog = false },
-            onSave = { t, d, _ ->
-                viewModel.createNews(t, d, null)
+            onSave = { t, d, uri ->
+                if (uri != null) {
+                    viewModel.createNews(t, d, uri)
+                }
                 showCreateDialog = false
             }
         )
@@ -107,9 +122,10 @@ fun AdminNewsScreen(
             title = "Editar Noticia",
             initialTitle = news.title,
             initialDescription = news.description,
+            initialImageUrl = news.imageUrl,
             onDismiss = { editingNews = null },
-            onSave = { t, d, _ ->
-                viewModel.updateNews(news.newsId, t, d, null)
+            onSave = { t, d, uri ->
+                viewModel.updateNews(news.newsId, t, d, uri, news.imageUrl)
                 editingNews = null
             }
         )
@@ -135,6 +151,18 @@ private fun AdminNewsCard(
                 .padding(12.dp),
             verticalAlignment = Alignment.Top
         ) {
+            // Previsualización pequeña en la tarjeta
+            AsyncImage(
+                model = news.imageUrl,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .size(60.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(Color.DarkGray)
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+
             Column(modifier = Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
@@ -194,11 +222,19 @@ private fun NewsFormDialog(
     title: String,
     initialTitle: String,
     initialDescription: String,
+    initialImageUrl: String?,
     onDismiss: () -> Unit,
-    onSave: (title: String, description: String, imageUrl: String?) -> Unit
+    onSave: (title: String, description: String, imageUri: Uri?) -> Unit
 ) {
     var newsTitle by remember { mutableStateOf(initialTitle) }
     var newsDescription by remember { mutableStateOf(initialDescription) }
+    var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
+
+    val mediaPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
+        selectedImageUri = uri
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -235,14 +271,54 @@ private fun NewsFormDialog(
                     ),
                     modifier = Modifier.fillMaxWidth()
                 )
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text("Imagen (Obligatoria)", color = Color.Gray, fontSize = 12.sp)
+                Spacer(modifier = Modifier.height(4.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(140.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color(0xFF333333))
+                        .clickable {
+                            mediaPickerLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (selectedImageUri != null) {
+                        AsyncImage(
+                            model = selectedImageUri,
+                            contentDescription = "Selected Image",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    } else if (!initialImageUrl.isNullOrBlank()) {
+                        AsyncImage(
+                            model = initialImageUrl,
+                            contentDescription = "Existing Image",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    } else {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(Icons.Default.Image, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(32.dp))
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text("Tocar para elegir", color = Color.Gray, fontSize = 12.sp)
+                        }
+                    }
+                }
             }
         },
         confirmButton = {
+            val isFormValid = newsTitle.isNotBlank() && newsDescription.isNotBlank() &&
+                    (selectedImageUri != null || !initialImageUrl.isNullOrBlank())
+
             TextButton(
-                onClick = { onSave(newsTitle, newsDescription, null) },
-                enabled = newsTitle.isNotBlank() && newsDescription.isNotBlank()
+                onClick = { onSave(newsTitle, newsDescription, selectedImageUri) },
+                enabled = isFormValid
             ) {
-                Text("Guardar", color = Color(0xFFFF5722))
+                Text("Guardar", color = if (isFormValid) Color(0xFFFF5722) else Color.DarkGray)
             }
         },
         dismissButton = {

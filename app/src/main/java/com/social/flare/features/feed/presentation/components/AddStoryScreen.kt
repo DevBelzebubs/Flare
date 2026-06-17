@@ -97,7 +97,7 @@ fun AddStoryScreen(
 
     var strokes by remember { mutableStateOf(listOf<DrawnStroke>()) }
     var currentPoints by remember { mutableStateOf(listOf<Offset>()) }
-    var textElements by remember { mutableStateOf(listOf<StoryText>()) }
+    val textElements = remember { mutableStateListOf<StoryText>() }
     var textIdCounter by remember { mutableStateOf(0) }
 
     val picture = remember { Picture() }
@@ -109,7 +109,7 @@ fun AddStoryScreen(
     var musicOffset by remember { mutableStateOf(Offset(300f, 600f)) }
 
     var showStickerSheet by remember { mutableStateOf(false) }
-    var activeStickers by remember { mutableStateOf(listOf<StorySticker>()) }
+    val activeStickers = remember { mutableStateListOf<StorySticker>() }
     var stickerIdCounter by remember { mutableStateOf(0) }
     var pendingStickerType by remember { mutableStateOf<StickerType?>(null) }
     var stickerInputValue by remember { mutableStateOf("") }
@@ -135,7 +135,7 @@ fun AddStoryScreen(
                     "UBICACIÓN ACTUAL"
                 }
                 withContext(Dispatchers.Main) {
-                    activeStickers = activeStickers + StorySticker(id = stickerIdCounter++, type = StickerType.LOCATION, value = locName.uppercase())
+                    activeStickers.add(StorySticker(id = stickerIdCounter++, type = StickerType.LOCATION, value = locName.uppercase()))
                     isFetchingLocation = false
                     showStickerSheet = false
                 }
@@ -160,7 +160,7 @@ fun AddStoryScreen(
                         "UBICACIÓN ACTUAL"
                     }
                     withContext(Dispatchers.Main) {
-                        activeStickers = activeStickers + StorySticker(id = stickerIdCounter++, type = StickerType.LOCATION, value = locName.uppercase())
+                    activeStickers.add(StorySticker(id = stickerIdCounter++, type = StickerType.LOCATION, value = locName.uppercase()))
                         isFetchingLocation = false
                         showStickerSheet = false
                     }
@@ -269,14 +269,16 @@ fun AddStoryScreen(
 
             textElements.forEach { storyText ->
                 DraggableTextItem(text = storyText, onDrag = { dragAmount ->
-                    textElements = textElements.map { if (it.id == storyText.id) it.copy(offset = it.offset + dragAmount) else it }
+                    val textIndex = textElements.indexOfFirst { it.id == storyText.id }
+                    if (textIndex >= 0) textElements[textIndex] = textElements[textIndex].copy(offset = textElements[textIndex].offset + dragAmount)
                     dragUpdateCounter++
                 })
             }
 
             activeStickers.forEach { sticker ->
                 DraggableStickerItem(sticker = sticker, onDrag = { dragAmount ->
-                    activeStickers = activeStickers.map { if (it.id == sticker.id) it.copy(offset = it.offset + dragAmount) else it }
+                    val stickerIndex = activeStickers.indexOfFirst { it.id == sticker.id }
+                    if (stickerIndex >= 0) activeStickers[stickerIndex] = activeStickers[stickerIndex].copy(offset = activeStickers[stickerIndex].offset + dragAmount)
                     dragUpdateCounter++
                 })
             }
@@ -370,7 +372,7 @@ fun AddStoryScreen(
                     Spacer(modifier = Modifier.height(24.dp))
                     Button(
                         onClick = {
-                            if (inputText.isNotBlank()) textElements = textElements + StoryText(id = textIdCounter++, text = inputText)
+                            if (inputText.isNotBlank()) textElements.add(StoryText(id = textIdCounter++, text = inputText))
                             inputText = ""
                             showTextInput = false
                         },
@@ -395,7 +397,7 @@ fun AddStoryScreen(
                     TextButton(onClick = {
                         if (stickerInputValue.isNotBlank()) {
                             val finalValue = if (!stickerInputValue.startsWith("@")) "@$stickerInputValue" else stickerInputValue
-                            activeStickers = activeStickers + StorySticker(id = stickerIdCounter++, type = StickerType.MENTION, value = finalValue)
+                            activeStickers.add(StorySticker(id = stickerIdCounter++, type = StickerType.MENTION, value = finalValue))
                         }
                         pendingStickerType = null
                         stickerInputValue = ""
@@ -425,7 +427,7 @@ fun AddStoryScreen(
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
                             StickerOptionItem(icon = Icons.Default.Schedule, label = "Hora") {
                                 val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
-                                activeStickers = activeStickers + StorySticker(id = stickerIdCounter++, type = StickerType.TIME, value = time)
+                                activeStickers.add(StorySticker(id = stickerIdCounter++, type = StickerType.TIME, value = time))
                                 showStickerSheet = false
                             }
                             StickerOptionItem(icon = Icons.Default.LocationOn, label = "Ubicación") {

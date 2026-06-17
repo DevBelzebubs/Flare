@@ -16,6 +16,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -39,6 +40,7 @@ fun AddPostMediaPreview(
         items(mediaUris) { uri ->
             val mimeType = context.contentResolver.getType(uri)
             val isVideo = mimeType?.startsWith("video") == true
+            val onRemove = remember(uri) { { onRemoveMedia(uri) } }
 
             Box(modifier = Modifier.size(120.dp).clip(RoundedCornerShape(12.dp))) {
                 if (isVideo) {
@@ -59,7 +61,7 @@ fun AddPostMediaPreview(
                     modifier = Modifier
                         .align(Alignment.TopEnd).padding(4.dp).size(24.dp)
                         .clip(CircleShape).background(Color.Black.copy(alpha = 0.6f))
-                        .clickable { onRemoveMedia(uri) },
+                        .clickable(onClick = onRemove),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(Icons.Default.Close, contentDescription = "Remove", tint = Color.White, modifier = Modifier.size(16.dp))

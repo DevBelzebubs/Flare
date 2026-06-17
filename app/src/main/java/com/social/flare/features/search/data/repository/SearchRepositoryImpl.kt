@@ -78,7 +78,10 @@ class SearchRepositoryImpl(
         withContext(Dispatchers.IO) {
             try {
                 val posts = supabase.postgrest["posts"]
-                    .select()
+                    .select {
+                        order("created_at", io.github.jan.supabase.postgrest.query.Order.DESCENDING)
+                        limit(100)
+                    }
                     .decodeList<PostEntity>()
                 val authorIds = posts.map { it.author_id }.distinct()
                 if (authorIds.isNotEmpty()) {
@@ -111,10 +114,10 @@ class SearchRepositoryImpl(
         withContext(Dispatchers.IO) {
             try {
                 val hashtags = supabase.postgrest["hashtags"]
-                    .select()
+                    .select { limit(50) }
                     .decodeList<HashtagEntity>()
                 val relations = supabase.postgrest["post_hashtags"]
-                    .select()
+                    .select { limit(200) }
                     .decodeList<PostHashtagEntity>()
                 postDao.syncHashtagsTransaction(hashtags, relations)
             } catch (_: Exception) {}

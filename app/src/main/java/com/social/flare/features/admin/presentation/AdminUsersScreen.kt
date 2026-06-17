@@ -59,10 +59,12 @@ fun AdminUsersScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(uiState.users, key = { it.citizenId }) { user ->
+                    val onStatusChange = remember(user) { { showStatusDialog = user.citizenId } }
+                    val onDelete = remember(user) { { viewModel.deleteUser(user.citizenId) } }
                     AdminUserCard(
                         user = user,
-                        onStatusChange = { showStatusDialog = user.citizenId },
-                        onDelete = { viewModel.deleteUser(user.citizenId) }
+                        onStatusChange = onStatusChange,
+                        onDelete = onDelete
                     )
                 }
             }
