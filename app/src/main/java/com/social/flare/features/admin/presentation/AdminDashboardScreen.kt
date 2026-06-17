@@ -46,6 +46,7 @@ fun AdminDashboardScreen(
     }
 
     val snackbarHostState = remember { SnackbarHostState() }
+    val colorScheme = MaterialTheme.colorScheme
 
     LaunchedEffect(uiState.errorMessage, uiState.successMessage) {
         uiState.errorMessage?.let { snackbarHostState.showSnackbar(it) }
@@ -55,16 +56,16 @@ fun AdminDashboardScreen(
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        containerColor = Color.Black,
+        containerColor = colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("Admin Panel", color = Color.White, fontWeight = FontWeight.Bold) },
+                title = { Text("Admin Panel", color = colorScheme.onBackground, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = null, tint = Color.White)
+                        Icon(Icons.Default.ArrowBack, contentDescription = null, tint = colorScheme.onBackground)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Black)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = colorScheme.background)
             )
         }
     ) { padding ->
@@ -77,7 +78,7 @@ fun AdminDashboardScreen(
         ) {
             Text(
                 text = "Dashboard",
-                color = Color.White,
+                color = colorScheme.onBackground,
                 fontSize = 22.sp,
                 fontWeight = FontWeight.Bold
             )
@@ -85,7 +86,7 @@ fun AdminDashboardScreen(
 
             if (uiState.isLoading) {
                 Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = Color(0xFFFF5722))
+                    CircularProgressIndicator(color = colorScheme.primary)
                 }
             } else {
                 val data = uiState.dashboard
@@ -139,7 +140,7 @@ fun AdminDashboardScreen(
 
             Text(
                 text = "Gestión",
-                color = Color.White,
+                color = colorScheme.onBackground,
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold
             )
@@ -173,7 +174,7 @@ fun AdminDashboardScreen(
                 Spacer(modifier = Modifier.height(32.dp))
                 Text(
                     text = "Agentes IA Registrados",
-                    color = Color.White,
+                    color = colorScheme.onBackground,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -199,12 +200,14 @@ private fun AdminMenuItem(
     subtitle: String,
     onClick: () -> Unit
 ) {
+    val colorScheme = MaterialTheme.colorScheme
+
     Card(
         onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF1A1A1A)),
+        colors = CardDefaults.cardColors(containerColor = colorScheme.surface),
         shape = RoundedCornerShape(12.dp)
     ) {
         Row(
@@ -213,13 +216,13 @@ private fun AdminMenuItem(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(icon, contentDescription = null, tint = Color(0xFFFF5722), modifier = Modifier.size(28.dp))
+            Icon(icon, contentDescription = null, tint = colorScheme.primary, modifier = Modifier.size(28.dp))
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Text(title, color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
-                Text(subtitle, color = Color.Gray, fontSize = 13.sp)
+                Text(title, color = colorScheme.onSurface, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+                Text(subtitle, color = colorScheme.onSurfaceVariant, fontSize = 13.sp)
             }
-            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color.DarkGray)
+            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = colorScheme.onSurfaceVariant)
         }
     }
 }
@@ -228,11 +231,13 @@ fun BotItem(
     persona: AiPersona,
     onToggle: (Boolean) -> Unit
 ) {
+    val colorScheme = MaterialTheme.colorScheme
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF1A1A1A)),
+        colors = CardDefaults.cardColors(containerColor = colorScheme.surface),
         shape = RoundedCornerShape(12.dp)
     ) {
         Row(
@@ -244,13 +249,13 @@ fun BotItem(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = persona.displayName,
-                    color = Color.White,
+                    color = colorScheme.onSurface,
                     fontWeight = FontWeight.SemiBold,
                     fontSize = 16.sp
                 )
                 Text(
                     text = "${persona.username}",
-                    color = Color.Gray,
+                    color = colorScheme.onSurfaceVariant,
                     fontSize = 13.sp
                 )
             }
@@ -259,10 +264,10 @@ fun BotItem(
                 checked = persona.isActive,
                 onCheckedChange = { onToggle(it) },
                 colors = SwitchDefaults.colors(
-                    checkedThumbColor = Color.White,
-                    checkedTrackColor = Color(0xFFFF5722),
-                    uncheckedThumbColor = Color.Gray,
-                    uncheckedTrackColor = Color(0xFF333333)
+                    checkedThumbColor = colorScheme.onPrimary,
+                    checkedTrackColor = colorScheme.primary,
+                    uncheckedThumbColor = colorScheme.onSurfaceVariant,
+                    uncheckedTrackColor = colorScheme.surfaceVariant
                 )
             )
         }

@@ -30,41 +30,42 @@ fun AdminNewsScreen(
     val uiState by viewModel.uiState.collectAsState()
     var showCreateDialog by remember { mutableStateOf(false) }
     var editingNews by remember { mutableStateOf<NewsItem?>(null) }
+    val colorScheme = MaterialTheme.colorScheme
 
     LaunchedEffect(Unit) {
         viewModel.loadNews()
     }
 
     Scaffold(
-        containerColor = Color.Black,
+        containerColor = colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("Gestión de Noticias", color = Color.White, fontWeight = FontWeight.Bold) },
+                title = { Text("Gestión de Noticias", color = colorScheme.onBackground, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = null, tint = Color.White)
+                        Icon(Icons.Default.ArrowBack, contentDescription = null, tint = colorScheme.onBackground)
                     }
                 },
                 actions = {
                     IconButton(onClick = { showCreateDialog = true }) {
-                        Icon(Icons.Default.Add, contentDescription = "Agregar noticia", tint = Color(0xFFFF5722))
+                        Icon(Icons.Default.Add, contentDescription = "Agregar noticia", tint = colorScheme.primary)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Black)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = colorScheme.background)
             )
         }
     ) { padding ->
         if (uiState.isLoading) {
             Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = Color(0xFFFF5722))
+                CircularProgressIndicator(color = colorScheme.primary)
             }
         } else if (uiState.news.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("No hay noticias", color = Color.Gray)
+                    Text("No hay noticias", color = colorScheme.onSurfaceVariant)
                     Spacer(modifier = Modifier.height(8.dp))
                     TextButton(onClick = { showCreateDialog = true }) {
-                        Text("Crear primera noticia", color = Color(0xFFFF5722))
+                        Text("Crear primera noticia", color = colorScheme.primary)
                     }
                 }
             }
@@ -123,9 +124,10 @@ private fun AdminNewsCard(
     onDelete: () -> Unit
 ) {
     val dateFormat = remember { SimpleDateFormat("dd/MM/yy", Locale.getDefault()) }
+    val colorScheme = MaterialTheme.colorScheme
 
     Card(
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF1A1A1A)),
+        colors = CardDefaults.cardColors(containerColor = colorScheme.surface),
         shape = RoundedCornerShape(12.dp)
     ) {
         Row(
@@ -138,7 +140,7 @@ private fun AdminNewsCard(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = news.title,
-                        color = Color.White,
+                        color = colorScheme.onSurface,
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 15.sp,
                         maxLines = 1,
@@ -148,7 +150,7 @@ private fun AdminNewsCard(
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = if (news.isActive) "Activa" else "Inactiva",
-                        color = if (news.isActive) Color(0xFF4CAF50) else Color.Gray,
+                        color = if (news.isActive) Color(0xFF4CAF50) else colorScheme.onSurfaceVariant,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Medium
                     )
@@ -156,7 +158,7 @@ private fun AdminNewsCard(
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = news.description,
-                    color = Color.LightGray,
+                    color = colorScheme.onSurface,
                     fontSize = 13.sp,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
@@ -164,7 +166,7 @@ private fun AdminNewsCard(
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = dateFormat.format(Date(news.createdAt)),
-                    color = Color.DarkGray,
+                    color = colorScheme.onSurfaceVariant,
                     fontSize = 11.sp
                 )
             }
@@ -173,15 +175,15 @@ private fun AdminNewsCard(
                     Icon(
                         if (news.isActive) Icons.Default.VisibilityOff else Icons.Default.Visibility,
                         contentDescription = if (news.isActive) "Desactivar" else "Activar",
-                        tint = Color.Gray,
+                        tint = colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(20.dp)
                     )
                 }
                 IconButton(onClick = onEdit) {
-                    Icon(Icons.Default.Edit, contentDescription = "Editar", tint = Color(0xFFFF5722), modifier = Modifier.size(20.dp))
+                    Icon(Icons.Default.Edit, contentDescription = "Editar", tint = colorScheme.primary, modifier = Modifier.size(20.dp))
                 }
                 IconButton(onClick = onDelete) {
-                    Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = Color(0xFFF44336), modifier = Modifier.size(20.dp))
+                    Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = colorScheme.error, modifier = Modifier.size(20.dp))
                 }
             }
         }
@@ -198,24 +200,29 @@ private fun NewsFormDialog(
 ) {
     var newsTitle by remember { mutableStateOf(initialTitle) }
     var newsDescription by remember { mutableStateOf(initialDescription) }
+    val colorScheme = MaterialTheme.colorScheme
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = Color(0xFF1A1A1A),
-        title = { Text(title, color = Color.White) },
+        containerColor = colorScheme.surface,
+        title = { Text(title, color = colorScheme.onSurface) },
         text = {
             Column {
                 OutlinedTextField(
                     value = newsTitle,
                     onValueChange = { newsTitle = it },
-                    label = { Text("Título", color = Color.Gray) },
+                    label = { Text("Título") },
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
-                        focusedBorderColor = Color(0xFFFF5722),
-                        unfocusedBorderColor = Color(0xFF333333),
-                        cursorColor = Color(0xFFFF5722)
+                        focusedContainerColor = colorScheme.surface,
+                        unfocusedContainerColor = colorScheme.surface,
+                        focusedTextColor = colorScheme.onSurface,
+                        unfocusedTextColor = colorScheme.onSurface,
+                        focusedBorderColor = colorScheme.primary,
+                        unfocusedBorderColor = colorScheme.outline,
+                        cursorColor = colorScheme.primary,
+                        focusedLabelColor = colorScheme.primary,
+                        unfocusedLabelColor = colorScheme.onSurfaceVariant
                     ),
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -223,14 +230,18 @@ private fun NewsFormDialog(
                 OutlinedTextField(
                     value = newsDescription,
                     onValueChange = { newsDescription = it },
-                    label = { Text("Descripción", color = Color.Gray) },
+                    label = { Text("Descripción") },
                     maxLines = 3,
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
-                        focusedBorderColor = Color(0xFFFF5722),
-                        unfocusedBorderColor = Color(0xFF333333),
-                        cursorColor = Color(0xFFFF5722)
+                        focusedContainerColor = colorScheme.surface,
+                        unfocusedContainerColor = colorScheme.surface,
+                        focusedTextColor = colorScheme.onSurface,
+                        unfocusedTextColor = colorScheme.onSurface,
+                        focusedBorderColor = colorScheme.primary,
+                        unfocusedBorderColor = colorScheme.outline,
+                        cursorColor = colorScheme.primary,
+                        focusedLabelColor = colorScheme.primary,
+                        unfocusedLabelColor = colorScheme.onSurfaceVariant
                     ),
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -241,12 +252,12 @@ private fun NewsFormDialog(
                 onClick = { onSave(newsTitle, newsDescription, null) },
                 enabled = newsTitle.isNotBlank() && newsDescription.isNotBlank()
             ) {
-                Text("Guardar", color = Color(0xFFFF5722))
+                Text("Guardar", color = colorScheme.primary)
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancelar", color = Color.Gray)
+                Text("Cancelar", color = colorScheme.onSurfaceVariant)
             }
         }
     )

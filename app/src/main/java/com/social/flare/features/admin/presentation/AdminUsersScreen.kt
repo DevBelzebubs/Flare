@@ -26,28 +26,29 @@ fun AdminUsersScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var showStatusDialog by remember { mutableStateOf<String?>(null) }
+    val colorScheme = MaterialTheme.colorScheme
 
     LaunchedEffect(Unit) {
         viewModel.loadUsers()
     }
 
     Scaffold(
-        containerColor = Color.Black,
+        containerColor = colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("Gestión de Usuarios", color = Color.White, fontWeight = FontWeight.Bold) },
+                title = { Text("Gestión de Usuarios", color = colorScheme.onBackground, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = null, tint = Color.White)
+                        Icon(Icons.Default.ArrowBack, contentDescription = null, tint = colorScheme.onBackground)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Black)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = colorScheme.background)
             )
         }
     ) { padding ->
         if (uiState.isLoading) {
             Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = Color(0xFFFF5722))
+                CircularProgressIndicator(color = colorScheme.primary)
             }
         } else {
             LazyColumn(
@@ -73,8 +74,8 @@ fun AdminUsersScreen(
         if (user != null) {
             AlertDialog(
                 onDismissRequest = { showStatusDialog = null },
-                containerColor = Color(0xFF1A1A1A),
-                title = { Text("Estado de ${user.displayName}", color = Color.White) },
+                containerColor = colorScheme.surface,
+                title = { Text("Estado de ${user.displayName}", color = colorScheme.onSurface) },
                 text = {
                     Column {
                         StatusOption("active", "Activo", user.status) {
@@ -93,7 +94,7 @@ fun AdminUsersScreen(
                 },
                 confirmButton = {
                     TextButton(onClick = { showStatusDialog = null }) {
-                        Text("Cancelar", color = Color(0xFFFF5722))
+                        Text("Cancelar", color = colorScheme.primary)
                     }
                 }
             )
@@ -109,6 +110,7 @@ private fun StatusOption(
     onClick: () -> Unit
 ) {
     val isSelected = currentStatus == value
+    val colorScheme = MaterialTheme.colorScheme
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -118,10 +120,10 @@ private fun StatusOption(
         RadioButton(
             selected = isSelected,
             onClick = onClick,
-            colors = RadioButtonDefaults.colors(selectedColor = Color(0xFFFF5722))
+            colors = RadioButtonDefaults.colors(selectedColor = colorScheme.primary)
         )
         Spacer(modifier = Modifier.width(8.dp))
-        Text(label, color = if (isSelected) Color.White else Color.Gray)
+        Text(label, color = if (isSelected) colorScheme.onSurface else colorScheme.onSurfaceVariant)
     }
 }
 
@@ -132,9 +134,10 @@ private fun AdminUserCard(
     onDelete: () -> Unit
 ) {
     var showDeleteConfirm by remember { mutableStateOf(false) }
+    val colorScheme = MaterialTheme.colorScheme
 
     Card(
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF1A1A1A)),
+        colors = CardDefaults.cardColors(containerColor = colorScheme.surface),
         shape = RoundedCornerShape(12.dp)
     ) {
         Row(
@@ -147,7 +150,7 @@ private fun AdminUserCard(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = user.displayName,
-                        color = Color.White,
+                        color = colorScheme.onSurface,
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 15.sp,
                         maxLines = 1,
@@ -158,7 +161,7 @@ private fun AdminUserCard(
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
                             text = "ADMIN",
-                            color = Color(0xFFFF5722),
+                            color = colorScheme.primary,
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Bold
                         )
@@ -167,7 +170,7 @@ private fun AdminUserCard(
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = user.username,
-                    color = Color(0xFFFF5722),
+                    color = colorScheme.primary,
                     fontSize = 13.sp
                 )
                 Spacer(modifier = Modifier.height(4.dp))
@@ -176,7 +179,7 @@ private fun AdminUserCard(
                         "active" -> Color(0xFF4CAF50)
                         "blocked" -> Color(0xFFF44336)
                         "suspended" -> Color(0xFFFF9800)
-                        else -> Color.Gray
+                        else -> colorScheme.onSurfaceVariant
                     }
                     val statusLabel = when (user.status) {
                         "active" -> "Activo"
@@ -194,10 +197,10 @@ private fun AdminUserCard(
             }
             if (!user.isAdmin) {
                 IconButton(onClick = onStatusChange) {
-                    Icon(Icons.Default.Shield, contentDescription = "Cambiar estado", tint = Color.Gray, modifier = Modifier.size(20.dp))
+                    Icon(Icons.Default.Shield, contentDescription = "Cambiar estado", tint = colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
                 }
                 IconButton(onClick = { showDeleteConfirm = true }) {
-                    Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = Color(0xFFF44336), modifier = Modifier.size(20.dp))
+                    Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = colorScheme.error, modifier = Modifier.size(20.dp))
                 }
             }
         }
@@ -206,17 +209,17 @@ private fun AdminUserCard(
     if (showDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
-            containerColor = Color(0xFF1A1A1A),
-            title = { Text("Eliminar usuario", color = Color.White) },
-            text = { Text("¿Eliminar a ${user.displayName}? Esta acción no se puede deshacer.", color = Color.Gray) },
+            containerColor = colorScheme.surface,
+            title = { Text("Eliminar usuario", color = colorScheme.onSurface) },
+            text = { Text("¿Eliminar a ${user.displayName}? Esta acción no se puede deshacer.", color = colorScheme.onSurfaceVariant) },
             confirmButton = {
                 TextButton(onClick = { onDelete(); showDeleteConfirm = false }) {
-                    Text("Eliminar", color = Color(0xFFF44336))
+                    Text("Eliminar", color = colorScheme.error)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirm = false }) {
-                    Text("Cancelar", color = Color(0xFFFF5722))
+                    Text("Cancelar", color = colorScheme.primary)
                 }
             }
         )
