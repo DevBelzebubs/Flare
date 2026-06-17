@@ -1,5 +1,6 @@
 package com.social.flare.features.feed.presentation.components.stories
 
+import android.media.MediaPlayer
 import android.os.Build
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
@@ -42,18 +43,21 @@ fun StoryViewerScreen(
     viewModel: StoryViewModel,
     onClose: () -> Unit
 ) {
-    if (userStories.isEmpty()) {
-        onClose()
-        return
-    }
+    if (userStories.isEmpty()) { onClose(); return }
+
     val sessionStories = remember { userStories.toList() }
     var currentIndex by remember { mutableIntStateOf(0) }
     var replyText by remember { mutableStateOf("") }
     var showMenu by remember { mutableStateOf(false) }
-
     var isPaused by remember { mutableStateOf(false) }
 
     val progressAnim = remember { Animatable(0f) }
+
+    val mediaPlayer = remember { MediaPlayer() }
+
+    DisposableEffect(Unit) {
+        onDispose { mediaPlayer.release() }
+    }
 
     val currentStory = sessionStories[currentIndex]
     val storyUrl = currentStory.story.media_url
@@ -64,84 +68,87 @@ fun StoryViewerScreen(
 
     LaunchedEffect(currentIndex) {
         progressAnim.snapTo(0f)
+        mediaPlayer.reset()
+
+        val musicUrl = currentStory.story.music_url
+        if (!musicUrl.isNullOrEmpty()) {
+            try {
+                mediaPlayer.setDataSource(musicUrl)
+                mediaPlayer.prepareAsync()
+                mediaPlayer.setOnPreparedListener {
+                    if (!isPaused) it.start()
+                }
+                mediaPlayer.setOnErrorListener { _, what, extra ->
+                    android.util.Log.e("StoryViewer", "MediaPlayer error: $what $extra")
+                    true
+                }
+            } catch (e: Exception) { e.printStackTrace() }
+        }
     }
 
     LaunchedEffect(currentIndex, isPaused) {
         if (isPaused) {
             progressAnim.stop()
+            try { if (mediaPlayer.isPlaying) mediaPlayer.pause() } catch (e: Exception) {}
         } else {
+            // Reanudar música
+            if (!currentStory.story.music_url.isNullOrEmpty()) {
+                try { mediaPlayer.start() } catch (e: Exception) {}
+            }
+
             val totalDuration = 5000f
             val remainingTime = (1f - progressAnim.value) * totalDuration
 
             if (remainingTime > 0) {
                 progressAnim.animateTo(
                     targetValue = 1f,
-                    animationSpec = tween(
-                        durationMillis = remainingTime.toInt(),
-                        easing = LinearEasing
-                    )
+                    animationSpec = tween(durationMillis = remainingTime.toInt(), easing = LinearEasing)
                 )
             }
 
-            // Cuando la animación termina por sí sola
             if (progressAnim.value >= 1f) {
-                if (currentIndex < userStories.size - 1) {
-                    currentIndex++
-                } else {
-                    onClose()
-                }
+                if (currentIndex < userStories.size - 1) currentIndex++ else onClose()
             }
         }
     }
 
     LaunchedEffect(currentStory.story.story_id) {
         viewModel.loadCommentsForStory(currentStory.story.story_id)
-        activeCitizenId?.let { userId ->
-            viewModel.markStoryAsViewed(currentStory.story.story_id, userId)
-        }
+        activeCitizenId?.let { userId -> viewModel.markStoryAsViewed(currentStory.story.story_id, userId) }
     }
 
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black)
-            .pointerInput(Unit) {
-                detectTapGestures(
-                    onPress = {
-                        isPaused = true
-                        tryAwaitRelease()
-                        isPaused = false
-                    },
-                    onTap = { offset ->
-                        if (showMenu) return@detectTapGestures
-
-                        if (offset.x < size.width / 2) {
-                            if (currentIndex > 0) currentIndex--
-                        } else {
-                            if (currentIndex < userStories.size - 1) currentIndex++
-                            else onClose()
-                        }
+        modifier = Modifier.fillMaxSize().background(Color.Black).pointerInput(Unit) {
+            detectTapGestures(
+                onPress = {
+                    isPaused = true
+                    tryAwaitRelease()
+                    isPaused = false
+                },
+                onTap = { offset ->
+                    if (showMenu) return@detectTapGestures
+                    if (offset.x < size.width / 2) {
+                        if (currentIndex > 0) currentIndex--
+                    } else {
+                        if (currentIndex < userStories.size - 1) currentIndex++ else onClose()
                     }
-                )
-            }
+                }
+            )
+        }
     ) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             AsyncImage(
                 model = storyUrl, contentDescription = "Background Blur", contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize().blur(radius = 60.dp).background(Color.Black.copy(alpha = 0.4f))
             )
-        } else {
-            Box(modifier = Modifier.fillMaxSize().background(Color(0xFF121212)))
-        }
+        } else { Box(modifier = Modifier.fillMaxSize().background(Color(0xFF121212))) }
 
         AsyncImage(model = storyUrl, contentDescription = "Story Content", contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize())
 
         Box(modifier = Modifier.fillMaxWidth().height(120.dp).align(Alignment.TopCenter).background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.7f), Color.Transparent))))
         Box(modifier = Modifier.fillMaxWidth().height(120.dp).align(Alignment.BottomCenter).background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.8f)))))
 
-        Column(
-            modifier = Modifier.fillMaxWidth().align(Alignment.TopCenter).padding(top = 16.dp)
-        ) {
+        Column(modifier = Modifier.fillMaxWidth().align(Alignment.TopCenter).padding(top = 16.dp)) {
             StoryProgressBar(storiesCount = userStories.size, currentIndex = currentIndex, progress = progressAnim.value)
             Spacer(modifier = Modifier.height(12.dp))
 
@@ -156,10 +163,7 @@ fun StoryViewerScreen(
                 Spacer(modifier = Modifier.weight(1f))
 
                 IconButton(onClick = { isPaused = !isPaused }, modifier = Modifier.size(32.dp)) {
-                    Icon(
-                        imageVector = if (isPaused) Icons.Default.PlayArrow else Icons.Default.Pause,
-                        contentDescription = "Pausar/Reanudar", tint = Color.White
-                    )
+                    Icon(imageVector = if (isPaused) Icons.Default.PlayArrow else Icons.Default.Pause, contentDescription = "Pausar/Reanudar", tint = Color.White)
                 }
                 Spacer(modifier = Modifier.width(4.dp))
 
@@ -168,28 +172,18 @@ fun StoryViewerScreen(
                         IconButton(onClick = { showMenu = true; isPaused = true }, modifier = Modifier.size(32.dp)) {
                             Icon(Icons.Default.MoreVert, contentDescription = "Opciones", tint = Color.White)
                         }
-                        DropdownMenu(
-                            expanded = showMenu,
-                            onDismissRequest = { showMenu = false; isPaused = false },
-                            modifier = Modifier.background(Color(0xFF1E1E1E))
-                        ) {
+                        DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false; isPaused = false }, modifier = Modifier.background(Color(0xFF1E1E1E))) {
                             DropdownMenuItem(
                                 text = { Text("Eliminar historia", color = Color.Red) },
                                 leadingIcon = { Icon(Icons.Outlined.Delete, contentDescription = null, tint = Color.Red) },
-                                onClick = {
-                                    showMenu = false
-                                    viewModel.deleteStory(currentStory.story.story_id)
-                                    onClose()
-                                }
+                                onClick = { showMenu = false; viewModel.deleteStory(currentStory.story.story_id); onClose() }
                             )
                         }
                     }
                     Spacer(modifier = Modifier.width(4.dp))
                 }
 
-                IconButton(onClick = onClose, modifier = Modifier.size(32.dp)) {
-                    Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White)
-                }
+                IconButton(onClick = onClose, modifier = Modifier.size(32.dp)) { Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White) }
             }
         }
 

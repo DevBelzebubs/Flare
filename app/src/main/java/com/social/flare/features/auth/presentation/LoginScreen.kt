@@ -196,12 +196,12 @@ fun LoginScreen(
                         )
                     }
 
-                    // Campo EMAIL
+                    // Campo EMAIL / USERNAME
                     Column(modifier = Modifier.fillMaxWidth()) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(Icons.Default.Email, contentDescription = null, tint = colorScheme.primary, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("EMAIL", color = colorScheme.primary, fontSize = 12.sp, fontWeight = FontWeight.ExtraBold)
+                            Text("EMAIL OR USERNAME", color = colorScheme.primary, fontSize = 12.sp, fontWeight = FontWeight.ExtraBold)
                         }
                         Spacer(modifier = Modifier.height(8.dp))
                         OutlinedTextField(
@@ -210,7 +210,7 @@ fun LoginScreen(
                                 email = it
                                 errorMessage = null
                             },
-                            placeholder = { Text("example@gmail.com", fontSize = 14.sp) },
+                            placeholder = { Text("example@gmail.com or @username", fontSize = 14.sp) },
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(16.dp),
                             colors = OutlinedTextFieldDefaults.colors(
@@ -244,7 +244,7 @@ fun LoginScreen(
                                 password = it
                                 errorMessage = null
                             },
-                            placeholder = { Text("Must have at least 8 characters", fontSize = 14.sp) },
+                            placeholder = { Text("Mínimo 5 caracteres", fontSize = 14.sp) },
                             visualTransformation = PasswordVisualTransformation(),
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(16.dp),

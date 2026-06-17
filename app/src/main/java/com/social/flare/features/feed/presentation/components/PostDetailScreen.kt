@@ -187,7 +187,7 @@ fun PostDetailScreen(
                                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
                             )
                         }
-                        items(detail.replies) { reply ->
+                        items(detail.replies, key = { it.id }) { reply ->
                             val isNestedReply = reply.parentPostId != detail.mainPost.id
                             CommentItem(
                                 post = reply,

@@ -14,6 +14,9 @@ class RegisterUseCase(
         if (displayName.isBlank() || username.isBlank() || pass.isBlank()) {
             return Result.failure(Exception("Debes completar todos los campos obligatorios"));
         }
+        if (pass.length < 5) {
+            return Result.failure(Exception("La contraseña debe tener al menos 5 caracteres"))
+        }
         if (!username.startsWith("@")) {
             return Result.failure(Exception("El nombre de usuario debe empezar con @"));
         }

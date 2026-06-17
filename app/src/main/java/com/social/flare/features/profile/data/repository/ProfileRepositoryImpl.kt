@@ -5,31 +5,24 @@ import com.social.flare.features.auth.data.local.entity.CitizenEntity
 import com.social.flare.features.profile.domain.repository.ProfileRepository
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.Flow
-import kotlin.coroutines.cancellation.CancellationException
+import kotlinx.coroutines.withContext
 
 class ProfileRepositoryImpl(
     private val citizenDao: CitizenDao,
     private val supabase: SupabaseClient
 ) : ProfileRepository {
 
-    private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
-
     override suspend fun getCitizenProfile(citizenId: String): Flow<CitizenEntity?> {
-        try {
-            val remote = scope.async {
-                supabase.postgrest["citizens"]
+        withContext(Dispatchers.IO) {
+            try {
+                val remote = supabase.postgrest["citizens"]
                     .select { filter { eq("citizen_id", citizenId) } }
                     .decodeSingle<CitizenEntity>()
-            }.await()
-            citizenDao.insertCitizen(remote)
-        } catch (e: Exception) {
-            if (e !is CancellationException) {
-                e.printStackTrace();
+                citizenDao.insertCitizen(remote)
+            } catch (e: Throwable) {
+                e.printStackTrace()
             }
         }
         return citizenDao.observeCitizenById(citizenId)
@@ -41,8 +34,8 @@ class ProfileRepositoryImpl(
         bio: String?,
         avatarUrl: String?,
         bannerUrl: String?
-    ): Result<Unit> {
-        return try {
+    ): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
             supabase.postgrest["citizens"].update({
                 set("display_name", displayName)
                 set("bio", bio ?: "")

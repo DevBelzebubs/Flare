@@ -32,11 +32,9 @@ fun FeedScreen(
     val isGuest = activeCitizenId == null
     var fullScreenImageUrl by remember { mutableStateOf<String?>(null) }
 
-    val requireAuth: (() -> Unit) -> Unit = { action ->
-        if (isGuest) {
-            onRequireAuth()
-        } else {
-            action()
+    val requireAuth = remember(isGuest, onRequireAuth) {
+        { action: () -> Unit ->
+            if (isGuest) onRequireAuth() else action()
         }
     }
 
@@ -98,7 +96,9 @@ fun FeedScreen(
                             items = uiState.posts,
                             key = { post -> post.id }
                         ) { post ->
-                            val displayPost = if (isGuest) post.copy(isLikedByMe = false) else post
+                            val displayPost = remember(post, isGuest) {
+                                if (isGuest) post.copy(isLikedByMe = false) else post
+                            }
                             PostCard(
                                 post = displayPost,
                                 activeCitizenId = activeCitizenId,

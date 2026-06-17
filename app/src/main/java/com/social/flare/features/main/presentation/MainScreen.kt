@@ -36,9 +36,11 @@ import com.social.flare.features.search.presentation.SearchViewModel
 
 import com.social.flare.core.media.CloudinaryService
 import com.social.flare.features.feed.data.repository.FeedRepositoryImpl
+import com.social.flare.features.feed.data.repository.MusicRepositoryImpl
 import com.social.flare.features.feed.data.repository.StoryRepositoryImpl
 import com.social.flare.features.feed.domain.usecase.GetFeedUseCase
 import com.social.flare.features.feed.presentation.FeedViewModel
+import com.social.flare.features.feed.presentation.MusicViewModel
 import com.social.flare.features.feed.presentation.StoryViewModel
 import com.social.flare.features.feed.presentation.components.AddStoryScreen
 import com.social.flare.features.feed.presentation.components.CustomGalleryScreen
@@ -76,6 +78,7 @@ import com.social.flare.features.admin.presentation.AdminPostsScreen
 import com.social.flare.features.admin.presentation.AdminNewsScreen
 import com.social.flare.features.admin.presentation.viewmodel.AdminViewModel
 import com.social.flare.features.ai.data.repository.AiAgentRepositoryImpl
+import com.social.flare.features.main.presentation.components.SplashScreen
 import com.social.flare.features.notifications.domain.usecase.GetSuggestedAccountsUseCase
 import com.social.flare.features.profile.presentation.FollowListScreen
 import com.social.flare.features.profile.presentation.viewmodel.FollowListViewModel
@@ -173,6 +176,7 @@ fun MainScreen() {
     Scaffold(
         topBar = {
             val hideTopBarRoutes = listOf(
+                Screen.Splash.route,
                 Screen.Login.route, Screen.SignUp.route,
                 Screen.AdminDashboard.route, Screen.AdminUsers.route,
                 Screen.AdminPosts.route, Screen.AdminNews.route
@@ -186,7 +190,7 @@ fun MainScreen() {
                 Screen.AdminDashboard.route, Screen.AdminUsers.route,
                 Screen.AdminPosts.route, Screen.AdminNews.route
             )
-            val isMainTab = !adminRoutes.contains(currentRoute) && (
+            val isMainTab = currentRoute != Screen.Splash.route && !adminRoutes.contains(currentRoute) && (
                 listOf(
                     Screen.Feed.route, Screen.Search.route, Screen.AddPost.route, Screen.Notifications.route
                 ).contains(currentRoute) || currentRoute?.startsWith(Screen.Profile.route) == true
@@ -219,8 +223,16 @@ fun MainScreen() {
     ) { paddingValues ->
 
         Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
-            NavHost(navController = navController, startDestination = Screen.Feed.route) {
-
+            NavHost(navController = navController, startDestination = Screen.Splash.route) {
+                composable(Screen.Splash.route) {
+                    SplashScreen(
+                        onAnimationFinished = {
+                            navController.navigate(Screen.Feed.route) {
+                                popUpTo(Screen.Splash.route) { inclusive = true }
+                            }
+                        }
+                    )
+                }
                 composable(Screen.Feed.route) {
                     val feedViewModel: FeedViewModel = viewModel(
                         factory = object : ViewModelProvider.Factory {
@@ -292,6 +304,13 @@ fun MainScreen() {
                             override fun <T : ViewModel> create(modelClass: Class<T>): T { return StoryViewModel(storyRepository) as T }
                         }
                     )
+                    val musicRepository = remember { MusicRepositoryImpl() }
+                    val musicViewModel: MusicViewModel = viewModel(
+                        factory = object : ViewModelProvider.Factory {
+                            @Suppress("UNCHECKED_CAST")
+                            override fun <T : ViewModel> create(modelClass: Class<T>): T { return MusicViewModel(musicRepository) as T }
+                        }
+                    )
                     val profileViewModel: ProfileViewModel = viewModel(factory = ProfileViewModelFactory(context.applicationContext))
                     val storyUiState by storyViewModel.uiState.collectAsStateWithLifecycle()
                     val profileState by profileViewModel.uiState.collectAsStateWithLifecycle()
@@ -317,9 +336,15 @@ fun MainScreen() {
 
                     Box(modifier = Modifier.fillMaxSize()) {
                         AddStoryScreen(
-                            selectedImageUri = storyUri, activeUserAvatarUrl = avatarUrl,
+                            selectedImageUri = storyUri,
+                            activeUserAvatarUrl = avatarUrl,
+                            musicViewModel = musicViewModel,
                             onCancel = { navController.popBackStack() },
-                            onShareToStory = { uri -> activeCitizenId?.let { userId -> storyViewModel.createStory(authorId = userId, imageUri = uri) } }
+                            onShareToStory = { uri, musicUrl ->
+                                activeCitizenId?.let { userId ->
+                                    storyViewModel.createStory(authorId = userId, imageUri = uri, musicUrl = musicUrl)
+                                }
+                            }
                         )
                     }
                 }
@@ -535,7 +560,7 @@ fun MainScreen() {
                         activeCitizenId = activeCitizenId, profileViewModel = profileViewModel,
                         onNavigateBack = { navController.popBackStack() },
                         onNavigateToEditProfile = { navController.navigate(Screen.EditProfile.route) },
-                        onLogout = { scope.launch { sessionManager.clearSession(); navController.navigate(Screen.Login.route) { popUpTo(0) { inclusive = true } } } },
+                        onLogout = { scope.launch { sessionManager.clearSession(); app.database.clearAllTables(); navController.navigate(Screen.Login.route) { popUpTo(0) { inclusive = true } } } },
                         onLogin = { navController.navigate(Screen.Login.route) },
                         onChangePassword = { newPassword -> changePasswordUseCase(newPassword) },
                         onNavigateToAdmin = { navController.navigate(Screen.AdminDashboard.route) }

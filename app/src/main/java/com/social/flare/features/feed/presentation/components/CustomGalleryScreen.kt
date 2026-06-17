@@ -105,7 +105,7 @@ fun CustomGalleryScreen(
                 horizontalArrangement = Arrangement.spacedBy(2.dp),
                 verticalArrangement = Arrangement.spacedBy(2.dp)
             ) {
-                items(galleryImages) { uri ->
+                items(galleryImages, key = { it }) { uri ->
                     AsyncImage(
                         model = uri,
                         contentDescription = "Gallery Image",

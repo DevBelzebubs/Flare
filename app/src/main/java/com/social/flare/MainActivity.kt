@@ -13,7 +13,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -47,7 +47,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             val app = (LocalContext.current.applicationContext as FlareApp)
             val settingsManager = remember { SettingsManager(applicationContext) }
-            val darkModeEnabled by settingsManager.darkModeEnabledFlow.collectAsState(initial = true)
+            val darkModeEnabled by settingsManager.darkModeEnabledFlow.collectAsStateWithLifecycle(initialValue = true)
             var initialized by remember { mutableStateOf(app.isInitialized) }
 
             LaunchedEffect(darkModeEnabled) {

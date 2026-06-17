@@ -26,6 +26,7 @@ interface SearchDao {
         INNER JOIN citizen_table c ON p.author_id = c.citizen_id
         WHERE p.content LIKE '%' || :query || '%' AND p.parent_post_id IS NULL AND p.shared_post_id IS NULL
         ORDER BY p.created_at DESC
+        LIMIT 50
     """)
     fun searchPosts(query: String): Flow<List<PostWithDetails>>
 

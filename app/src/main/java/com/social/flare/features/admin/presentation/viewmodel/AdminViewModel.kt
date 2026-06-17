@@ -244,4 +244,9 @@ class AdminViewModel(
     fun clearMessages() {
         _uiState.update { it.copy(errorMessage = null, successMessage = null) }
     }
+
+    override fun onCleared() {
+        super.onCleared()
+        loadJob?.cancel()
+    }
 }

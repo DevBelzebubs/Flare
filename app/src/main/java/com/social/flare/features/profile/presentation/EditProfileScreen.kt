@@ -16,6 +16,7 @@ import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -45,8 +46,8 @@ fun EditProfileScreen(
     var avatarUri by remember { mutableStateOf<Uri?>(citizen.avatar_url?.takeIf { it.isNotBlank() }?.let { Uri.parse(it) }) }
     var bannerUri by remember { mutableStateOf<Uri?>(citizen.banner_url?.takeIf { it.isNotBlank() }?.let { Uri.parse(it) }) }
 
-    val isLoading by viewModel.isLoading.collectAsState()
-    val isSuccess by viewModel.isSuccess.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val isSuccess by viewModel.isSuccess.collectAsStateWithLifecycle()
 
     val avatarLauncher = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         if (uri != null) avatarUri = uri

@@ -21,9 +21,6 @@ import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.filter.FilterOperator
 import io.github.jan.supabase.postgrest.query.filter.PostgrestFilterBuilder
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
@@ -31,8 +28,9 @@ import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.UUID
 
 class FeedRepositoryImpl(
@@ -42,19 +40,23 @@ class FeedRepositoryImpl(
     private val supabase: SupabaseClient
 ) : FeedRepository {
 
-    private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
-
     override fun getFeedPosts(currentUserId: String): Flow<List<Post>> = flow {
-        syncPostsFromSupabase(currentUserId, isGuest = false)
+        withContext(Dispatchers.IO) { syncPostsFromSupabase(currentUserId, isGuest = false) }
         val sourceFlow = postDao.getFeedPosts(currentUserId)
         sourceFlow.collect { entities ->
             val followedIds = followDao?.getFollowedIds(currentUserId) ?: emptyList()
             val now = System.currentTimeMillis()
+            val pollPostIds = entities.mapNotNull { entity ->
+                if (entity.post.poll_question != null) entity.post.post_id else null
+            }
+            val userVotesMap = if (pollPostIds.isNotEmpty()) {
+                postDao.getUserVotes(pollPostIds, currentUserId).associate { it.post_id to it.selected_option_index }
+            } else emptyMap()
             val posts = entities.map { entity ->
                 val post = entity.toDomain()
                 if (post.pollQuestion != null) {
                     val counts = parseIntList(entity.post.poll_vote_counts)
-                    val userVote = postDao.getUserVote(post.id, currentUserId)
+                    val userVote = userVotesMap[post.id]
                     post.copy(pollVoteCounts = counts, userSelectedOptionIndex = userVote)
                 } else {
                     post
@@ -73,7 +75,7 @@ class FeedRepositoryImpl(
     }
 
     override fun getFeedPostsGuest(): Flow<List<Post>> = flow {
-        syncPostsFromSupabase(isGuest = true)
+        withContext(Dispatchers.IO) { syncPostsFromSupabase(isGuest = true) }
         emitAll(
             postDao.getFeedPostsGuest().map { entities ->
                 val now = System.currentTimeMillis()
@@ -144,11 +146,17 @@ class FeedRepositoryImpl(
         currentUserId: String
     ): Flow<List<Post>> {
         return postDao.getPostReplies(parentPostId, currentUserId).map { entities ->
+            val pollPostIds = entities.mapNotNull { entity ->
+                if (entity.post.poll_question != null) entity.post.post_id else null
+            }
+            val userVotesMap = if (pollPostIds.isNotEmpty()) {
+                postDao.getUserVotes(pollPostIds, currentUserId).associate { it.post_id to it.selected_option_index }
+            } else emptyMap()
             entities.map { entity ->
                 val post = entity.toDomain()
                 if (post.pollQuestion != null) {
                     val counts = parseIntList(entity.post.poll_vote_counts)
-                    val userVote = postDao.getUserVote(post.id, currentUserId)
+                    val userVote = userVotesMap[post.id]
                     post.copy(pollVoteCounts = counts, userSelectedOptionIndex = userVote)
                 } else post
             }
@@ -166,7 +174,7 @@ class FeedRepositoryImpl(
         locationName: String?,
         locationLat: Double?,
         locationLng: Double?
-    ) {
+    ) = withContext(Dispatchers.IO) {
         val newPostId = UUID.randomUUID().toString()
         val newPost = PostEntity(
             post_id = newPostId,
@@ -191,25 +199,31 @@ class FeedRepositoryImpl(
             e.printStackTrace()
             throw e
         }
-        postDao.insertPost(newPost)
 
         try {
             val hashtagPattern = Regex("#(\\w+)")
-            val hashtags = hashtagPattern.findAll(content)
+            val hashtagNames = hashtagPattern.findAll(content)
                 .map { it.groupValues[1].lowercase() }
                 .distinct()
                 .toList()
-            for (tag in hashtags) {
+
+            val hashtagEntities = mutableListOf<HashtagEntity>()
+            val postHashtagEntities = mutableListOf<PostHashtagEntity>()
+
+            for (tag in hashtagNames) {
                 val existingId = postDao.getHashtagId(tag)
                 val tagId = existingId ?: UUID.randomUUID().toString().also {
                     supabase.postgrest["hashtags"].insert(HashtagEntity(it, tag, System.currentTimeMillis()))
-                    postDao.insertHashtag(HashtagEntity(it, tag, System.currentTimeMillis()))
                 }
+                val hashtagEntity = HashtagEntity(tagId, tag, System.currentTimeMillis())
+                hashtagEntities.add(hashtagEntity)
+                postHashtagEntities.add(PostHashtagEntity(newPostId, tagId))
                 try {
                     supabase.postgrest["post_hashtags"].insert(PostHashtagEntity(newPostId, tagId))
                 } catch (_: Exception) {}
-                postDao.insertPostHashtag(PostHashtagEntity(newPostId, tagId))
             }
+
+            postDao.insertPostWithHashtags(newPost, hashtagEntities, postHashtagEntities)
         } catch (e: Throwable) {
             e.printStackTrace()
         }
@@ -229,7 +243,7 @@ class FeedRepositoryImpl(
         }
     }
 
-    override suspend fun castVote(postId: String, citizenId: String, optionIndex: Int) {
+    override suspend fun castVote(postId: String, citizenId: String, optionIndex: Int) = withContext(Dispatchers.IO) {
         val currentPost = postDao.getPostById(postId)
         val currentCounts = parseIntList(currentPost?.post?.poll_vote_counts)
             ?: currentPost?.post?.let { post ->
@@ -239,23 +253,21 @@ class FeedRepositoryImpl(
                     parsed?.map { 0 }
                 } else null
             }
-            ?: return
+            ?: return@withContext
 
         val existingVote = postDao.getUserVote(postId, citizenId)
         val newCounts = currentCounts.toMutableList()
 
         if (existingVote != null) {
-            if (existingVote == optionIndex) return
+            if (existingVote == optionIndex) return@withContext
             newCounts[existingVote] = maxOf(0, newCounts[existingVote] - 1)
-            postDao.deleteVote(postId, citizenId)
         }
 
         if (optionIndex in newCounts.indices) {
             newCounts[optionIndex] = newCounts[optionIndex] + 1
         }
 
-        postDao.insertVote(PostVoteEntity(postId, citizenId, optionIndex))
-        postDao.insertPost(currentPost!!.post.copy(poll_vote_counts = newCounts.toVoteCountsJson()))
+        postDao.castVoteTransaction(postId, citizenId, PostVoteEntity(postId, citizenId, optionIndex), currentPost!!.post.copy(poll_vote_counts = newCounts.toVoteCountsJson()))
 
         try {
             supabase.postgrest["post_votes"].upsert(PostVoteEntity(postId, citizenId, optionIndex))
@@ -271,8 +283,8 @@ class FeedRepositoryImpl(
         postId: String,
         citizenId: String,
         isCurrentlyLiked: Boolean
-    ): Result<Unit> {
-        return try {
+    ): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
             val currentPost = supabase.postgrest["posts"]
                 .select { filter { eq("post_id", postId) } }
                 .decodeSingle<PostEntity>()
@@ -286,7 +298,7 @@ class FeedRepositoryImpl(
                 supabase.postgrest["posts"].update({ set("likes_count", newCount) }) {
                     filter { eq("post_id", postId) }
                 }
-                postDao.deleteLike(postId, citizenId)
+                postDao.toggleLikeTransaction(postId, citizenId, null, isLiked = true)
 
             } else {
                 supabase.postgrest["post_likes"].insert(PostLikeEntity(postId, citizenId))
@@ -295,7 +307,7 @@ class FeedRepositoryImpl(
                 supabase.postgrest["posts"].update({ set("likes_count", newCount) }) {
                     filter { eq("post_id", postId) }
                 }
-                postDao.insertLike(PostLikeEntity(postId, citizenId))
+                postDao.toggleLikeTransaction(postId, citizenId, PostLikeEntity(postId, citizenId), isLiked = false)
             }
 
             val updatedPost = supabase.postgrest["posts"]
@@ -313,7 +325,7 @@ class FeedRepositoryImpl(
         postId: String,
         citizenId: String,
         isCurrentlySaved: Boolean
-    ) {
+    ) = withContext(Dispatchers.IO) {
         if (isCurrentlySaved) {
             supabase.postgrest["saved_posts"].delete {
                 filter { eq("post_id", postId) }
@@ -335,8 +347,8 @@ class FeedRepositoryImpl(
         postId: String,
         currentUserId: String,
         newContent: String
-    ): Result<Unit> {
-        return try {
+    ):         Result<Unit> = withContext(Dispatchers.IO) {
+        try {
             supabase.postgrest["posts"].update({
                 set("content", newContent)
             }) {
@@ -357,8 +369,8 @@ class FeedRepositoryImpl(
     override suspend fun deletePost(
         postId: String,
         currentUserId: String
-    ): Result<Unit> {
-        return try {
+    ): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
             supabase.postgrest["posts"].delete {
                 filter { eq("post_id", postId) }
                 filter { eq("author_id", currentUserId) }
@@ -373,8 +385,8 @@ class FeedRepositoryImpl(
         }
     }
 
-    override fun getUserPosts(userId: String): Flow<List<Post>> {
-        scope.launch {
+    override fun getUserPosts(userId: String): Flow<List<Post>> = flow {
+        withContext(Dispatchers.IO) {
             try {
                 val userPosts = supabase.postgrest["posts"]
                     .select { filter { eq("author_id", userId) } }
@@ -386,26 +398,31 @@ class FeedRepositoryImpl(
 
                 citizenDao.insertCitizen(author)
                 userPosts.forEach { postDao.insertPost(it) }
-
             } catch (e: Throwable) { e.printStackTrace() }
         }
-        return postDao.getPostsByAuthor(userId).map { entities ->
+        emitAll(postDao.getPostsByAuthor(userId).map { entities ->
+            val pollPostIds = entities.mapNotNull { entity ->
+                if (entity.post.poll_question != null) entity.post.post_id else null
+            }
+            val userVotesMap = if (pollPostIds.isNotEmpty()) {
+                postDao.getUserVotes(pollPostIds, userId).associate { it.post_id to it.selected_option_index }
+            } else emptyMap()
             entities.map { entity ->
                 val post = entity.toDomain()
                 if (post.pollQuestion != null) {
                     val counts = parseIntList(entity.post.poll_vote_counts)
-                    val userVote = postDao.getUserVote(post.id, userId)
+                    val userVote = userVotesMap[post.id]
                     post.copy(pollVoteCounts = counts, userSelectedOptionIndex = userVote)
                 } else post
             }
-        }
+        })
     }
 
     override fun getPostDetail(
         postId: String,
         currentUserId: String
-    ): Flow<PostDetail> {
-        scope.launch {
+    ): Flow<PostDetail> = flow {
+        withContext(Dispatchers.IO) {
             try {
                 val post = supabase.postgrest["posts"]
                     .select { filter { eq("post_id", postId) } }
@@ -467,11 +484,21 @@ class FeedRepositoryImpl(
                 flowOf(null)
             }
         }
-        return combine(mainPostFlow, repliesFlow, parentPostFlow) { mainPostEntity, repliesEntities, parentPostEntity ->
+        emitAll(combine(mainPostFlow, repliesFlow, parentPostFlow) { mainPostEntity, repliesEntities, parentPostEntity ->
             val mainPost = mainPostEntity.toDomain()
+            val allPostIds = buildList {
+                if (mainPost.pollQuestion != null) add(mainPost.id)
+                addAll(repliesEntities.mapNotNull { entity ->
+                    if (entity.post.poll_question != null) entity.post.post_id else null
+                })
+            }
+            val userVotesMap = if (allPostIds.isNotEmpty()) {
+                postDao.getUserVotes(allPostIds, currentUserId).associate { it.post_id to it.selected_option_index }
+            } else emptyMap()
+
             val enrichedMain = if (mainPost.pollQuestion != null) {
                 val counts = parseIntList(mainPostEntity.post.poll_vote_counts)
-                val userVote = postDao.getUserVote(mainPost.id, currentUserId)
+                val userVote = userVotesMap[mainPost.id]
                 mainPost.copy(pollVoteCounts = counts, userSelectedOptionIndex = userVote)
             } else mainPost
 
@@ -479,7 +506,7 @@ class FeedRepositoryImpl(
                 val reply = entity.toDomain()
                 if (reply.pollQuestion != null) {
                     val counts = parseIntList(entity.post.poll_vote_counts)
-                    val userVote = postDao.getUserVote(reply.id, currentUserId)
+                    val userVote = userVotesMap[reply.id]
                     reply.copy(pollVoteCounts = counts, userSelectedOptionIndex = userVote)
                 } else reply
             }
@@ -489,11 +516,11 @@ class FeedRepositoryImpl(
                 mainPost = enrichedMain,
                 replies = enrichedReplies
             )
-        }
+        })
     }
 
-    override suspend fun getPostById(postId: String): Post? {
-        return try {
+    override suspend fun getPostById(postId: String): Post? = withContext(Dispatchers.IO) {
+        try {
             val post = supabase.postgrest["posts"]
                 .select { filter { eq("post_id", postId) } }
                 .decodeSingle<PostEntity>()
@@ -516,7 +543,7 @@ class FeedRepositoryImpl(
         }
     }
 
-    override suspend fun toggleSharePost(authorId: String, originalPostId: String, isCurrentlyShared: Boolean) {
+    override suspend fun toggleSharePost(authorId: String, originalPostId: String, isCurrentlyShared: Boolean) = withContext(Dispatchers.IO) {
         if (isCurrentlyShared) {
             val sharedPostId = postDao.getSharedPostId(authorId, originalPostId)
             if (sharedPostId != null) {
@@ -541,8 +568,8 @@ class FeedRepositoryImpl(
         }
     }
 
-    override fun getSharedPosts(userId: String): Flow<List<Post>> {
-        scope.launch {
+    override fun getSharedPosts(userId: String): Flow<List<Post>> = flow {
+        withContext(Dispatchers.IO) {
             try {
                 val shared = supabase.postgrest["posts"]
                     .select {
@@ -562,7 +589,13 @@ class FeedRepositoryImpl(
                 shared.forEach { postDao.insertPost(it) }
             } catch (e: Throwable) { e.printStackTrace() }
         }
-        return postDao.getSharedPosts(userId).map { entities ->
+        emitAll(postDao.getSharedPosts(userId).map { entities ->
+            val pollPostIds = entities.mapNotNull { entity ->
+                if (entity.post.poll_question != null) entity.post.post_id else null
+            }
+            val userVotesMap = if (pollPostIds.isNotEmpty()) {
+                postDao.getUserVotes(pollPostIds, userId).associate { it.post_id to it.selected_option_index }
+            } else emptyMap()
             entities.map { entity ->
                 var post = entity.toDomain()
                 if (post.content.isNullOrBlank() && post.mediaUrls.isEmpty() && post.sharedPostId != null) {
@@ -577,12 +610,12 @@ class FeedRepositoryImpl(
                 }
                 if (post.pollQuestion != null) {
                     val counts = parseIntList(entity.post.poll_vote_counts)
-                    val userVote = postDao.getUserVote(post.id, userId)
+                    val userVote = userVotesMap[post.id]
                     post = post.copy(pollVoteCounts = counts, userSelectedOptionIndex = userVote)
                 }
                 post
             }
-        }
+        })
     }
 
     private fun PostgrestFilterBuilder.isNotNull(column: String) {

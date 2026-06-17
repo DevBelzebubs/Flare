@@ -18,12 +18,11 @@ import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Columns
 import io.github.jan.supabase.postgrest.rpc
 
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.UUID
 import kotlin.collections.map
@@ -52,15 +51,13 @@ class AdminRepositoryImpl(
     private val supabase: SupabaseClient
 ) : AdminRepository {
 
-    private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
-
-    override suspend fun getDashboardData(): AdminDashboardData {
+    override suspend fun getDashboardData(): AdminDashboardData = withContext(Dispatchers.IO) {
         syncAllData()
         val allUsers = citizenDao.getAllCitizens()
         val totalPosts = postDao.getAllPostsAdmin()
         val totalNews = newsDao.countNews()
 
-        return AdminDashboardData(
+        AdminDashboardData(
             totalUsers = allUsers.size,
             activeUsers = allUsers.count { it.status == "active" },
             blockedUsers = allUsers.count { it.status != "active" },
@@ -87,29 +84,26 @@ class AdminRepositoryImpl(
         }
     }
 
-    override suspend fun getAllUsers(): List<AdminUser> {
+    override suspend fun getAllUsers(): List<AdminUser> = withContext(Dispatchers.IO) {
         syncAllUsers()
         val citizens = citizenDao.getAllCitizens()
-        val result = mutableListOf<AdminUser>()
-        for (citizen in citizens) {
-            val postsCount = postDao.countPostsByAuthor(citizen.citizen_id)
-            result.add(
-                AdminUser(
-                    citizenId = citizen.citizen_id,
-                    username = citizen.username,
-                    displayName = citizen.display_name,
-                    avatarUrl = citizen.avatar_url,
-                    bio = citizen.bio,
-                    isAdmin = citizen.is_admin,
-                    status = citizen.status,
-                    postsCount = postsCount
-                )
+        val postCounts = postDao.getPostsCountsByAuthors(citizens.map { it.citizen_id })
+        val countsMap = postCounts.associate { it.authorId to it.count }
+        citizens.map { citizen ->
+            AdminUser(
+                citizenId = citizen.citizen_id,
+                username = citizen.username,
+                displayName = citizen.display_name,
+                avatarUrl = citizen.avatar_url,
+                bio = citizen.bio,
+                isAdmin = citizen.is_admin,
+                status = citizen.status,
+                postsCount = countsMap[citizen.citizen_id] ?: 0
             )
         }
-        return result
     }
 
-    override suspend fun updateUserStatus(citizenId: String, status: String) {
+    override suspend fun updateUserStatus(citizenId: String, status: String) = withContext(Dispatchers.IO) {
         try {
             supabase.postgrest["citizens"].update({
                 set("status", status)
@@ -120,16 +114,16 @@ class AdminRepositoryImpl(
         citizenDao.updateUserStatus(citizenId, status)
     }
 
-    override suspend fun deleteUser(citizenId: String) {
+    override suspend fun deleteUser(citizenId: String) = withContext(Dispatchers.IO) {
         try {
             supabase.postgrest["citizens"].delete { filter { eq("citizen_id", citizenId) } }
         } catch (e: Throwable) { e.printStackTrace() }
         citizenDao.deleteCitizen(citizenId)
     }
 
-    override suspend fun getAllPosts(): List<AdminPost> {
+    override suspend fun getAllPosts(): List<AdminPost> = withContext(Dispatchers.IO) {
         syncAllPosts()
-        return postDao.getAllPostsAdmin().map { pwd ->
+        postDao.getAllPostsAdmin().map { pwd ->
             val mediaList = pwd.post.media_urls?.takeIf { it.isNotBlank() }?.split(",") ?: emptyList()
             AdminPost(
                 postId = pwd.post.post_id,
@@ -145,28 +139,28 @@ class AdminRepositoryImpl(
         }
     }
 
-    override suspend fun deletePost(postId: String) {
+    override suspend fun deletePost(postId: String) = withContext(Dispatchers.IO) {
         try {
             supabase.postgrest["posts"].delete { filter { eq("post_id", postId) } }
         } catch (e: Throwable) { e.printStackTrace() }
         postDao.deletePostAdmin(postId)
     }
 
-    override fun getActiveNews(): Flow<List<NewsItem>> {
-        scope.launch { syncAllNews() }
-        return newsDao.getActiveNews().map { entities ->
+    override fun getActiveNews(): Flow<List<NewsItem>> = flow {
+        withContext(Dispatchers.IO) { syncAllNews() }
+        emitAll(newsDao.getActiveNews().map { entities ->
             entities.map { it.toDomain() }
-        }
+        })
     }
 
-    override fun getAllNews(): Flow<List<NewsItem>> {
-        scope.launch { syncAllNews() }
-        return newsDao.getAllNews().map { entities ->
+    override fun getAllNews(): Flow<List<NewsItem>> = flow {
+        withContext(Dispatchers.IO) { syncAllNews() }
+        emitAll(newsDao.getAllNews().map { entities ->
             entities.map { it.toDomain() }
-        }
+        })
     }
 
-    override suspend fun createNews(title: String, description: String, imageUrl: String?) {
+    override suspend fun createNews(title: String, description: String, imageUrl: String?) = withContext(Dispatchers.IO) {
         val news = NewsItemEntity(
             news_id = UUID.randomUUID().toString(),
             title = title,
@@ -181,7 +175,7 @@ class AdminRepositoryImpl(
         newsDao.insertNews(news)
     }
 
-    override suspend fun updateNews(newsId: String, title: String, description: String, imageUrl: String?) {
+    override suspend fun updateNews(newsId: String, title: String, description: String, imageUrl: String?) = withContext(Dispatchers.IO) {
         try {
             supabase.postgrest["news"].update({
                 set("title", title)
@@ -194,7 +188,7 @@ class AdminRepositoryImpl(
         newsDao.updateNews(newsId, title, description, imageUrl)
     }
 
-    override suspend fun toggleNewsActive(newsId: String, isActive: Boolean) {
+    override suspend fun toggleNewsActive(newsId: String, isActive: Boolean) = withContext(Dispatchers.IO) {
         try {
             supabase.postgrest["news"].update({
                 set("is_active", isActive)
@@ -205,15 +199,15 @@ class AdminRepositoryImpl(
         newsDao.toggleNewsActive(newsId, isActive)
     }
 
-    override suspend fun deleteNews(newsId: String) {
+    override suspend fun deleteNews(newsId: String) = withContext(Dispatchers.IO) {
         try {
             supabase.postgrest["news"].delete { filter { eq("news_id", newsId) } }
         } catch (e: Throwable) { e.printStackTrace() }
         newsDao.deleteNews(newsId)
     }
 
-    override suspend fun getAllBots(): List<AiPersona> {
-        return try {
+    override suspend fun getAllBots(): List<AiPersona> = withContext(Dispatchers.IO) {
+        try {
             supabase.postgrest["ai_personas"]
                 .select(
                     columns = Columns.raw(
@@ -240,8 +234,8 @@ class AdminRepositoryImpl(
     override suspend fun toggleBotStatus(
         citizenId: String,
         isActive: Boolean
-    ): Result<Unit> {
-        return try {
+    ): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
             supabase.postgrest.rpc(
                 "toggle_bot_status",
                 buildJsonObject {
@@ -258,8 +252,8 @@ class AdminRepositoryImpl(
     override suspend fun updateBotAvatar(
         citizenId: String,
         avatarUrl: String
-    ): Result<Unit> {
-        return try {
+    ): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
             supabase.postgrest["citizens"].update({
                 set("avatar_url", avatarUrl)
             }) {

@@ -18,8 +18,8 @@ import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.realtime.Realtime
 import io.github.jan.supabase.serializer.KotlinXSerializer
 import io.ktor.client.engine.okhttp.OkHttp
-import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
@@ -37,8 +37,8 @@ class FlareApp : Application(), ImageLoaderFactory, Configuration.Provider {
             .setWorkerFactory(workerFactory)
             .build()
 
-    private val initScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val initDeferred = CompletableDeferred<Unit>()
+    private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     @Volatile
     var isInitialized = false
@@ -85,7 +85,7 @@ class FlareApp : Application(), ImageLoaderFactory, Configuration.Provider {
             android.util.Log.e("FlareApp", "UNCAUGHT EXCEPTION on thread: ${thread.name}", throwable)
         }
 
-        initScope.launch {
+        applicationScope.launch {
             try {
                 database
                 supabase
@@ -108,6 +108,9 @@ class FlareApp : Application(), ImageLoaderFactory, Configuration.Provider {
             }
         }
     }
+
+    // applicationScope lives for the app process lifetime (never explicitly cancelled,
+    // since Application.onTerminate() is never called on real Android devices).
 
     override fun newImageLoader(): ImageLoader {
         return ImageLoader.Builder(this)

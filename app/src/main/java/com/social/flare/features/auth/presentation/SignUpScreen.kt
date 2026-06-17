@@ -49,7 +49,7 @@ fun SignUpScreen(
             if (password.isEmpty()) 0
             else {
                 var score = 0
-                if (password.length >= 8) score++
+                if (password.length >= 5) score++
                 if (password.any { it.isDigit() }) score++
                 if (password.any { it.isUpperCase() }) score++
                 if (password.any { !it.isLetterOrDigit() }) score++
@@ -217,7 +217,7 @@ fun SignUpScreen(
                         value = password,
                         onValueChange = { password = it; errorMessage = null },
                         icon = Icons.Default.Lock,
-                        placeholder = "Create a strong password",
+                        placeholder = "Mínimo 5 caracteres",
                         isPassword = true
                     )
 

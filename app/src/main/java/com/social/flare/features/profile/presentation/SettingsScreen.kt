@@ -13,6 +13,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -51,13 +52,13 @@ fun SettingsScreen(
     val context = LocalContext.current
     val settingsManager = remember { SettingsManager(context.applicationContext) }
     val scope = rememberCoroutineScope()
-    val pushNotificationsEnabled by settingsManager.pushNotificationsEnabledFlow.collectAsState(initial = false)
-    val emailNotificationsEnabled by settingsManager.emailNotificationsEnabledFlow.collectAsState(initial = false)
-    val darkModeEnabled by settingsManager.darkModeEnabledFlow.collectAsState(initial = true)
-    val textSizeScale by settingsManager.textSizeScaleFlow.collectAsState(initial = 0.5f)
-    val privateAccountEnabled by settingsManager.privateAccountEnabledFlow.collectAsState(initial = false)
-    val showActivityStatusEnabled by settingsManager.showActivityStatusEnabledFlow.collectAsState(initial = true)
-    val allowProfileSearchEnabled by settingsManager.allowProfileSearchEnabledFlow.collectAsState(initial = true)
+    val pushNotificationsEnabled by settingsManager.pushNotificationsEnabledFlow.collectAsStateWithLifecycle(initialValue = false)
+    val emailNotificationsEnabled by settingsManager.emailNotificationsEnabledFlow.collectAsStateWithLifecycle(initialValue = false)
+    val darkModeEnabled by settingsManager.darkModeEnabledFlow.collectAsStateWithLifecycle(initialValue = true)
+    val textSizeScale by settingsManager.textSizeScaleFlow.collectAsStateWithLifecycle(initialValue = 0.5f)
+    val privateAccountEnabled by settingsManager.privateAccountEnabledFlow.collectAsStateWithLifecycle(initialValue = false)
+    val showActivityStatusEnabled by settingsManager.showActivityStatusEnabledFlow.collectAsStateWithLifecycle(initialValue = true)
+    val allowProfileSearchEnabled by settingsManager.allowProfileSearchEnabledFlow.collectAsStateWithLifecycle(initialValue = true)
     val currentDensity = LocalDensity.current
     val settingsFontScale = textSizeScaleToFontScale(textSizeScale)
     var supportDialog by remember { mutableStateOf<SettingsSupportDialog?>(null) }
@@ -80,7 +81,7 @@ fun SettingsScreen(
             profileViewModel.loadActiveUserProfile(activeCitizenId)
         }
     }
-    val profileState by profileViewModel.uiState.collectAsState()
+    val profileState by profileViewModel.uiState.collectAsStateWithLifecycle()
     val colorScheme = MaterialTheme.colorScheme
     CompositionLocalProvider(
         LocalDensity provides Density(

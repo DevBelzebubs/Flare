@@ -8,8 +8,10 @@ import com.social.flare.features.profile.domain.model.FollowStats
 import com.social.flare.features.profile.domain.repository.FollowRepository
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.withContext
 
 class FollowRepositoryImpl(
     private val followDao: FollowDao,
@@ -17,7 +19,7 @@ class FollowRepositoryImpl(
     private val supabase: SupabaseClient
 ) : FollowRepository {
 
-    override suspend fun followUser(followerId: String, followedId: String) {
+    override suspend fun followUser(followerId: String, followedId: String) = withContext(Dispatchers.IO) {
         val entity = FollowEntity(followerId = followerId, followedId = followedId)
         try {
             supabase.postgrest["follows"].insert(entity)
@@ -31,7 +33,7 @@ class FollowRepositoryImpl(
         }
     }
 
-    override suspend fun unfollowUser(followerId: String, followedId: String) {
+    override suspend fun unfollowUser(followerId: String, followedId: String) = withContext(Dispatchers.IO) {
         try {
             supabase.postgrest["follows"].delete {
                 filter { eq("followerId", followerId) }
@@ -68,11 +70,11 @@ class FollowRepositoryImpl(
         }
     }
 
-    override suspend fun getFollowedIds(userId: String): List<String> {
-        return followDao.getFollowedIds(userId)
+    override suspend fun getFollowedIds(userId: String): List<String> = withContext(Dispatchers.IO) {
+        followDao.getFollowedIds(userId)
     }
 
-    override suspend fun getFollowers(userId: String): List<CitizenEntity> {
+    override suspend fun getFollowers(userId: String): List<CitizenEntity> = withContext(Dispatchers.IO) {
         try {
             val follows = supabase.postgrest["follows"]
                 .select { filter { eq("followedId", userId) } }
@@ -86,10 +88,10 @@ class FollowRepositoryImpl(
                     .forEach { citizenDao.insertCitizen(it) }
             }
         } catch (_: Exception) {}
-        return followDao.getFollowerIds(userId).mapNotNull { citizenDao.getCitizenById(it) }
+        followDao.getFollowerIds(userId).mapNotNull { citizenDao.getCitizenById(it) }
     }
 
-    override suspend fun getFollowing(userId: String): List<CitizenEntity> {
+    override suspend fun getFollowing(userId: String): List<CitizenEntity> = withContext(Dispatchers.IO) {
         try {
             val follows = supabase.postgrest["follows"]
                 .select { filter { eq("followerId", userId) } }
@@ -103,6 +105,6 @@ class FollowRepositoryImpl(
                     .forEach { citizenDao.insertCitizen(it) }
             }
         } catch (_: Exception) {}
-        return followDao.getFollowedIds(userId).mapNotNull { citizenDao.getCitizenById(it) }
+        followDao.getFollowedIds(userId).mapNotNull { citizenDao.getCitizenById(it) }
     }
 }

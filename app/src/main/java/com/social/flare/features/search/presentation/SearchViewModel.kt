@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 data class SearchUiState(
@@ -54,10 +55,10 @@ class SearchViewModel(
     }
 
     fun onQueryChange(query: String) {
-        _uiState.value = _uiState.value.copy(query = query)
+        _uiState.update { it.copy(query = query) }
         searchJob?.cancel()
         if (query.isBlank()) {
-            _uiState.value = _uiState.value.copy(searchResults = null)
+            _uiState.update { it.copy(searchResults = null) }
             return
         }
         searchJob = viewModelScope.launch {
@@ -67,7 +68,7 @@ class SearchViewModel(
     }
 
     fun selectTab(tab: SearchTab) {
-        _uiState.value = _uiState.value.copy(selectedTab = tab)
+        _uiState.update { it.copy(selectedTab = tab) }
         val query = _uiState.value.query
         if (query.isNotBlank()) {
             searchJob?.cancel()
@@ -76,31 +77,31 @@ class SearchViewModel(
     }
 
     fun onHashtagClick(hashtag: String) {
-        _uiState.value = _uiState.value.copy(query = hashtag, selectedTab = SearchTab.HASHTAGS)
+        _uiState.update { it.copy(query = hashtag, selectedTab = SearchTab.HASHTAGS) }
         searchJob?.cancel()
         searchJob = viewModelScope.launch { search(hashtag) }
     }
 
     private suspend fun search(query: String) {
-        _uiState.value = _uiState.value.copy(isLoading = true)
+        _uiState.update { it.copy(isLoading = true) }
         val profiles = searchRepository.searchUsers(query).first()
         val posts = searchRepository.searchPosts(query, currentUserId).first()
         val hashtagPosts = searchRepository.searchHashtagPosts(query, currentUserId).first()
-        _uiState.value = _uiState.value.copy(
+        _uiState.update { it.copy(
             searchResults = SearchResults(
                 profiles = profiles,
                 posts = posts,
                 hashtagPosts = hashtagPosts
             ),
             isLoading = false
-        )
+        ) }
     }
 
     fun loadNews() {
         newsJob?.cancel()
         newsJob = viewModelScope.launch {
             adminRepository.getActiveNews().collect { newsList ->
-                _uiState.value = _uiState.value.copy(news = newsList, isLoading = false)
+                _uiState.update { it.copy(news = newsList, isLoading = false) }
             }
         }
     }
@@ -109,7 +110,7 @@ class SearchViewModel(
         exploreJob?.cancel()
         exploreJob = viewModelScope.launch {
             searchRepository.getExplorePosts(currentUserId).collect { posts ->
-                _uiState.value = _uiState.value.copy(explorePosts = posts)
+                _uiState.update { it.copy(explorePosts = posts) }
             }
         }
     }
@@ -118,7 +119,7 @@ class SearchViewModel(
         trendingJob?.cancel()
         trendingJob = viewModelScope.launch {
             searchRepository.getTrendingHashtags().collect { hashtags ->
-                _uiState.value = _uiState.value.copy(trendingHashtags = hashtags)
+                _uiState.update { it.copy(trendingHashtags = hashtags) }
             }
         }
     }

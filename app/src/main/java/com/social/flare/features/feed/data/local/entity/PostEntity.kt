@@ -9,7 +9,12 @@ import kotlinx.serialization.Serializable
 @Serializable
 @Entity(
     tableName = "post_table",
-    indices = [Index("author_id"), Index("parent_post_id")],
+    indices = [
+        Index("author_id"),
+        Index("parent_post_id"),
+        Index("shared_post_id"),
+        Index("created_at")
+    ],
     foreignKeys = [
         ForeignKey(
             entity = PostEntity::class,

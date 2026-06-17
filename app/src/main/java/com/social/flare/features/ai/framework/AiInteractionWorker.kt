@@ -9,6 +9,7 @@ import com.social.flare.features.ai.domain.model.AiPersona
 import com.social.flare.features.ai.domain.repository.AiAgentRepository
 import com.social.flare.features.ai.domain.usecase.GenerateAutonomousCommentUseCase
 import com.social.flare.features.ai.domain.usecase.GenerateAutonomousPostUseCase
+import com.social.flare.features.ai.domain.usecase.GenerateAutonomousStoryUseCase
 import com.social.flare.features.feed.domain.repository.FeedRepository
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
@@ -22,7 +23,8 @@ class AiInteractionWorker @AssistedInject constructor(
     private val aiRepository: AiAgentRepository,
     private val feedRepository: FeedRepository,
     private val generatePostUseCase: GenerateAutonomousPostUseCase,
-    private val generateCommentUseCase: GenerateAutonomousCommentUseCase
+    private val generateCommentUseCase: GenerateAutonomousCommentUseCase,
+    private val generateStoryUseCase: GenerateAutonomousStoryUseCase
 ) : CoroutineWorker(appContext, workerParams) {
 
     override suspend fun doWork(): Result {
@@ -57,14 +59,14 @@ class AiInteractionWorker @AssistedInject constructor(
         }
     }
 
-    private suspend fun executeAiAction(persona: com.social.flare.features.ai.domain.model.AiPersona) {
+    private suspend fun executeAiAction(persona: AiPersona) {
         val actionDice = Random.nextInt(1, 100)
         Log.d("AiBot", "Dado de accion: $actionDice para ${persona.displayName}")
 
-        if (actionDice <= 30) {
-            performPostAction(persona)
-        } else {
-            performSocialInteraction(persona)
+        when {
+            actionDice <= 20 -> performPostAction(persona)
+            actionDice <= 35 -> performStoryAction(persona)
+            else -> performSocialInteraction(persona)
         }
     }
 
@@ -147,6 +149,20 @@ class AiInteractionWorker @AssistedInject constructor(
                     Log.e("AiBot", "Error al comentar de ${persona.username}: ${result.exceptionOrNull()?.message}")
                 }
             }
+        }
+    }
+    private suspend fun performStoryAction(persona: AiPersona) {
+        val topics = listOf(
+            "tomando un café en la mañana",
+            "caminando por la calle",
+            "mostrando mi almuerzo",
+            "selfie casual"
+        )
+        val selectedTopic = topics.random()
+        val result = generateStoryUseCase.execute(persona, selectedTopic)
+
+        if (result.isFailure) {
+            Log.e("AiBot", "Error publicando historia: ${result.exceptionOrNull()?.message}")
         }
     }
 }

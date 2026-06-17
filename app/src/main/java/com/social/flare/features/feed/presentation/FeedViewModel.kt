@@ -169,4 +169,9 @@ class FeedViewModel(
     fun clearError() {
         _uiState.update { it.copy(error = null) }
     }
+
+    override fun onCleared() {
+        super.onCleared()
+        cancelJobs()
+    }
 }

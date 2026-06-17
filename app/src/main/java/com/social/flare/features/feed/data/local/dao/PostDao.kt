@@ -28,9 +28,19 @@ data class PostWithDetails(
     val sharesCount: Int = 0
 )
 
+data class AuthorPostCount(
+    val authorId: String,
+    val count: Int
+)
+
+data class UserVote(
+    val post_id: String,
+    val selected_option_index: Int
+)
+
 @Dao
 interface PostDao {
-    @Query("SELECT * FROM post_table ORDER BY created_at DESC")
+    @Query("SELECT * FROM post_table ORDER BY created_at DESC LIMIT 100")
     fun getAllPosts(): Flow<List<PostEntity>>
 
     // --- LIKES ---
@@ -260,6 +270,9 @@ interface PostDao {
     @Query("SELECT COUNT(*) FROM post_table WHERE author_id = :userId AND parent_post_id IS NULL AND shared_post_id IS NULL")
     suspend fun countPostsByAuthor(userId: String): Int
 
+    @Query("SELECT author_id AS authorId, COUNT(*) AS count FROM post_table WHERE author_id IN (:authorIds) AND parent_post_id IS NULL AND shared_post_id IS NULL GROUP BY author_id")
+    suspend fun getPostsCountsByAuthors(authorIds: List<String>): List<AuthorPostCount>
+
     @Transaction
     @Query("""
         SELECT 
@@ -289,6 +302,40 @@ interface PostDao {
 
     @Query("SELECT selected_option_index FROM post_votes WHERE post_id = :postId AND citizen_id = :citizenId LIMIT 1")
     suspend fun getUserVote(postId: String, citizenId: String): Int?
+
+    @Query("SELECT post_id, selected_option_index FROM post_votes WHERE post_id IN (:postIds) AND citizen_id = :citizenId")
+    suspend fun getUserVotes(postIds: List<String>, citizenId: String): List<UserVote>
+
+    @Transaction
+    suspend fun castVoteTransaction(postId: String, citizenId: String, newVote: PostVoteEntity, post: PostEntity) {
+        deleteVote(postId, citizenId)
+        insertVote(newVote)
+        insertPost(post)
+    }
+
+    @Transaction
+    suspend fun toggleLikeTransaction(postId: String, citizenId: String, like: PostLikeEntity?, isLiked: Boolean) {
+        if (isLiked) {
+            deleteLike(postId, citizenId)
+        } else {
+            insertLike(like!!)
+        }
+    }
+
+    @Transaction
+    suspend fun insertPostWithHashtags(post: PostEntity, hashtags: List<HashtagEntity>, postHashtags: List<PostHashtagEntity>) {
+        insertPost(post)
+        hashtags.forEach { insertHashtag(it) }
+        postHashtags.forEach { insertPostHashtag(it) }
+    }
+
+    @Transaction
+    suspend fun syncHashtagsTransaction(hashtags: List<HashtagEntity>, postHashtags: List<PostHashtagEntity>) {
+        clearAllHashtags()
+        clearAllPostHashtags()
+        hashtags.forEach { insertHashtag(it) }
+        postHashtags.forEach { insertPostHashtag(it) }
+    }
 
     @Query("DELETE FROM post_votes WHERE post_id = :postId")
     suspend fun deleteAllVotesForPost(postId: String)

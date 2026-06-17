@@ -58,7 +58,7 @@ fun StoryCarousel(
             )
         }
 
-        items(groupedStories.keys.toList()) { username ->
+        items(groupedStories.keys.toList(), key = { it }) { username ->
             val userStories = groupedStories[username] ?: emptyList()
             val otherHasUnviewed = userStories.any { !it.isViewedByMe }
 

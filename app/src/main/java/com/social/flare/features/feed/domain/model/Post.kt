@@ -1,5 +1,8 @@
 package com.social.flare.features.feed.domain.model
 
+import androidx.compose.runtime.Immutable
+
+@Immutable
 data class Post(
     val id: String,
     val authorId: String,

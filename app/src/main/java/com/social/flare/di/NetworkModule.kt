@@ -23,7 +23,7 @@ object NetworkModule {
     @Singleton
     fun provideOpenRouterOkHttpClient(): OkHttpClient {
         val logging = HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BODY
+            level = if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BODY else HttpLoggingInterceptor.Level.NONE
         }
         val headerInterceptor = Interceptor { chain ->
             val request = chain.request().newBuilder()

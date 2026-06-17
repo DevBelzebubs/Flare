@@ -29,6 +29,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import coil.request.ImageRequest
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.layout.ContentScale
@@ -109,17 +111,18 @@ fun PostCard(
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .heightIn(max = 450.dp)
+                                .heightIn(min = 180.dp, max = 450.dp)
                                 .clip(RoundedCornerShape(12.dp))
                                 .clickable { onImageClick(mediaUrl) }
                         ) {
                             AsyncImage(
-                                model = mediaUrl,
+                                model = ImageRequest.Builder(LocalContext.current)
+                                    .data(mediaUrl)
+                                    .crossfade(true)
+                                    .build(),
                                 contentDescription = "Post image",
                                 contentScale = ContentScale.Crop,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .wrapContentHeight()
+                                modifier = Modifier.fillMaxSize()
                             )
                         }
                     }

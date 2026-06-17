@@ -20,4 +20,5 @@ sealed class Screen(val route: String) {
     object AdminPosts : Screen("admin_posts")
     object AdminNews : Screen("admin_news")
     object FollowList : Screen("follow_list")
+    object Splash : Screen("splash")
 }
