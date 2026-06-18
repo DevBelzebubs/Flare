@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
@@ -28,7 +27,7 @@ import com.social.flare.features.auth.data.local.entity.CitizenEntity
 @Composable
 public fun ProfileHeaderSection(citizen: CitizenEntity) {
     val bannerHeight = 180
-    Box(modifier = Modifier.fillMaxWidth().height(260.dp).statusBarsPadding()) {
+    Box(modifier = Modifier.fillMaxWidth().height(260.dp)) {
         AsyncImage(
             model = citizen.banner_url,
             contentDescription = "Banner",
