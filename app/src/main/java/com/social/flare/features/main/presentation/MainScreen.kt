@@ -30,6 +30,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+import androidx.work.WorkManager
 import com.social.flare.FlareApp
 import com.social.flare.core.data.SessionManager
 import com.social.flare.core.navigation.Screen
@@ -159,6 +160,8 @@ fun MainScreen() {
         )
     }
     val followRepository = remember { FollowRepositoryImpl(followDao, citizenDao, app.supabase) }
+    val syncDao = remember { app.database.syncDao() }
+    val workManager = remember { WorkManager.getInstance(context) }
 
     val notificationRepository = remember {
         NotificationRepositoryImpl(
@@ -186,6 +189,8 @@ fun MainScreen() {
             citizenDao = citizenDao,
             postDao = app.database.postDao(),
             newsDao = app.database.newsDao(),
+            syncDao = syncDao,
+            workManager = workManager,
             supabase = app.supabase,
             cloudinaryService = cloudinaryService
         )

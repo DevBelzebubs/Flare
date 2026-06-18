@@ -2,6 +2,7 @@ package com.social.flare.core.database
 
 import androidx.room.Database
 import androidx.room.RoomDatabase
+import com.social.flare.core.sync.data.local.dao.SyncDao
 import com.social.flare.features.admin.data.local.dao.NewsDao
 import com.social.flare.features.admin.data.local.entity.NewsItemEntity
 import com.social.flare.features.auth.data.local.dao.CitizenDao
@@ -23,7 +24,7 @@ import com.social.flare.features.notifications.data.local.entity.NotificationEnt
 import com.social.flare.features.profile.data.local.dao.FollowDao
 import com.social.flare.features.profile.data.local.entity.FollowEntity
 import com.social.flare.features.search.data.local.dao.SearchDao
-
+import com.social.flare.core.sync.data.local.entity.SyncQueueEntity
 @Database(
     entities = [
         CitizenEntity::class,
@@ -40,8 +41,9 @@ import com.social.flare.features.search.data.local.dao.SearchDao
         PostVoteEntity::class,
         HashtagEntity::class,
         PostHashtagEntity::class,
+        SyncQueueEntity::class
     ],
-    version = 22,
+    version = 23,
     exportSchema = false
 )
 abstract class FlareDatabase : RoomDatabase() {
@@ -53,4 +55,5 @@ abstract class FlareDatabase : RoomDatabase() {
     abstract fun notificationDao(): NotificationDao
     abstract fun newsDao(): NewsDao
     abstract fun searchDao(): SearchDao
+    abstract fun syncDao(): SyncDao
 }
