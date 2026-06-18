@@ -319,13 +319,16 @@ interface PostDao {
     }
 
     @Transaction
-    suspend fun toggleLikeTransaction(postId: String, citizenId: String, like: PostLikeEntity?, isLiked: Boolean) {
-        if (isLiked) {
-            deleteLike(postId, citizenId)
+    suspend fun toggleLikeTransaction(postId: String, citizenId: String, nowLiked: Boolean) {
+        if (nowLiked) {
+            insertLike(PostLikeEntity(postId, citizenId))
         } else {
-            insertLike(like!!)
+            deleteLike(postId, citizenId)
         }
     }
+
+    @Query("UPDATE post_table SET likes_count = :newCount WHERE post_id = :postId")
+    suspend fun updatePostLikesCount(postId: String, newCount: Int)
 
     @Transaction
     suspend fun insertPostWithHashtags(post: PostEntity, hashtags: List<HashtagEntity>, postHashtags: List<PostHashtagEntity>) {

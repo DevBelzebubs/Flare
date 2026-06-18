@@ -132,7 +132,10 @@ class FeedViewModel(
                 postId = post.id,
                 citizenId = userId,
                 isCurrentlyLiked = post.isLikedByMe
-            )
+            ).onFailure { e ->
+                android.util.Log.e("FeedViewModel", "toggleLike failed", e)
+                _uiState.update { it.copy(error = "Error al dar like. Intenta de nuevo.") }
+            }
         }
     }
     private fun handleSave(postId: String) {

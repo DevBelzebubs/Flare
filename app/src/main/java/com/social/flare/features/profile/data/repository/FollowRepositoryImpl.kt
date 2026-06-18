@@ -8,9 +8,21 @@ import com.social.flare.features.profile.domain.model.FollowStats
 import com.social.flare.features.profile.domain.repository.FollowRepository
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.postgrest.query.filter.FilterOperator
+import io.github.jan.supabase.realtime.PostgresAction
+import io.github.jan.supabase.realtime.channel
+import io.github.jan.supabase.realtime.decodeRecord
+import io.github.jan.supabase.realtime.postgresChangeFlow
+import io.github.jan.supabase.realtime.realtime
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class FollowRepositoryImpl(
@@ -18,6 +30,11 @@ class FollowRepositoryImpl(
     private val citizenDao: CitizenDao,
     private val supabase: SupabaseClient
 ) : FollowRepository {
+    @Volatile
+    private var realtimeChannel: io.github.jan.supabase.realtime.RealtimeChannel? = null
+    @Volatile
+    private var realtimeJob: Job? = null
+    private var realtimeScope: CoroutineScope? = null
 
     override suspend fun followUser(followerId: String, followedId: String) = withContext(Dispatchers.IO) {
         val entity = FollowEntity(followerId = followerId, followedId = followedId)
@@ -72,6 +89,57 @@ class FollowRepositoryImpl(
 
     override suspend fun getFollowedIds(userId: String): List<String> = withContext(Dispatchers.IO) {
         followDao.getFollowedIds(userId)
+    }
+
+    override fun connectToRealtimeFollows(userId: String, scope: CoroutineScope) {
+        disconnectFromRealtimeFollows()
+        realtimeScope = scope
+
+        scope.launch {
+            try {
+                supabase.realtime.connect()
+
+                val channel = supabase.channel("follows-user-$userId")
+
+                realtimeJob = channel.postgresChangeFlow<PostgresAction.Insert>(schema = "public") {
+                    table = "follows"
+                    filter("followedId", io.github.jan.supabase.postgrest.query.filter.FilterOperator.EQ, userId)
+                }.onEach { action ->
+                    val follow = action.decodeRecord<FollowEntity>()
+                    followDao.insertFollow(follow)
+                }.launchIn(scope)
+
+                channel.postgresChangeFlow<PostgresAction.Delete>(schema = "public") {
+                    table = "follows"
+                    filter("followedId", FilterOperator.EQ, userId)
+                }.onEach { action ->
+                    val follow = kotlinx.serialization.json.Json.decodeFromString<FollowEntity>(action.oldRecord.toString())
+                    followDao.deleteFollow(follow.followerId, follow.followedId)
+                }.launchIn(scope)
+
+                channel.subscribe()
+                realtimeChannel = channel
+            } catch (e: Throwable) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    override fun disconnectFromRealtimeFollows() {
+        realtimeJob?.cancel()
+        realtimeJob = null
+        realtimeChannel?.let { channel ->
+            CoroutineScope(Dispatchers.IO + NonCancellable).launch {
+                try {
+                    channel.unsubscribe()
+                    supabase.realtime.removeChannel(channel)
+                } catch (e: Throwable) {
+                    e.printStackTrace()
+                }
+            }
+        }
+        realtimeChannel = null
+        realtimeScope = null
     }
 
     override suspend fun getFollowers(userId: String): List<CitizenEntity> = withContext(Dispatchers.IO) {

@@ -25,8 +25,10 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 import com.social.flare.FlareApp
 import com.social.flare.core.data.SessionManager
@@ -208,9 +210,13 @@ fun MainScreen() {
         val id = activeCitizenId
         if (id != null) {
             notificationRepository.connectToRealtimeNotifications(id, scope)
+            feedRepository.connectToRealtimeFeed(scope)
+            followRepository.connectToRealtimeFollows(id, scope)
         }
         onDispose {
             notificationRepository.disconnectFromRealtimeNotifications()
+            feedRepository.disconnectFromRealtimeFeed()
+            followRepository.disconnectFromRealtimeFollows()
         }
     }
 
@@ -595,7 +601,11 @@ fun MainScreen() {
                     LoginScreen(
                         onNavigateBack = { navController.popBackStack() },
                         onNavigateToSignUp = { navController.navigate(Screen.SignUp.route) },
-                        onLoginSuccess = { tokenOrId -> scope.launch { sessionManager.saveSession(tokenOrId); navController.navigate(Screen.Feed.route) { popUpTo(0) } } }
+                        onLoginSuccess = { tokenOrId -> scope.launch {
+                            sessionManager.saveSession(tokenOrId)
+                            withContext(Dispatchers.IO) { app.database.clearAllTables() }
+                            navController.navigate(Screen.Feed.route) { popUpTo(0) }
+                        } }
                     )
                 }
 
@@ -603,7 +613,11 @@ fun MainScreen() {
                     SignUpScreen(
                         onNavigateBack = { navController.popBackStack() },
                         onNavigateToLogin = { navController.navigate(Screen.Login.route) },
-                        onSignUpSuccess = { tokenOrId -> scope.launch { sessionManager.saveSession(tokenOrId); navController.navigate(Screen.Feed.route) { popUpTo(0) } } }
+                        onSignUpSuccess = { tokenOrId -> scope.launch {
+                            sessionManager.saveSession(tokenOrId)
+                            withContext(Dispatchers.IO) { app.database.clearAllTables() }
+                            navController.navigate(Screen.Feed.route) { popUpTo(0) }
+                        } }
                     )
                 }
 
@@ -613,7 +627,7 @@ fun MainScreen() {
                         activeCitizenId = activeCitizenId, profileViewModel = profileViewModel,
                         onNavigateBack = { navController.popBackStack() },
                         onNavigateToEditProfile = { navController.navigate(Screen.EditProfile.route) },
-                        onLogout = { scope.launch { sessionManager.clearSession(); app.database.clearAllTables(); navController.navigate(Screen.Login.route) { popUpTo(0) { inclusive = true } } } },
+                        onLogout = { scope.launch { sessionManager.clearSession(); withContext(Dispatchers.IO) { app.database.clearAllTables() }; navController.navigate(Screen.Login.route) { popUpTo(0) { inclusive = true } } } },
                         onLogin = { navController.navigate(Screen.Login.route) },
                         onChangePassword = { newPassword -> changePasswordUseCase(newPassword) },
                         onNavigateToAdmin = { navController.navigate(Screen.AdminDashboard.route) },
@@ -647,11 +661,17 @@ fun MainScreen() {
 
                     LaunchedEffect(activeCitizenId) { activeCitizenId?.let { profileViewModel.loadActiveUserProfile(it) } }
 
-                    val editProfileSuccess = profileState as? ProfileUiState.Success
-                    if (editProfileSuccess != null) {
-                        val currentCitizen = editProfileSuccess.citizen
-                        if (currentCitizen != null) {
-                            EditProfileScreen(citizen = currentCitizen, viewModel = editViewModel, onNavigateBack = { navController.popBackStack() })
+                    when (val state = profileState) {
+                        is ProfileUiState.Success -> {
+                            val citizen = state.citizen
+                            if (citizen != null) {
+                                EditProfileScreen(citizen = citizen, viewModel = editViewModel, onNavigateBack = { navController.popBackStack() })
+                            }
+                        }
+                        else -> {
+                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                            }
                         }
                     }
                 }

@@ -2,6 +2,7 @@ package com.social.flare.features.profile.domain.repository
 
 import com.social.flare.features.auth.data.local.entity.CitizenEntity
 import com.social.flare.features.profile.domain.model.FollowStats
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 
 interface FollowRepository {
@@ -12,4 +13,6 @@ interface FollowRepository {
     suspend fun getFollowers(userId: String): List<CitizenEntity>
     suspend fun getFollowing(userId: String): List<CitizenEntity>
     suspend fun getFollowedIds(userId: String): List<String>
+    fun connectToRealtimeFollows(userId: String, scope: CoroutineScope)
+    fun disconnectFromRealtimeFollows()
 }

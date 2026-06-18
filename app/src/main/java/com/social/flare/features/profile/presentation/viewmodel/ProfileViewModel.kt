@@ -40,6 +40,8 @@ class ProfileViewModel(
         loadJob?.cancel()
         followStatsJob?.cancel()
 
+        _uiState.value = ProfileUiState.Loading
+
         followStatsJob = viewModelScope.launch {
             getFollowStatsUseCase(
                 targetUserId = targetCitizenId,
@@ -50,7 +52,6 @@ class ProfileViewModel(
         }
 
         loadJob = viewModelScope.launch {
-            _uiState.value = ProfileUiState.Loading
             try {
                 val citizenFlow = repository.getCitizenProfile(targetCitizenId)
 

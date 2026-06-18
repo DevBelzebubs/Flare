@@ -18,6 +18,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Person
 import coil.compose.AsyncImage
 import com.social.flare.core.utils.TimeUtils
 import com.social.flare.features.notifications.domain.model.FlareNotification
@@ -46,16 +48,30 @@ fun NotificationItem(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(modifier = Modifier.size(48.dp)) {
-            AsyncImage(
-                model = notification.actorAvatarUrl,
-                contentDescription = "Avatar de ${notification.actorUsername}",
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-                    .clickable { onAvatarClick(notification.actorId) }
-            )
+            if (notification.actorAvatarUrl != null) {
+                AsyncImage(
+                    model = notification.actorAvatarUrl,
+                    contentDescription = "Avatar de ${notification.actorUsername}",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                        .clickable { onAvatarClick(notification.actorId) }
+                )
+            } else {
+                Icon(
+                    imageVector = Icons.Default.Person,
+                    contentDescription = "Avatar de ${notification.actorUsername}",
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(12.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                        .clickable { onAvatarClick(notification.actorId) },
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
             if (!notification.isRead) {
                 Box(
                     modifier = Modifier

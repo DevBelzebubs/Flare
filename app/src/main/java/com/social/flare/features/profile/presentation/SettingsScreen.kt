@@ -17,11 +17,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.social.flare.core.data.SettingsManager
+import com.social.flare.core.ui.theme.textSizeScaleToFontScale
 import com.social.flare.features.profile.presentation.components.settings.SettingsDarkModeSelector
 import com.social.flare.features.profile.presentation.components.settings.SettingsItem
 import com.social.flare.features.profile.presentation.components.settings.SettingsProfileHeader
@@ -62,7 +64,7 @@ fun SettingsScreen(
     val allowProfileSearchEnabled by settingsManager.allowProfileSearchEnabledFlow.collectAsStateWithLifecycle(initialValue = true)
     val currentDensity = LocalDensity.current
     val settingsFontScale = textSizeScaleToFontScale(textSizeScale)
-    var supportDialog by remember { mutableStateOf<SettingsSupportDialog?>(null) }
+    //var supportDialog by remember { mutableStateOf<SettingsSupportDialog?>(null) }
     var showChangePasswordDialog by remember { mutableStateOf(false) }
     var showPrivacySettingsDialog by remember { mutableStateOf(false) }
 

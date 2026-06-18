@@ -19,8 +19,18 @@ import com.social.flare.features.post.domain.model.PostDetail
 import com.social.flare.features.profile.data.local.dao.FollowDao
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.postgrest.rpc
 import io.github.jan.supabase.postgrest.query.filter.FilterOperator
 import io.github.jan.supabase.postgrest.query.filter.PostgrestFilterBuilder
+import io.github.jan.supabase.realtime.PostgresAction
+import io.github.jan.supabase.realtime.channel
+import io.github.jan.supabase.realtime.decodeRecord
+import io.github.jan.supabase.realtime.postgresChangeFlow
+import io.github.jan.supabase.realtime.realtime
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
@@ -28,9 +38,13 @@ import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import java.util.UUID
 
 class FeedRepositoryImpl(
@@ -39,6 +53,11 @@ class FeedRepositoryImpl(
     private val followDao: FollowDao? = null,
     private val supabase: SupabaseClient
 ) : FeedRepository {
+    @Volatile
+    private var realtimeChannel: io.github.jan.supabase.realtime.RealtimeChannel? = null
+    @Volatile
+    private var realtimeJob: Job? = null
+    private var realtimeScope: CoroutineScope? = null
 
     override fun getFeedPosts(currentUserId: String): Flow<List<Post>> = flow {
         withContext(Dispatchers.IO) { syncPostsFromSupabase(currentUserId, isGuest = false) }
@@ -293,34 +312,16 @@ class FeedRepositoryImpl(
         isCurrentlyLiked: Boolean
     ): Result<Unit> = withContext(Dispatchers.IO) {
         try {
-            val currentPost = supabase.postgrest["posts"]
-                .select { filter { eq("post_id", postId) } }
-                .decodeSingle<PostEntity>()
-
-            if (isCurrentlyLiked) {
-                supabase.postgrest["post_likes"].delete {
-                    filter { eq("post_id", postId) }
-                    filter { eq("citizen_id", citizenId) }
-                }
-                val newCount = maxOf(0, currentPost.likes_count - 1)
-                supabase.postgrest["posts"].update({ set("likes_count", newCount) }) {
-                    filter { eq("post_id", postId) }
-                }
-                postDao.toggleLikeTransaction(postId, citizenId, null, isLiked = true)
-
-            } else {
-                supabase.postgrest["post_likes"].insert(PostLikeEntity(postId, citizenId))
-
-                val newCount = currentPost.likes_count + 1
-                supabase.postgrest["posts"].update({ set("likes_count", newCount) }) {
-                    filter { eq("post_id", postId) }
-                }
-                postDao.toggleLikeTransaction(postId, citizenId, PostLikeEntity(postId, citizenId), isLiked = false)
-            }
+            supabase.postgrest.rpc("toggle_post_like", buildJsonObject {
+                put("p_post_id", postId)
+                put("p_citizen_id", citizenId)
+            })
 
             val updatedPost = supabase.postgrest["posts"]
                 .select { filter { eq("post_id", postId) } }
                 .decodeSingle<PostEntity>()
+
+            postDao.toggleLikeTransaction(postId, citizenId, !isCurrentlyLiked)
             postDao.insertPost(updatedPost)
 
             Result.success(Unit)
@@ -574,6 +575,55 @@ class FeedRepositoryImpl(
             supabase.postgrest["posts"].insert(sharedPost)
             postDao.insertPost(sharedPost)
         }
+    }
+
+    override fun connectToRealtimeFeed(scope: CoroutineScope) {
+        disconnectFromRealtimeFeed()
+        realtimeScope = scope
+
+        scope.launch {
+            try {
+                supabase.realtime.connect()
+
+                val channel = supabase.channel("feed-posts")
+
+                realtimeJob = channel.postgresChangeFlow<PostgresAction.Insert>(schema = "public") {
+                    table = "posts"
+                }.onEach { action ->
+                    val newPost = action.decodeRecord<PostEntity>()
+                    val authorId = newPost.author_id
+                    try {
+                        val author = supabase.postgrest["citizens"]
+                            .select { filter { eq("citizen_id", authorId) } }
+                            .decodeSingle<com.social.flare.features.auth.data.local.entity.CitizenEntity>()
+                        citizenDao.insertCitizen(author)
+                    } catch (_: Throwable) { }
+                    postDao.insertPost(newPost)
+                }.launchIn(scope)
+
+                channel.subscribe()
+                realtimeChannel = channel
+            } catch (e: Throwable) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    override fun disconnectFromRealtimeFeed() {
+        realtimeJob?.cancel()
+        realtimeJob = null
+        realtimeChannel?.let { channel ->
+            CoroutineScope(Dispatchers.IO + NonCancellable).launch {
+                try {
+                    channel.unsubscribe()
+                    supabase.realtime.removeChannel(channel)
+                } catch (e: Throwable) {
+                    e.printStackTrace()
+                }
+            }
+        }
+        realtimeChannel = null
+        realtimeScope = null
     }
 
     override fun getSharedPosts(userId: String): Flow<List<Post>> = flow {

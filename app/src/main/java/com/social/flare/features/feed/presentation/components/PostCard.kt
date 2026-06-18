@@ -399,15 +399,10 @@ private fun PostActionButtons(
                 onClick = onShareClick
             )
         }
-        IconButton(
+        AnimatedSaveButton(
+            isSaved = isSavedByMe,
             onClick = onSaveClick
-        ) {
-            Icon(
-                imageVector = if (isSavedByMe) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
-                contentDescription = "Save Post",
-                tint = if (isSavedByMe) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-            )
-        }
+        )
     }
 }
 
@@ -435,6 +430,36 @@ fun AnimatedShareButton(
         Icon(
             imageVector = if (isShared) Icons.Filled.Repeat else Icons.Outlined.Repeat,
             contentDescription = "Share",
+            tint = tint,
+            modifier = Modifier.scale(scale)
+        )
+    }
+}
+
+@Composable
+fun AnimatedSaveButton(
+    isSaved: Boolean,
+    onClick: () -> Unit
+) {
+    val tint by animateColorAsState(
+        targetValue = if (isSaved) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+        animationSpec = tween(durationMillis = 200),
+        label = "saveColorAnimation"
+    )
+
+    val scale by animateFloatAsState(
+        targetValue = if (isSaved) 1.2f else 1.0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioHighBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "saveScaleAnimation"
+    )
+
+    IconButton(onClick = onClick) {
+        Icon(
+            imageVector = if (isSaved) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
+            contentDescription = "Save Post",
             tint = tint,
             modifier = Modifier.scale(scale)
         )

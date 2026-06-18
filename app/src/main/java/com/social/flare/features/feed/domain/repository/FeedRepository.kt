@@ -2,6 +2,7 @@ package com.social.flare.features.feed.domain.repository
 
 import com.social.flare.features.feed.domain.model.Post
 import com.social.flare.features.post.domain.model.PostDetail
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 
 interface FeedRepository {
@@ -31,4 +32,6 @@ interface FeedRepository {
     suspend fun getPostById(PostId: String) : Post?
     suspend fun toggleSharePost(authorId: String, originalPostId: String, isCurrentlyShared: Boolean)
     fun getSharedPosts(userId: String): Flow<List<Post>>
+    fun connectToRealtimeFeed(scope: CoroutineScope)
+    fun disconnectFromRealtimeFeed()
 }
