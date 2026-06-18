@@ -83,7 +83,7 @@ private fun AddStoryItem(
     val ringBrush = if (hasUnviewed) {
         Brush.verticalGradient(colors = listOf(Color(0xFFFF5722), Color(0xFFFF9800)))
     } else {
-        SolidColor(Color.DarkGray)
+        SolidColor(MaterialTheme.colorScheme.outline)
     }
 
     Column(
@@ -107,7 +107,7 @@ private fun AddStoryItem(
                         }
                     )
                     .clip(CircleShape)
-                    .background(Color.DarkGray)
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
                     .clickable {
                         if (hasStories) onViewClick() else onAddClick()
                     }
@@ -128,7 +128,7 @@ private fun AddStoryItem(
                     .size(22.dp)
                     .offset(x = 2.dp, y = 2.dp)
                     .clip(CircleShape)
-                    .background(Color.Black)
+                    .background(MaterialTheme.colorScheme.background)
                     .padding(2.dp)
                     .clickable { onAddClick() }
             ) {
@@ -137,12 +137,12 @@ private fun AddStoryItem(
                     modifier = Modifier
                         .fillMaxSize()
                         .clip(CircleShape)
-                        .background(Color(0xFFFF5722))
+                        .background(MaterialTheme.colorScheme.primary)
                 ) {
                     Icon(
                         imageVector = Icons.Filled.Add,
                         contentDescription = "Add Story",
-                        tint = Color.White,
+                        tint = MaterialTheme.colorScheme.onPrimary,
                         modifier = Modifier.size(16.dp)
                     )
                 }
@@ -166,7 +166,7 @@ private fun StoryItem(username: String, avatarUrl: String? = null, hasUnviewedSt
     val ringBrush = if (hasUnviewedStory) {
         Brush.verticalGradient(colors = listOf(Color(0xFFFF5722), Color(0xFFFF9800)))
     } else {
-        SolidColor(Color.DarkGray)
+        SolidColor(MaterialTheme.colorScheme.outline)
     }
 
     Column(
@@ -179,7 +179,7 @@ private fun StoryItem(username: String, avatarUrl: String? = null, hasUnviewedSt
                 .border(width = 2.dp, brush = ringBrush, shape = CircleShape)
                 .padding(4.dp)
                 .clip(CircleShape)
-                .background(Color.DarkGray)
+                .background(MaterialTheme.colorScheme.surfaceVariant)
                 .clickable { onClick() }
         ) {
             if (avatarUrl != null) {

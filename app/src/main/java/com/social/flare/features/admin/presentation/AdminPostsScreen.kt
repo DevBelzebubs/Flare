@@ -28,33 +28,34 @@ fun AdminPostsScreen(
     viewModel: AdminViewModel,
     onNavigateBack: () -> Unit
 ) {
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val uiState by viewModel.uiState.collectAsState()
+    val colorScheme = MaterialTheme.colorScheme
 
     LaunchedEffect(Unit) {
         viewModel.loadPosts()
     }
 
     Scaffold(
-        containerColor = Color.Black,
+        containerColor = colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("Gestión de Publicaciones", color = Color.White, fontWeight = FontWeight.Bold) },
+                title = { Text("Gestión de Publicaciones", color = colorScheme.onBackground, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = null, tint = Color.White)
+                        Icon(Icons.Default.ArrowBack, contentDescription = null, tint = colorScheme.onBackground)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Black)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = colorScheme.background)
             )
         }
     ) { padding ->
         if (uiState.isLoading) {
             Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = Color(0xFFFF5722))
+                CircularProgressIndicator(color = colorScheme.primary)
             }
         } else if (uiState.posts.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
-                Text("No hay publicaciones", color = Color.Gray)
+                Text("No hay publicaciones", color = colorScheme.onSurfaceVariant)
             }
         } else {
             LazyColumn(
@@ -83,9 +84,10 @@ private fun AdminPostCard(
 ) {
     var showDeleteConfirm by remember { mutableStateOf(false) }
     val dateFormat = remember { SimpleDateFormat("dd/MM/yy HH:mm", Locale.getDefault()) }
+    val colorScheme = MaterialTheme.colorScheme
 
     Card(
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF1A1A1A)),
+        colors = CardDefaults.cardColors(containerColor = colorScheme.surface),
         shape = RoundedCornerShape(12.dp)
     ) {
         Row(
@@ -98,21 +100,21 @@ private fun AdminPostCard(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = post.authorDisplayName,
-                        color = Color.White,
+                        color = colorScheme.onSurface,
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 14.sp
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
                         text = post.authorUsername,
-                        color = Color(0xFFFF5722),
+                        color = colorScheme.primary,
                         fontSize = 12.sp
                     )
                 }
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = post.content ?: "(sin texto)",
-                    color = Color.LightGray,
+                    color = colorScheme.onSurface,
                     fontSize = 13.sp,
                     maxLines = 3,
                     overflow = TextOverflow.Ellipsis
@@ -122,24 +124,24 @@ private fun AdminPostCard(
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.FavoriteBorder, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(14.dp))
+                        Icon(Icons.Default.FavoriteBorder, contentDescription = null, tint = colorScheme.onSurfaceVariant, modifier = Modifier.size(14.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text(post.likesCount.toString(), color = Color.Gray, fontSize = 12.sp)
+                        Text(post.likesCount.toString(), color = colorScheme.onSurfaceVariant, fontSize = 12.sp)
                     }
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.ChatBubbleOutline, contentDescription = null, tint = Color.Gray, modifier = Modifier.size(14.dp))
+                        Icon(Icons.Default.ChatBubbleOutline, contentDescription = null, tint = colorScheme.onSurfaceVariant, modifier = Modifier.size(14.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text(post.commentsCount.toString(), color = Color.Gray, fontSize = 12.sp)
+                        Text(post.commentsCount.toString(), color = colorScheme.onSurfaceVariant, fontSize = 12.sp)
                     }
                     Text(
                         text = dateFormat.format(Date(post.createdAt)),
-                        color = Color.DarkGray,
+                        color = colorScheme.onSurfaceVariant,
                         fontSize = 11.sp
                     )
                 }
             }
             IconButton(onClick = { showDeleteConfirm = true }) {
-                Icon(Icons.Default.Delete, contentDescription = "Eliminar post", tint = Color(0xFFF44336), modifier = Modifier.size(20.dp))
+                Icon(Icons.Default.Delete, contentDescription = "Eliminar post", tint = colorScheme.error, modifier = Modifier.size(20.dp))
             }
         }
     }
@@ -147,17 +149,17 @@ private fun AdminPostCard(
     if (showDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
-            containerColor = Color(0xFF1A1A1A),
-            title = { Text("Eliminar publicación", color = Color.White) },
-            text = { Text("¿Eliminar esta publicación de ${post.authorDisplayName}?", color = Color.Gray) },
+            containerColor = colorScheme.surface,
+            title = { Text("Eliminar publicación", color = colorScheme.onSurface) },
+            text = { Text("¿Eliminar esta publicación de ${post.authorDisplayName}?", color = colorScheme.onSurfaceVariant) },
             confirmButton = {
                 TextButton(onClick = { onDelete(); showDeleteConfirm = false }) {
-                    Text("Eliminar", color = Color(0xFFF44336))
+                    Text("Eliminar", color = colorScheme.error)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteConfirm = false }) {
-                    Text("Cancelar", color = Color(0xFFFF5722))
+                    Text("Cancelar", color = colorScheme.primary)
                 }
             }
         )

@@ -1,18 +1,26 @@
 package com.social.flare.features.main.presentation
 
 import android.net.Uri
+import android.os.Build
 import android.widget.Toast
+import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.core.view.WindowCompat
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -24,6 +32,10 @@ import com.social.flare.FlareApp
 import com.social.flare.core.data.SessionManager
 import com.social.flare.core.navigation.Screen
 import com.social.flare.core.ui.components.AuthDialog
+import com.social.flare.core.ui.theme.FlareDarkBackground
+import com.social.flare.core.ui.theme.FlareDarkSurface
+import com.social.flare.core.ui.theme.FlareLightBackground
+import com.social.flare.core.ui.theme.FlareLightSurface
 import com.social.flare.features.auth.data.repository.AuthRepositoryImpl
 import com.social.flare.features.auth.domain.usecase.ChangePasswordUseCase
 import com.social.flare.features.auth.presentation.LoginScreen
@@ -83,6 +95,9 @@ import com.social.flare.features.main.presentation.components.SplashScreen
 import dagger.hilt.android.EntryPointAccessors
 import com.social.flare.features.notifications.domain.usecase.GetSuggestedAccountsUseCase
 import com.social.flare.features.profile.presentation.FollowListScreen
+import com.social.flare.features.profile.presentation.HelpCenterScreen
+import com.social.flare.features.profile.presentation.PrivacyPolicyScreen
+import com.social.flare.features.profile.presentation.TermsOfServiceScreen
 import com.social.flare.features.profile.presentation.viewmodel.FollowListViewModel
 import com.social.flare.features.search.data.repository.SearchRepositoryImpl
 
@@ -92,7 +107,28 @@ fun MainScreen() {
     val navBackStackEntry by navController.currentBackStackEntryFlow.collectAsStateWithLifecycle(null)
     val currentRoute = navBackStackEntry?.destination?.route
     val context = LocalContext.current
+    val isStoryViewerRoute = currentRoute?.startsWith(Screen.StoryViewer.route) == true
+    val isAddStoryRoute = currentRoute?.startsWith(Screen.AddStory.route) == true
+    val isCustomGalleryRoute = currentRoute == Screen.CustomGallery.route
+    val isFullscreenStoryRoute = isStoryViewerRoute || isAddStoryRoute
+    val isStoryFlowRoute = isFullscreenStoryRoute || isCustomGalleryRoute
+    val isLightTheme = MaterialTheme.colorScheme.background.luminance() > 0.5f
     var showAuthDialog by remember { mutableStateOf(false) }
+
+    DisposableEffect(isFullscreenStoryRoute, isLightTheme, context) {
+        val activity = context as? ComponentActivity
+        if (activity != null) {
+            if (isFullscreenStoryRoute) {
+                activity.applyStoryFullscreenSystemBars()
+            } else {
+                activity.applyNormalSystemBars(isLightTheme)
+            }
+        }
+
+        onDispose {
+            activity?.applyNormalSystemBars(isLightTheme)
+        }
+    }
 
     val app = context.applicationContext as FlareApp
     val sessionManager = remember { SessionManager(context.applicationContext) }
@@ -195,7 +231,7 @@ fun MainScreen() {
                 Screen.AdminDashboard.route, Screen.AdminUsers.route,
                 Screen.AdminPosts.route, Screen.AdminNews.route
             )
-            if (currentRoute !in hideTopBarRoutes) {
+            if (currentRoute !in hideTopBarRoutes && !isStoryFlowRoute) {
                 FlareTopBar(onSettingsClick = { navController.navigate(Screen.Settings.route) })
             }
         },
@@ -204,7 +240,7 @@ fun MainScreen() {
                 Screen.AdminDashboard.route, Screen.AdminUsers.route,
                 Screen.AdminPosts.route, Screen.AdminNews.route
             )
-            val isMainTab = currentRoute != Screen.Splash.route && !adminRoutes.contains(currentRoute) && (
+            val isMainTab = !isStoryFlowRoute && !adminRoutes.contains(currentRoute) && (
                 listOf(
                     Screen.Feed.route, Screen.Search.route, Screen.AddPost.route, Screen.Notifications.route
                 ).contains(currentRoute) || currentRoute?.startsWith(Screen.Profile.route) == true
@@ -234,20 +270,22 @@ fun MainScreen() {
                 )
             }
         },
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = if (isFullscreenStoryRoute) Color.Black else MaterialTheme.colorScheme.background,
+        contentWindowInsets = if (isFullscreenStoryRoute) {
+            WindowInsets(0, 0, 0, 0)
+        } else {
+            ScaffoldDefaults.contentWindowInsets
+        }
     ) { paddingValues ->
 
-        Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
-            NavHost(navController = navController, startDestination = Screen.Splash.route) {
-                composable(Screen.Splash.route) {
-                    SplashScreen(
-                        onAnimationFinished = {
-                            navController.navigate(Screen.Feed.route) {
-                                popUpTo(Screen.Splash.route) { inclusive = true }
-                            }
-                        }
-                    )
-                }
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(if (isFullscreenStoryRoute) Color.Black else MaterialTheme.colorScheme.background)
+                .padding(paddingValues)
+        ) {
+            NavHost(navController = navController, startDestination = Screen.Feed.route) {
+
                 composable(Screen.Feed.route) {
                     val feedViewModel: FeedViewModel = viewModel(
                         factory = object : ViewModelProvider.Factory {
@@ -578,8 +616,23 @@ fun MainScreen() {
                         onLogout = { scope.launch { sessionManager.clearSession(); app.database.clearAllTables(); navController.navigate(Screen.Login.route) { popUpTo(0) { inclusive = true } } } },
                         onLogin = { navController.navigate(Screen.Login.route) },
                         onChangePassword = { newPassword -> changePasswordUseCase(newPassword) },
-                        onNavigateToAdmin = { navController.navigate(Screen.AdminDashboard.route) }
+                        onNavigateToAdmin = { navController.navigate(Screen.AdminDashboard.route) },
+                        onNavigateToPrivacyPolicy = { navController.navigate(Screen.PrivacyPolicy.route) },
+                        onNavigateToTermsOfService = { navController.navigate(Screen.TermsOfService.route) },
+                        onNavigateToHelpCenter = { navController.navigate(Screen.HelpCenter.route) }
                     )
+                }
+
+                composable(Screen.PrivacyPolicy.route) {
+                    PrivacyPolicyScreen(onNavigateBack = { navController.popBackStack() })
+                }
+
+                composable(Screen.TermsOfService.route) {
+                    TermsOfServiceScreen(onNavigateBack = { navController.popBackStack() })
+                }
+
+                composable(Screen.HelpCenter.route) {
+                    HelpCenterScreen(onNavigateBack = { navController.popBackStack() })
                 }
 
                 composable(Screen.EditProfile.route) {
@@ -677,5 +730,49 @@ fun MainScreen() {
                 onSignUpClick = { showAuthDialog = false; navController.navigate(Screen.SignUp.route) }
             )
         }
+    }
+}
+
+private fun ComponentActivity.applyStoryFullscreenSystemBars() {
+    val black = Color.Black.toArgb()
+    enableEdgeToEdge(
+        statusBarStyle = SystemBarStyle.dark(black),
+        navigationBarStyle = SystemBarStyle.dark(black)
+    )
+    window.statusBarColor = black
+    window.navigationBarColor = black
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        window.isNavigationBarContrastEnforced = false
+    }
+    WindowCompat.getInsetsController(window, window.decorView).apply {
+        isAppearanceLightStatusBars = false
+        isAppearanceLightNavigationBars = false
+    }
+}
+
+private fun ComponentActivity.applyNormalSystemBars(isLightTheme: Boolean) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        window.isNavigationBarContrastEnforced = true
+    }
+    if (isLightTheme) {
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.light(
+                FlareLightBackground.toArgb(),
+                FlareDarkBackground.toArgb()
+            ),
+            navigationBarStyle = SystemBarStyle.light(
+                FlareLightSurface.toArgb(),
+                FlareDarkSurface.toArgb()
+            )
+        )
+    } else {
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.dark(FlareDarkBackground.toArgb()),
+            navigationBarStyle = SystemBarStyle.dark(FlareDarkSurface.toArgb())
+        )
+    }
+    WindowCompat.getInsetsController(window, window.decorView).apply {
+        isAppearanceLightStatusBars = isLightTheme
+        isAppearanceLightNavigationBars = isLightTheme
     }
 }

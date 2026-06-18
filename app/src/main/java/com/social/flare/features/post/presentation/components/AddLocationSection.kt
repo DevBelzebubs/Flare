@@ -18,6 +18,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -27,7 +28,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -55,6 +55,7 @@ fun AddLocationSection(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var permissionDenied by remember { mutableStateOf(false) }
+    val colorScheme = MaterialTheme.colorScheme
 
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
@@ -120,31 +121,34 @@ fun AddLocationSection(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .fillMaxWidth()
-                .background(Color(0xFF1A1A1A), RoundedCornerShape(12.dp))
+                .background(colorScheme.surface, RoundedCornerShape(12.dp))
                 .padding(horizontal = 12.dp, vertical = 8.dp)
         ) {
-            Icon(Icons.Default.LocationOn, contentDescription = null, tint = Color(0xFFFF5722), modifier = Modifier.size(18.dp))
+            Icon(Icons.Default.LocationOn, contentDescription = null, tint = colorScheme.primary, modifier = Modifier.size(18.dp))
             Spacer(modifier = Modifier.width(6.dp))
-            Text(location.name, color = Color.White, fontSize = 13.sp, modifier = Modifier.weight(1f))
+            Text(location.name, color = colorScheme.onSurface, fontSize = 13.sp, modifier = Modifier.weight(1f))
             IconButton(onClick = { onLocationChanged(null) }, modifier = Modifier.size(24.dp)) {
-                Icon(Icons.Default.Close, contentDescription = "Remove location", tint = Color.Gray, modifier = Modifier.size(16.dp))
+                Icon(Icons.Default.Close, contentDescription = "Remove location", tint = colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
             }
         }
     } else {
         Button(
             onClick = { locationPermissionLauncher.launch(android.Manifest.permission.ACCESS_FINE_LOCATION) },
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1A1A1A)),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = colorScheme.surface,
+                contentColor = colorScheme.onSurface
+            ),
             shape = RoundedCornerShape(12.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
-            Icon(Icons.Default.LocationOn, contentDescription = null, tint = Color(0xFFFF5722), modifier = Modifier.size(18.dp))
+            Icon(Icons.Default.LocationOn, contentDescription = null, tint = colorScheme.primary, modifier = Modifier.size(18.dp))
             Spacer(modifier = Modifier.width(6.dp))
-            Text("Agregar ubicación", color = Color.White, fontSize = 13.sp)
+            Text("Agregar ubicación", fontSize = 13.sp)
         }
         if (permissionDenied) {
             Text(
                 "Permiso de ubicación denegado. Actívalo en Ajustes.",
-                color = Color.Red,
+                color = colorScheme.error,
                 fontSize = 11.sp,
                 modifier = Modifier.padding(start = 8.dp, top = 4.dp)
             )

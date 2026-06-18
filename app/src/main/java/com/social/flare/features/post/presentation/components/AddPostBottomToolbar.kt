@@ -13,11 +13,11 @@ import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material.icons.outlined.Poll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -30,30 +30,40 @@ public fun AddPostBottomToolbar(
     isPollActive: Boolean = false,
     isLocationActive: Boolean = false
 ) {
+    val colorScheme = MaterialTheme.colorScheme
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color(0xFF121212))
+            .background(colorScheme.surface)
             .padding(horizontal = 16.dp, vertical = 8.dp)
             .navigationBarsPadding()
             .imePadding(),
         verticalAlignment = Alignment.CenterVertically
     ) {
         IconButton(onClick = onOpenGallery) {
-            Icon(Icons.Outlined.Image, contentDescription = "Add Media", tint = Color(0xFFFF5722))
+            Icon(Icons.Outlined.Image, contentDescription = "Add Media", tint = colorScheme.primary)
         }
         IconButton(onClick = onPollToggle) {
-            Icon(Icons.Outlined.Poll, contentDescription = "Add Poll", tint = if (isPollActive) Color(0xFFFF5722) else Color.Gray)
+            Icon(
+                Icons.Outlined.Poll,
+                contentDescription = "Add Poll",
+                tint = if (isPollActive) colorScheme.primary else colorScheme.onSurfaceVariant
+            )
         }
         IconButton(onClick = onLocationToggle) {
-            Icon(Icons.Outlined.LocationOn, contentDescription = "Add Location", tint = if (isLocationActive) Color(0xFFFF5722) else Color.Gray)
+            Icon(
+                Icons.Outlined.LocationOn,
+                contentDescription = "Add Location",
+                tint = if (isLocationActive) colorScheme.primary else colorScheme.onSurfaceVariant
+            )
         }
 
         Spacer(modifier = Modifier.weight(1f))
 
         Text(
             text = "$contentLength/500",
-            color = if (contentLength > 500) Color.Red else Color.Gray,
+            color = if (contentLength > 500) colorScheme.error else colorScheme.onSurfaceVariant,
             fontSize = 12.sp
         )
     }

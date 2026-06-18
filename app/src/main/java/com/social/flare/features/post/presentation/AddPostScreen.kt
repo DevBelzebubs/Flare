@@ -14,8 +14,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -50,6 +48,7 @@ fun AddPostScreen(
     var selectedMedia by remember { mutableStateOf<List<Uri>>(emptyList()) }
     var pollData by remember { mutableStateOf<PollData?>(null) }
     var locationData by remember { mutableStateOf<PostLocationData?>(null) }
+    val colorScheme = MaterialTheme.colorScheme
 
     val hasPoll = pollData != null
     val hasLocation = locationData != null
@@ -75,7 +74,7 @@ fun AddPostScreen(
     }
 
     Scaffold(
-        containerColor = Color.Black,
+        containerColor = colorScheme.background,
         topBar = {
             AddPostTopBar(
                 isPostEnabled = isPostEnabled,
@@ -99,7 +98,7 @@ fun AddPostScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Black)
+                .background(colorScheme.background)
                 .padding(paddingValues)
                 .padding(horizontal = 16.dp, vertical = 12.dp)
         ) {
@@ -160,29 +159,37 @@ fun AddPostScreen(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.9f)),
+                    .background(colorScheme.scrim.copy(alpha = 0.72f)),
                 contentAlignment = Alignment.Center
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = colorScheme.surface),
+                    shape = MaterialTheme.shapes.large
+                ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.padding(horizontal = 32.dp, vertical = 28.dp)
+                ) {
                     Icon(
                         imageVector = Icons.Default.CheckCircle,
                         contentDescription = null,
-                        tint = Color(0xFFFF5722),
+                        tint = colorScheme.primary,
                         modifier = Modifier.size(80.dp)
                     )
                     Spacer(modifier = Modifier.height(20.dp))
                     Text(
                         text = "¡Publicado con éxito!",
-                        color = Color.White,
+                        color = colorScheme.onSurface,
                         fontSize = 22.sp,
                         fontWeight = FontWeight.Bold
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = "Tu publicación ya está en el feed",
-                        color = Color.Gray,
+                        color = colorScheme.onSurfaceVariant,
                         fontSize = 14.sp
                     )
+                }
                 }
             }
         }

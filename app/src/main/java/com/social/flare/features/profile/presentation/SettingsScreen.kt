@@ -17,10 +17,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.social.flare.core.data.SettingsManager
@@ -46,7 +44,10 @@ fun SettingsScreen(
     onChangePassword: suspend (String) -> Result<Unit> = {
         Result.failure(Exception("Change password is not available"))
     },
-    onNavigateToAdmin: () -> Unit = {}
+    onNavigateToAdmin: () -> Unit = {},
+    onNavigateToPrivacyPolicy: () -> Unit = {},
+    onNavigateToTermsOfService: () -> Unit = {},
+    onNavigateToHelpCenter: () -> Unit = {}
 ) {
     val isGuest = activeCitizenId == null
     val context = LocalContext.current
@@ -83,275 +84,218 @@ fun SettingsScreen(
     }
     val profileState by profileViewModel.uiState.collectAsStateWithLifecycle()
     val colorScheme = MaterialTheme.colorScheme
-    CompositionLocalProvider(
-        LocalDensity provides Density(
-            density = currentDensity.density,
-            fontScale = currentDensity.fontScale * settingsFontScale
-        )
-    ) {
-        Scaffold(
-            containerColor = colorScheme.background,
-            topBar = {
-                TopAppBar(
-                    title = { Text("Settings", color = colorScheme.onBackground, fontWeight = FontWeight.Bold) },
-                    navigationIcon = {
-                        IconButton(onClick = onNavigateBack) {
-                            Icon(Icons.Default.ArrowBack, contentDescription = null, tint = colorScheme.onBackground)
-                        }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = colorScheme.background),
-                    windowInsets = WindowInsets(0, 0, 0, 0)
+    Scaffold(
+        containerColor = colorScheme.background,
+        topBar = {
+            TopAppBar(
+                title = { Text("Settings", color = colorScheme.onBackground, fontWeight = FontWeight.Bold) },
+                navigationIcon = {
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = null, tint = colorScheme.onBackground)
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = colorScheme.background),
+                windowInsets = WindowInsets(0, 0, 0, 0)
+            )
+        }
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .verticalScroll(rememberScrollState())
+        ) {
+            if (isGuest) {
+                SettingsProfileHeader(
+                    avatarUrl = null,
+                    displayName = "Guest User",
+                    username = "guest",
+                    showEditButton = false
                 )
-            }
-        ) { padding ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .verticalScroll(rememberScrollState())
-            ) {
-                if (isGuest) {
-                    SettingsProfileHeader(
-                        avatarUrl = null,
-                        displayName = "Guest User",
-                        username = "guest",
-                        showEditButton = false
-                    )
-                } else {
-                    when (profileState) {
-                        is ProfileUiState.Loading -> {
-                            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                                CircularProgressIndicator(color = colorScheme.primary)
-                            }
+            } else {
+                when (profileState) {
+                    is ProfileUiState.Loading -> {
+                        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(color = colorScheme.primary)
                         }
+                    }
 
-                        is ProfileUiState.Success -> {
-                            val success = profileState as ProfileUiState.Success
-                            val currentCitizen = success.citizen
+                    is ProfileUiState.Success -> {
+                        val success = profileState as ProfileUiState.Success
+                        val currentCitizen = success.citizen
 
-                            SettingsProfileHeader(
-                                avatarUrl = currentCitizen?.avatar_url,
-                                displayName = currentCitizen?.display_name,
-                                username = currentCitizen?.username,
-                                onEditClick = onNavigateToEditProfile
-                            )
+                        SettingsProfileHeader(
+                            avatarUrl = currentCitizen?.avatar_url,
+                            displayName = currentCitizen?.display_name,
+                            username = currentCitizen?.username,
+                            onEditClick = onNavigateToEditProfile
+                        )
 
-                            if (currentCitizen?.is_admin == true) {
-                                SettingsSectionTitle("ADMIN")
-                                SettingsItem(
-                                    icon = Icons.Default.AdminPanelSettings,
-                                    title = "Admin Panel",
-                                    onClick = onNavigateToAdmin
-                                )
-                            }
-                        }
-
-                        else -> {
-                            SettingsProfileHeader(
-                                avatarUrl = null,
-                                displayName = "User",
-                                username = "",
-                                onEditClick = onNavigateToEditProfile
+                        if (currentCitizen?.is_admin == true) {
+                            SettingsSectionTitle("ADMIN")
+                            SettingsItem(
+                                icon = Icons.Default.AdminPanelSettings,
+                                title = "Admin Panel",
+                                onClick = onNavigateToAdmin
                             )
                         }
                     }
+
+                    else -> {
+                        SettingsProfileHeader(
+                            avatarUrl = null,
+                            displayName = "User",
+                            username = "",
+                            onEditClick = onNavigateToEditProfile
+                        )
+                    }
                 }
+            }
 
-                if (!isGuest) {
-                    SettingsSectionTitle("ACCOUNT")
-                    SettingsItem(Icons.Default.Person, "Edit Profile", onClick = onNavigateToEditProfile)
-                    SettingsItem(Icons.Default.Lock, "Change Password", onClick = { showChangePasswordDialog = true })
-                    SettingsItem(
-                        icon = Icons.Default.Shield,
-                        title = "Privacy Settings",
-                        onClick = { showPrivacySettingsDialog = true }
-                    )
-                }
+            if (!isGuest) {
+                SettingsSectionTitle("ACCOUNT")
+                SettingsItem(Icons.Default.Person, "Edit Profile", onClick = onNavigateToEditProfile)
+                SettingsItem(Icons.Default.Lock, "Change Password", onClick = { showChangePasswordDialog = true })
+                SettingsItem(
+                    icon = Icons.Default.Shield,
+                    title = "Privacy Settings",
+                    onClick = { showPrivacySettingsDialog = true }
+                )
+            }
 
-                SettingsSectionTitle("NOTIFICATIONS")
-                SettingsToggleItem(
-                    icon = Icons.Default.Notifications,
-                    title = "Push Notifications",
-                    checked = pushNotificationsEnabled,
-                    onCheckedChange = { enabled ->
-                        if (enabled) {
-                            val requiresPermission = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
-                            val permissionGranted = !requiresPermission ||
-                                ContextCompat.checkSelfPermission(
-                                    context,
-                                    Manifest.permission.POST_NOTIFICATIONS
-                                ) == PackageManager.PERMISSION_GRANTED
+            SettingsSectionTitle("NOTIFICATIONS")
+            SettingsToggleItem(
+                icon = Icons.Default.Notifications,
+                title = "Push Notifications",
+                checked = pushNotificationsEnabled,
+                onCheckedChange = { enabled ->
+                    if (enabled) {
+                        val requiresPermission = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+                        val permissionGranted = !requiresPermission ||
+                            ContextCompat.checkSelfPermission(
+                                context,
+                                Manifest.permission.POST_NOTIFICATIONS
+                            ) == PackageManager.PERMISSION_GRANTED
 
-                            if (permissionGranted) {
-                                scope.launch {
-                                    settingsManager.setPushNotificationsEnabled(true)
-                                }
-                            } else {
-                                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        if (permissionGranted) {
+                            scope.launch {
+                                settingsManager.setPushNotificationsEnabled(true)
                             }
                         } else {
-                            scope.launch {
-                                settingsManager.setPushNotificationsEnabled(false)
-                            }
+                            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        }
+                    } else {
+                        scope.launch {
+                            settingsManager.setPushNotificationsEnabled(false)
                         }
                     }
-                )
-                if (!isGuest) {
-                    SettingsToggleItem(
-                        icon = Icons.Default.Email,
-                        title = "Email Notifications",
-                        checked = emailNotificationsEnabled,
-                        onCheckedChange = { enabled ->
-                            scope.launch {
-                                settingsManager.setEmailNotificationsEnabled(enabled)
-                            }
-                        }
-                    )
                 }
-
-                SettingsSectionTitle("DISPLAY")
-                SettingsDarkModeSelector(
-                    checked = darkModeEnabled,
+            )
+            if (!isGuest) {
+                SettingsToggleItem(
+                    icon = Icons.Default.Email,
+                    title = "Email Notifications",
+                    checked = emailNotificationsEnabled,
                     onCheckedChange = { enabled ->
                         scope.launch {
-                            settingsManager.setDarkModeEnabled(enabled)
+                            settingsManager.setEmailNotificationsEnabled(enabled)
                         }
                     }
                 )
-                SettingsTextSizeSelector(
-                    value = textSizeScale,
-                    onValueChange = { value ->
-                        scope.launch {
-                            settingsManager.setTextSizeScale(value)
-                        }
-                    }
-                )
-
-                SettingsSectionTitle("SUPPORT")
-                SettingsItem(
-                    icon = Icons.Default.Description,
-                    title = "Privacy Policy",
-                    onClick = { supportDialog = SettingsSupportDialog.PrivacyPolicy }
-                )
-                SettingsItem(
-                    icon = Icons.Default.Assignment,
-                    title = "Terms of Service",
-                    onClick = { supportDialog = SettingsSupportDialog.TermsOfService }
-                )
-                SettingsItem(
-                    icon = Icons.Default.Help,
-                    title = "Help Center",
-                    onClick = { supportDialog = SettingsSupportDialog.HelpCenter }
-                )
-
-                Spacer(modifier = Modifier.height(32.dp))
-
-                Button(
-                    onClick = if (isGuest) onLogin else onLogout,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 24.dp)
-                        .height(50.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (isGuest) colorScheme.primary else colorScheme.error.copy(alpha = 0.10f),
-                        contentColor = if (isGuest) colorScheme.onPrimary else colorScheme.error
-                    ),
-                    shape = RoundedCornerShape(12.dp),
-                    border = if (isGuest) null else BorderStroke(1.dp, colorScheme.error.copy(alpha = 0.35f))
-                ) {
-                    Text(
-                        text = if (isGuest) "Log In" else "Log Out",
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-                Spacer(modifier = Modifier.height(50.dp))
             }
-        }
 
-        supportDialog?.let { dialog ->
-            SettingsSupportDialog(
-                dialog = dialog,
-                onDismiss = { supportDialog = null }
-            )
-        }
-
-        if (showChangePasswordDialog) {
-            ChangePasswordDialog(
-                onDismiss = { showChangePasswordDialog = false },
-                onChangePassword = onChangePassword,
-                onSuccess = {
-                    Toast.makeText(context, "Password updated successfully", Toast.LENGTH_SHORT).show()
+            SettingsSectionTitle("DISPLAY")
+            SettingsDarkModeSelector(
+                checked = darkModeEnabled,
+                onCheckedChange = { enabled ->
+                    scope.launch {
+                        settingsManager.setDarkModeEnabled(enabled)
+                    }
                 }
             )
-        }
-
-        if (showPrivacySettingsDialog && !isGuest) {
-            PrivacySettingsDialog(
-                privateAccountEnabled = privateAccountEnabled,
-                showActivityStatusEnabled = showActivityStatusEnabled,
-                allowProfileSearchEnabled = allowProfileSearchEnabled,
-                onPrivateAccountChange = { enabled ->
+            SettingsTextSizeSelector(
+                value = textSizeScale,
+                onValueChange = { value ->
                     scope.launch {
-                        settingsManager.setPrivateAccountEnabled(enabled)
+                        settingsManager.setTextSizeScale(value)
                     }
-                },
-                onShowActivityStatusChange = { enabled ->
-                    scope.launch {
-                        settingsManager.setShowActivityStatusEnabled(enabled)
-                    }
-                },
-                onAllowProfileSearchChange = { enabled ->
-                    scope.launch {
-                        settingsManager.setAllowProfileSearchEnabled(enabled)
-                    }
-                },
-                onDismiss = { showPrivacySettingsDialog = false }
+                }
             )
-        }
-    }
-}
 
-private fun textSizeScaleToFontScale(value: Float): Float {
-    return 0.85f + value.coerceIn(0f, 1f) * 0.3f
-}
+            SettingsSectionTitle("SUPPORT")
+            SettingsItem(
+                icon = Icons.Default.Description,
+                title = "Privacy Policy",
+                onClick = onNavigateToPrivacyPolicy
+            )
+            SettingsItem(
+                icon = Icons.Default.Assignment,
+                title = "Terms of Service",
+                onClick = onNavigateToTermsOfService
+            )
+            SettingsItem(
+                icon = Icons.Default.Help,
+                title = "Help Center",
+                onClick = onNavigateToHelpCenter
+            )
 
-private enum class SettingsSupportDialog {
-    PrivacyPolicy,
-    TermsOfService,
-    HelpCenter
-}
+            Spacer(modifier = Modifier.height(32.dp))
 
-@Composable
-private fun SettingsSupportDialog(
-    dialog: SettingsSupportDialog,
-    onDismiss: () -> Unit
-) {
-    val title = when (dialog) {
-        SettingsSupportDialog.PrivacyPolicy -> "Privacy Policy"
-        SettingsSupportDialog.TermsOfService -> "Terms of Service"
-        SettingsSupportDialog.HelpCenter -> "Help Center"
-    }
-    val message = when (dialog) {
-        SettingsSupportDialog.PrivacyPolicy -> "Flare stores the account information needed to provide your profile and app experience. Your settings preferences are saved locally on this device. We do not sell your personal information."
-        SettingsSupportDialog.TermsOfService -> "Use Flare respectfully and do not post harmful, abusive, or illegal content. You are responsible for the activity on your account and for following community guidelines."
-        SettingsSupportDialog.HelpCenter -> "Need help with Flare? Contact the support team or review the app documentation for account, profile, notification, and settings guidance."
-    }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        containerColor = MaterialTheme.colorScheme.surface,
-        title = {
-            Text(title, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
-        },
-        text = {
-            Text(message, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text("OK", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+            Button(
+                onClick = if (isGuest) onLogin else onLogout,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp)
+                    .height(50.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (isGuest) colorScheme.primary else colorScheme.error.copy(alpha = 0.10f),
+                    contentColor = if (isGuest) colorScheme.onPrimary else colorScheme.error
+                ),
+                shape = RoundedCornerShape(12.dp),
+                border = if (isGuest) null else BorderStroke(1.dp, colorScheme.error.copy(alpha = 0.35f))
+            ) {
+                Text(
+                    text = if (isGuest) "Log In" else "Log Out",
+                    fontWeight = FontWeight.Bold
+                )
             }
+            Spacer(modifier = Modifier.height(50.dp))
         }
-    )
+    }
+
+    if (showChangePasswordDialog) {
+        ChangePasswordDialog(
+            onDismiss = { showChangePasswordDialog = false },
+            onChangePassword = onChangePassword,
+            onSuccess = {
+                Toast.makeText(context, "Password updated successfully", Toast.LENGTH_SHORT).show()
+            }
+        )
+    }
+
+    if (showPrivacySettingsDialog && !isGuest) {
+        PrivacySettingsDialog(
+            privateAccountEnabled = privateAccountEnabled,
+            showActivityStatusEnabled = showActivityStatusEnabled,
+            allowProfileSearchEnabled = allowProfileSearchEnabled,
+            onPrivateAccountChange = { enabled ->
+                scope.launch {
+                    settingsManager.setPrivateAccountEnabled(enabled)
+                }
+            },
+            onShowActivityStatusChange = { enabled ->
+                scope.launch {
+                    settingsManager.setShowActivityStatusEnabled(enabled)
+                }
+            },
+            onAllowProfileSearchChange = { enabled ->
+                scope.launch {
+                    settingsManager.setAllowProfileSearchEnabled(enabled)
+                }
+            },
+            onDismiss = { showPrivacySettingsDialog = false }
+        )
+    }
 }
 
 @Composable

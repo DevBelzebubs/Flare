@@ -13,6 +13,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
@@ -32,9 +33,14 @@ fun AddPostInputArea(
     onContentChange: (String) -> Unit,
     avatarUrl: String? = null
 ) {
+    val colorScheme = MaterialTheme.colorScheme
+
     Row(verticalAlignment = Alignment.Top) {
         Box(
-            modifier = Modifier.size(44.dp).clip(CircleShape).background(Color.DarkGray),
+            modifier = Modifier
+                .size(44.dp)
+                .clip(CircleShape)
+                .background(colorScheme.surfaceVariant),
             contentAlignment = Alignment.Center
         ) {
             if (!avatarUrl.isNullOrBlank()) {
@@ -42,10 +48,12 @@ fun AddPostInputArea(
                     model = avatarUrl,
                     contentDescription = "Avatar",
                     contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize().clip(CircleShape)
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(CircleShape)
                 )
             } else {
-                Icon(Icons.Default.Person, contentDescription = null, tint = Color.LightGray)
+                Icon(Icons.Default.Person, contentDescription = null, tint = colorScheme.onSurfaceVariant)
             }
         }
 
@@ -55,11 +63,15 @@ fun AddPostInputArea(
             value = content,
             onValueChange = { if (it.length <= 500) onContentChange(it) },
             modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text("¿Qué tienes en mente?", color = Color.DarkGray, fontSize = 16.sp) },
+            placeholder = { Text("¿Qué tienes en mente?", color = colorScheme.onSurfaceVariant, fontSize = 16.sp) },
             colors = TextFieldDefaults.colors(
-                focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent,
-                focusedIndicatorColor = Color.Transparent, unfocusedIndicatorColor = Color.Transparent,
-                cursorColor = Color(0xFFFF5722), focusedTextColor = Color.White, unfocusedTextColor = Color.White
+                focusedContainerColor = Color.Transparent,
+                unfocusedContainerColor = Color.Transparent,
+                focusedIndicatorColor = Color.Transparent,
+                unfocusedIndicatorColor = Color.Transparent,
+                cursorColor = colorScheme.primary,
+                focusedTextColor = colorScheme.onBackground,
+                unfocusedTextColor = colorScheme.onBackground
             ),
             textStyle = LocalTextStyle.current.copy(fontSize = 16.sp, lineHeight = 24.sp)
         )

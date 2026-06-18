@@ -50,6 +50,7 @@ fun StoryViewerScreen(
     var replyText by remember { mutableStateOf("") }
     var showMenu by remember { mutableStateOf(false) }
     var isPaused by remember { mutableStateOf(false) }
+    val colorScheme = MaterialTheme.colorScheme
 
     val progressAnim = remember { Animatable(0f) }
 
@@ -167,7 +168,13 @@ fun StoryViewerScreen(
         Box(modifier = Modifier.fillMaxWidth().height(120.dp).align(Alignment.TopCenter).background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.7f), Color.Transparent))))
         Box(modifier = Modifier.fillMaxWidth().height(120.dp).align(Alignment.BottomCenter).background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.8f)))))
 
-        Column(modifier = Modifier.fillMaxWidth().align(Alignment.TopCenter).padding(top = 16.dp)) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .align(Alignment.TopCenter)
+                .statusBarsPadding()
+                .padding(top = 8.dp)
+        ) {
             StoryProgressBar(storiesCount = userStories.size, currentIndex = currentIndex, progress = progressAnim.value)
             Spacer(modifier = Modifier.height(12.dp))
 
@@ -191,11 +198,19 @@ fun StoryViewerScreen(
                         IconButton(onClick = { showMenu = true; isPaused = true }, modifier = Modifier.size(32.dp)) {
                             Icon(Icons.Default.MoreVert, contentDescription = "Opciones", tint = Color.White)
                         }
-                        DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false; isPaused = false }, modifier = Modifier.background(Color(0xFF1E1E1E))) {
+                        DropdownMenu(
+                            expanded = showMenu,
+                            onDismissRequest = { showMenu = false; isPaused = false },
+                            modifier = Modifier.background(colorScheme.surface)
+                        ) {
                             DropdownMenuItem(
-                                text = { Text("Eliminar historia", color = Color.Red) },
-                                leadingIcon = { Icon(Icons.Outlined.Delete, contentDescription = null, tint = Color.Red) },
-                                onClick = { showMenu = false; viewModel.deleteStory(currentStory.story.story_id); onClose() }
+                                text = { Text("Eliminar historia", color = colorScheme.error) },
+                                leadingIcon = { Icon(Icons.Outlined.Delete, contentDescription = null, tint = colorScheme.error) },
+                                onClick = {
+                                    showMenu = false
+                                    viewModel.deleteStory(currentStory.story.story_id)
+                                    onClose()
+                                }
                             )
                         }
                     }

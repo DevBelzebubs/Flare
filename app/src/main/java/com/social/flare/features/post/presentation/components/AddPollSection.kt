@@ -1,8 +1,6 @@
 package com.social.flare.features.post.presentation.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -17,13 +15,13 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Poll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -44,43 +42,34 @@ fun AddPollSection(
     onRemoveOption: (Int) -> Unit,
     onRemovePoll: () -> Unit
 ) {
-    Column(
+    val colorScheme = MaterialTheme.colorScheme
+
+    androidx.compose.foundation.layout.Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color(0xFF1A1A1A), RoundedCornerShape(12.dp))
+            .background(colorScheme.surface, RoundedCornerShape(12.dp))
             .padding(12.dp)
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Icon(Icons.Default.Poll, contentDescription = null, tint = Color(0xFFFF5722), modifier = Modifier.size(20.dp))
+            Icon(Icons.Default.Poll, contentDescription = null, tint = colorScheme.primary, modifier = Modifier.size(20.dp))
             Spacer(modifier = Modifier.width(8.dp))
-            Text("Encuesta", color = Color.White, fontSize = 14.sp)
+            Text("Encuesta", color = colorScheme.onSurface, fontSize = 14.sp)
             Spacer(modifier = Modifier.weight(1f))
             IconButton(onClick = onRemovePoll, modifier = Modifier.size(24.dp)) {
-                Icon(Icons.Default.Close, contentDescription = "Remove poll", tint = Color.Gray, modifier = Modifier.size(18.dp))
+                Icon(Icons.Default.Close, contentDescription = "Remove poll", tint = colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
             }
         }
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        OutlinedTextField(
+        ThemedPollTextField(
             value = pollData.question,
             onValueChange = { if (it.length <= 200) onQuestionChange(it) },
-            placeholder = { Text("Pregunta de la encuesta", color = Color.DarkGray, fontSize = 14.sp) },
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = Color(0xFF262626),
-                unfocusedContainerColor = Color(0xFF262626),
-                focusedTextColor = Color.White,
-                unfocusedTextColor = Color.White,
-                focusedBorderColor = Color(0xFFFF5722),
-                unfocusedBorderColor = Color(0xFF333333),
-                cursorColor = Color(0xFFFF5722)
-            ),
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
-            textStyle = androidx.compose.ui.text.TextStyle(fontSize = 14.sp)
+            placeholder = "Pregunta de la encuesta",
+            modifier = Modifier.fillMaxWidth()
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -92,30 +81,19 @@ fun AddPollSection(
             ) {
                 Text(
                     "${index + 1}.",
-                    color = Color.Gray,
+                    color = colorScheme.onSurfaceVariant,
                     fontSize = 14.sp,
                     modifier = Modifier.width(20.dp)
                 )
-                OutlinedTextField(
+                ThemedPollTextField(
                     value = option,
                     onValueChange = { if (it.length <= 100) onOptionChange(index, it) },
-                    placeholder = { Text("Opción ${index + 1}", color = Color.DarkGray, fontSize = 14.sp) },
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedContainerColor = Color(0xFF262626),
-                        unfocusedContainerColor = Color(0xFF262626),
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
-                        focusedBorderColor = Color(0xFFFF5722),
-                        unfocusedBorderColor = Color(0xFF333333),
-                        cursorColor = Color(0xFFFF5722)
-                    ),
-                    singleLine = true,
-                    modifier = Modifier.weight(1f),
-                    textStyle = androidx.compose.ui.text.TextStyle(fontSize = 14.sp)
+                    placeholder = "Opción ${index + 1}",
+                    modifier = Modifier.weight(1f)
                 )
                 if (pollData.options.size > 2) {
                     IconButton(onClick = { onRemoveOption(index) }, modifier = Modifier.size(24.dp)) {
-                        Icon(Icons.Default.Close, contentDescription = "Remove option", tint = Color.Gray, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Default.Close, contentDescription = "Remove option", tint = colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
                     }
                 } else {
                     Spacer(modifier = Modifier.width(24.dp))
@@ -130,8 +108,38 @@ fun AddPollSection(
                 onClick = onAddOption,
                 modifier = Modifier.size(32.dp)
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Add option", tint = Color(0xFFFF5722))
+                Icon(Icons.Default.Add, contentDescription = "Add option", tint = colorScheme.primary)
             }
         }
     }
+}
+
+@Composable
+private fun ThemedPollTextField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    placeholder: String,
+    modifier: Modifier = Modifier
+) {
+    val colorScheme = MaterialTheme.colorScheme
+
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        placeholder = { Text(placeholder, fontSize = 14.sp) },
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedContainerColor = colorScheme.surfaceVariant,
+            unfocusedContainerColor = colorScheme.surfaceVariant,
+            focusedTextColor = colorScheme.onSurface,
+            unfocusedTextColor = colorScheme.onSurface,
+            focusedBorderColor = colorScheme.primary,
+            unfocusedBorderColor = colorScheme.outline,
+            cursorColor = colorScheme.primary,
+            focusedPlaceholderColor = colorScheme.onSurfaceVariant,
+            unfocusedPlaceholderColor = colorScheme.onSurfaceVariant
+        ),
+        singleLine = true,
+        modifier = modifier,
+        textStyle = androidx.compose.ui.text.TextStyle(fontSize = 14.sp)
+    )
 }
