@@ -17,15 +17,14 @@ import io.github.jan.supabase.postgrest.query.filter.FilterOperator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
 
 class NotificationRepositoryImpl(
@@ -37,7 +36,6 @@ class NotificationRepositoryImpl(
     @Volatile
     private var realtimeJob: Job? = null
     private var realtimeScope: CoroutineScope? = null
-    private val cleanupScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     override fun getNotifications(userId: String): Flow<List<FlareNotification>> = flow {
         withContext(Dispatchers.IO) {
             try {
@@ -111,7 +109,7 @@ class NotificationRepositoryImpl(
         realtimeJob?.cancel()
         realtimeJob = null
         realtimeChannel?.let { channel ->
-            cleanupScope.launch {
+            CoroutineScope(Dispatchers.IO + NonCancellable).launch {
                 try {
                     channel.unsubscribe()
                     supabase.realtime.removeChannel(channel)
@@ -122,6 +120,5 @@ class NotificationRepositoryImpl(
         }
         realtimeChannel = null
         realtimeScope = null
-        cleanupScope.cancel()
     }
 }

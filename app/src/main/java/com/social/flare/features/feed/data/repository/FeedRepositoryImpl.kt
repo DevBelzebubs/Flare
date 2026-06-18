@@ -92,12 +92,17 @@ class FeedRepositoryImpl(
         )
     }
 
-    private suspend fun syncPostsFromSupabase(currentUserId: String? = null, isGuest: Boolean = false) {
+    private suspend fun syncPostsFromSupabase(
+        currentUserId: String? = null,
+        isGuest: Boolean = false,
+        page: Int = 0,
+        pageSize: Int = 50
+    ) {
         try {
             val posts = supabase.postgrest["posts"]
                 .select {
                     order("created_at", io.github.jan.supabase.postgrest.query.Order.DESCENDING)
-                    limit(100)
+                    limit(pageSize.toLong())
                 }
                 .decodeList<PostEntity>()
 

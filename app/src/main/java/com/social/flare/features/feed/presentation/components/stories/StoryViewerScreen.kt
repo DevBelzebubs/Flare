@@ -54,9 +54,17 @@ fun StoryViewerScreen(
     val progressAnim = remember { Animatable(0f) }
 
     val mediaPlayer = remember { MediaPlayer() }
+    var isMediaPrepared by remember { mutableStateOf(false) }
 
-    DisposableEffect(Unit) {
-        onDispose { mediaPlayer.release() }
+    DisposableEffect(mediaPlayer) {
+        onDispose {
+            try {
+                if (mediaPlayer.isPlaying) mediaPlayer.stop()
+            } catch (_: Exception) {}
+            try {
+                mediaPlayer.release()
+            } catch (_: Exception) {}
+        }
     }
 
     val currentStory = sessionStories[currentIndex]
@@ -68,32 +76,43 @@ fun StoryViewerScreen(
 
     LaunchedEffect(currentIndex) {
         progressAnim.snapTo(0f)
-        mediaPlayer.reset()
+        isMediaPrepared = false
+        try {
+            mediaPlayer.reset()
+        } catch (e: Exception) {
+            android.util.Log.e("StoryViewer", "MediaPlayer reset failed", e)
+        }
 
         val musicUrl = currentStory.story.music_url
         if (!musicUrl.isNullOrEmpty()) {
             try {
                 mediaPlayer.setDataSource(musicUrl)
                 mediaPlayer.prepareAsync()
-                mediaPlayer.setOnPreparedListener {
-                    if (!isPaused) it.start()
+                mediaPlayer.setOnPreparedListener { mp ->
+                    isMediaPrepared = true
+                    if (!isPaused) {
+                        try { mp.start() } catch (_: Exception) {}
+                    }
                 }
                 mediaPlayer.setOnErrorListener { _, what, extra ->
                     android.util.Log.e("StoryViewer", "MediaPlayer error: $what $extra")
                     true
                 }
-            } catch (e: Exception) { e.printStackTrace() }
+            } catch (e: Exception) {
+                android.util.Log.e("StoryViewer", "MediaPlayer setup failed", e)
+            }
         }
     }
 
     LaunchedEffect(currentIndex, isPaused) {
         if (isPaused) {
             progressAnim.stop()
-            try { if (mediaPlayer.isPlaying) mediaPlayer.pause() } catch (e: Exception) {}
+            try { if (mediaPlayer.isPlaying) mediaPlayer.pause() } catch (_: Exception) {}
         } else {
-            // Reanudar música
-            if (!currentStory.story.music_url.isNullOrEmpty()) {
-                try { mediaPlayer.start() } catch (e: Exception) {}
+            if (!currentStory.story.music_url.isNullOrEmpty() && isMediaPrepared) {
+                try {
+                    if (!mediaPlayer.isPlaying) mediaPlayer.start()
+                } catch (_: Exception) {}
             }
 
             val totalDuration = 5000f

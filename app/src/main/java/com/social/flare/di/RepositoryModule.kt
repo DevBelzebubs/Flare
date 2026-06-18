@@ -15,6 +15,7 @@ import com.social.flare.features.feed.domain.repository.StoryRepository
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
+import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import io.github.jan.supabase.SupabaseClient
@@ -81,4 +82,10 @@ abstract class RepositoryModule {
             )
         }
     }
+}
+
+@EntryPoint
+@InstallIn(SingletonComponent::class)
+interface AiRepositoryEntryPoint {
+    fun aiAgentRepository(): AiAgentRepository
 }

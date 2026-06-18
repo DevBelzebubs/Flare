@@ -209,7 +209,6 @@ class AdminViewModel(
 
 
     fun toggleBotStatus(citizenId: String, isActive: Boolean) {
-        loadJob?.cancel()
         viewModelScope.launch {
             try {
                 _uiState.update { currentState ->

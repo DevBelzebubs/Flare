@@ -6,6 +6,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Picture
 import android.location.Geocoder
+import android.os.Build
 import android.net.Uri
 import com.google.android.gms.location.Priority
 import android.widget.Toast
@@ -101,6 +102,14 @@ fun AddStoryScreen(
     var textIdCounter by remember { mutableStateOf(0) }
 
     val picture = remember { Picture() }
+    DisposableEffect(picture) {
+        onDispose {
+            try {
+                val closeMethod = Picture::class.java.getMethod("close")
+                closeMethod.invoke(picture)
+            } catch (_: Exception) {}
+        }
+    }
     var viewWidth by remember { mutableIntStateOf(0) }
     var viewHeight by remember { mutableIntStateOf(0) }
 

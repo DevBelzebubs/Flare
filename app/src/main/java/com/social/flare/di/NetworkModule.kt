@@ -12,6 +12,8 @@ import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.util.concurrent.TimeUnit
+import javax.inject.Named
 import javax.inject.Singleton
 
 @Module
@@ -21,6 +23,7 @@ object NetworkModule {
 
     @Provides
     @Singleton
+    @Named("openrouter")
     fun provideOpenRouterOkHttpClient(): OkHttpClient {
         val logging = HttpLoggingInterceptor().apply {
             level = if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BODY else HttpLoggingInterceptor.Level.NONE
@@ -37,11 +40,14 @@ object NetworkModule {
         return OkHttpClient.Builder()
             .addInterceptor(headerInterceptor)
             .addInterceptor(logging)
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(60, TimeUnit.SECONDS)
+            .writeTimeout(30, TimeUnit.SECONDS)
             .build()
     }
     @Provides
     @Singleton
-    fun provideOpenRouterApi(client: OkHttpClient): OpenRouterApi {
+    fun provideOpenRouterApi(@Named("openrouter") client: OkHttpClient): OpenRouterApi {
         return Retrofit.Builder()
             .baseUrl(OPEN_ROUTER_BASE_URL)
             .client(client)
@@ -51,9 +57,21 @@ object NetworkModule {
     }
     @Provides
     @Singleton
-    fun provideHuggingFaceApi(): HuggingFaceApi {
+    @Named("huggingface")
+    fun provideHuggingFaceOkHttpClient(): OkHttpClient {
+        return OkHttpClient.Builder()
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(120, TimeUnit.SECONDS)
+            .writeTimeout(60, TimeUnit.SECONDS)
+            .build()
+    }
+
+    @Provides
+    @Singleton
+    fun provideHuggingFaceApi(@Named("huggingface") client: OkHttpClient): HuggingFaceApi {
         val retrofit = Retrofit.Builder()
             .baseUrl("https://api-inference.huggingface.co/")
+            .client(client)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
         return retrofit.create(HuggingFaceApi::class.java)

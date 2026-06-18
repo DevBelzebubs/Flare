@@ -30,33 +30,28 @@ class ProfileViewModel(
     private val _uiState = MutableStateFlow<ProfileUiState>(ProfileUiState.Loading)
     val uiState: StateFlow<ProfileUiState> = _uiState.asStateFlow()
 
-    // --- NUEVO: ESTADO INDEPENDIENTE PARA SEGUIDORES ---
-    // Lo exponemos separado para que el botón de la UI cambie inmediatamente
     private val _followStats = MutableStateFlow(FollowStats(0, 0, false))
     val followStats: StateFlow<FollowStats> = _followStats.asStateFlow()
 
     private var loadJob: Job? = null
     private var followStatsJob: Job? = null
 
-    // Renombrado a loadProfileData para reflejar que carga CUALQUIER perfil
     fun loadProfileData(targetCitizenId: String, currentCitizenId: String?) {
         loadJob?.cancel()
         followStatsJob?.cancel()
 
+        followStatsJob = viewModelScope.launch {
+            getFollowStatsUseCase(
+                targetUserId = targetCitizenId,
+                currentUserId = currentCitizenId ?: ""
+            ).collect { stats ->
+                _followStats.value = stats
+            }
+        }
+
         loadJob = viewModelScope.launch {
             _uiState.value = ProfileUiState.Loading
             try {
-                // 1. Escuchar los Stats de seguimiento en tiempo real
-                followStatsJob = launch {
-                    getFollowStatsUseCase(
-                        targetUserId = targetCitizenId,
-                        currentUserId = currentCitizenId ?: ""
-                    ).collect { stats ->
-                        _followStats.value = stats
-                    }
-                }
-
-                // 2. Cargar el ciudadano y combinar con Posts y Stats
                 val citizenFlow = repository.getCitizenProfile(targetCitizenId)
 
                 combine(
@@ -84,12 +79,12 @@ class ProfileViewModel(
                     _uiState.value = state
                 }
             } catch (e: Exception) {
+                if (e is kotlinx.coroutines.CancellationException) throw e
                 _uiState.value = ProfileUiState.Error(e.message ?: "Error desconocido")
             }
         }
     }
 
-    // --- NUEVO: ACCIÓN DE SEGUIR / DEJAR DE SEGUIR ---
     fun toggleFollow(followerId: String, followedId: String) {
         viewModelScope.launch {
             toggleFollowUseCase(

@@ -19,6 +19,12 @@ class EditProfileViewModel(
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
     private val _isSuccess = MutableStateFlow(false)
     val isSuccess: StateFlow<Boolean> = _isSuccess.asStateFlow()
+    private val _errorMessage = MutableStateFlow<String?>(null)
+    val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
+
+    fun clearError() {
+        _errorMessage.value = null
+    }
 
     fun updateProfile(
         citizen: CitizenEntity,
@@ -61,7 +67,7 @@ class EditProfileViewModel(
 
                 _isSuccess.value = true
             } catch (e: Exception) {
-                e.printStackTrace()
+                _errorMessage.value = e.message ?: "Error desconocido al actualizar el perfil"
             } finally {
                 _isLoading.value = false
             }

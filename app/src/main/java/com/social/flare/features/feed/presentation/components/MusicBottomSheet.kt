@@ -46,7 +46,7 @@ fun MusicBottomSheet(
 
     ModalBottomSheet(
         onDismissRequest = {
-            mediaPlayer.stop()
+            try { mediaPlayer.stop() } catch (_: Exception) {}
             onDismiss()
         },
         containerColor = Color(0xFF1E1E1E)
@@ -101,7 +101,7 @@ fun MusicBottomSheet(
                             }
                         } }
                         val onSelect = remember(track) { {
-                            mediaPlayer.stop()
+                            try { mediaPlayer.stop() } catch (_: Exception) {}
                             onTrackSelected(track)
                         } }
                         MusicTrackItem(

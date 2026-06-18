@@ -77,8 +77,10 @@ import com.social.flare.features.admin.presentation.AdminUsersScreen
 import com.social.flare.features.admin.presentation.AdminPostsScreen
 import com.social.flare.features.admin.presentation.AdminNewsScreen
 import com.social.flare.features.admin.presentation.viewmodel.AdminViewModel
-import com.social.flare.features.ai.data.repository.AiAgentRepositoryImpl
+import com.social.flare.di.AiRepositoryEntryPoint
+import com.social.flare.features.ai.domain.repository.AiAgentRepository
 import com.social.flare.features.main.presentation.components.SplashScreen
+import dagger.hilt.android.EntryPointAccessors
 import com.social.flare.features.notifications.domain.usecase.GetSuggestedAccountsUseCase
 import com.social.flare.features.profile.presentation.FollowListScreen
 import com.social.flare.features.profile.presentation.viewmodel.FollowListViewModel
@@ -151,27 +153,8 @@ fun MainScreen() {
         )
     }
     val aiAgentRepository = remember {
-        val gson = com.google.gson.Gson()
-
-        val openRouterRetrofit = retrofit2.Retrofit.Builder()
-            .baseUrl("https://openrouter.ai/api/v1/")
-            .addConverterFactory(retrofit2.converter.gson.GsonConverterFactory.create())
-            .build()
-        val openRouterApi = openRouterRetrofit.create(com.social.flare.features.ai.data.remote.OpenRouterApi::class.java)
-
-        val huggingFaceRetrofit = retrofit2.Retrofit.Builder()
-            .baseUrl("https://api-inference.huggingface.co/")
-            .addConverterFactory(retrofit2.converter.gson.GsonConverterFactory.create())
-            .build()
-        val huggingFaceApi = huggingFaceRetrofit.create(com.social.flare.features.ai.data.remote.HuggingFaceApi::class.java)
-
-        AiAgentRepositoryImpl(
-            openRouterApi = openRouterApi,
-            huggingFaceApi = huggingFaceApi,
-            gson = gson,
-            supabase = app.supabase,
-            context = context.applicationContext
-        )
+        val entryPoint = EntryPointAccessors.fromApplication(context, AiRepositoryEntryPoint::class.java)
+        entryPoint.aiAgentRepository()
     }
 
     var unreadCount by remember { mutableIntStateOf(0) }

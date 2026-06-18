@@ -79,7 +79,6 @@ interface PostDao {
     LIMIT 100
     """)
     fun getFeedPosts(currentUserId: String): Flow<List<PostWithDetails>>
-    @Transaction
     @Query("""
         SELECT 
         p.*, 
@@ -228,7 +227,6 @@ interface PostDao {
     LIMIT 100
     """)
     fun getSavedPosts(currentUserId: String): Flow<List<PostWithDetails>>
-    @Transaction
     @Query("""
         SELECT 
         p.*, 
@@ -247,7 +245,6 @@ interface PostDao {
     """)
     suspend fun getPostById(postId: String): PostWithDetails?
 
-    @Transaction
     @Query("""
         SELECT 
         p.*, 
@@ -281,7 +278,6 @@ interface PostDao {
     @Query("SELECT author_id AS authorId, COUNT(*) AS count FROM post_table WHERE author_id IN (:authorIds) AND parent_post_id IS NULL AND shared_post_id IS NULL GROUP BY author_id")
     suspend fun getPostsCountsByAuthors(authorIds: List<String>): List<AuthorPostCount>
 
-    @Transaction
     @Query("""
         SELECT 
         p.*, 

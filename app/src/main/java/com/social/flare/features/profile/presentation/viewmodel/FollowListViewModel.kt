@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
 class FollowListViewModel(
@@ -29,10 +30,12 @@ class FollowListViewModel(
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
     private var currentUserId: String? = null
+    private var loadJob: Job? = null
 
     fun load(userId: String, type: String, activeCitizenId: String?) {
         currentUserId = activeCitizenId
-        viewModelScope.launch {
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
             _isLoading.value = true
             val result = if (type == "followers") {
                 followRepository.getFollowers(userId)

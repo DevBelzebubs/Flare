@@ -76,6 +76,7 @@ class NotificationViewModel(
     }
 
     override fun onCleared() {
+        manageRealtimeNotificationsUseCase.disconnect()
         super.onCleared()
     }
 
