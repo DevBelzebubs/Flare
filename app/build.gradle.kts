@@ -36,6 +36,7 @@ android {
         val supabaseServiceRoleKey = localProperties.getProperty("SUPABASE_SERVICE_ROLE_KEY", "")
         val llamaApiKey = localProperties.getProperty("LLAMA_API_KEY","")
         val huggingFaceKey = localProperties.getProperty("HUGGING_FACE_API_KEY", "")
+        val mapsApiKey = localProperties.getProperty("MAPS_API_KEY", "")
 
         buildConfigField("String", "CLOUDINARY_CLOUD_NAME", "\"$cloudName\"")
         buildConfigField("String", "CLOUDINARY_API_KEY", "\"$apiKey\"")
@@ -45,6 +46,7 @@ android {
         buildConfigField("String", "SUPABASE_SERVICE_ROLE_KEY", "\"$supabaseServiceRoleKey\"")
         buildConfigField("String", "LLAMA_API_KEY", "\"$llamaApiKey\"")
         buildConfigField("String", "HUGGING_FACE_API_KEY", "\"$huggingFaceKey\"")
+        manifestPlaceholders["MAPS_API_KEY"] = mapsApiKey
     }
 
     buildTypes {
@@ -117,6 +119,8 @@ dependencies {
     implementation("androidx.work:work-runtime-ktx:2.9.1")
     implementation("androidx.hilt:hilt-work:1.2.0")
     implementation(libs.ktor.client.okhttp)
+    implementation("com.google.maps.android:maps-compose:4.3.3")
+    implementation("com.google.android.gms:play-services-maps:18.2.0")
     ksp("androidx.hilt:hilt-compiler:1.2.0")
     ksp("com.google.dagger:hilt-compiler:2.59.2")
     ksp("androidx.room:room-compiler:$room_version")

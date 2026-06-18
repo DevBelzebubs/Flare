@@ -26,10 +26,10 @@ class StoryViewModel(
 
     private var commentsJob: Job? = null
 
-    fun createStory(authorId: String, imageUri: Uri) {
+    fun createStory(authorId: String, imageUri: Uri,musicUrl: String? = null) {
         viewModelScope.launch {
             _uiState.update { it.copy(isUploading = true, errorMessage = null, isSuccess = false) }
-            val result = storyRepository.createStory(authorId, imageUri)
+            val result = storyRepository.createStory(authorId, imageUri, musicUrl)
             result.fold(
                 onSuccess = {
                     _uiState.update { it.copy(isUploading = false, isSuccess = true) }
@@ -48,7 +48,7 @@ class StoryViewModel(
         commentsJob?.cancel()
         commentsJob = viewModelScope.launch {
             storyRepository.getStoryComments(storyId).collect { commentList ->
-                _comments.value = commentList
+                _comments.update { commentList }
             }
         }
     }
@@ -68,5 +68,10 @@ class StoryViewModel(
         viewModelScope.launch {
             storyRepository.deleteStory(storyId)
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        commentsJob?.cancel()
     }
 }

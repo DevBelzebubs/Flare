@@ -5,21 +5,23 @@ import com.social.flare.features.auth.data.local.entity.CitizenEntity
 import com.social.flare.features.profile.data.local.dao.FollowDao
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class GetSuggestedAccountsUseCase(
     private val citizenDao: CitizenDao,
     private val followDao: FollowDao,
     private val supabase: SupabaseClient
 ) {
-    suspend operator fun invoke(currentUserId: String): List<CitizenEntity> {
+    suspend operator fun invoke(currentUserId: String): List<CitizenEntity> = withContext(Dispatchers.IO) {
         try {
             val citizens = supabase.postgrest["citizens"]
-                .select()
+                .select { limit(50) }
                 .decodeList<CitizenEntity>()
             citizens.forEach { citizenDao.insertCitizen(it) }
         } catch (_: Exception) {}
         val followedIds = followDao.getFollowedIds(currentUserId)
-        return citizenDao.getAllCitizens()
+        citizenDao.getAllCitizens()
             .filter { it.citizen_id != currentUserId && it.citizen_id !in followedIds }
             .shuffled()
             .take(10)

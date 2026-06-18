@@ -7,7 +7,10 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -22,6 +25,7 @@ import com.social.flare.core.navigation.Screen
 fun FlareBottomNavigation(
     currentRoute: String,
     isGuest: Boolean,
+    unreadCount: Int = 0,
     onRequireAuth: () -> Unit,
     onNavigate: (String) -> Unit
 ) {
@@ -72,7 +76,17 @@ fun FlareBottomNavigation(
         NavigationBarItem(
             selected = currentRoute == Screen.Notifications.route,
             onClick = { handleNavigate(Screen.Notifications.route) },
-            icon = { Icon(Icons.Default.Notifications, contentDescription = "Activity") },
+            icon = {
+                BadgedBox(
+                    badge = {
+                        if (unreadCount > 0) {
+                            Badge { Text("$unreadCount") }
+                        }
+                    }
+                ) {
+                    Icon(Icons.Default.Notifications, contentDescription = "Activity")
+                }
+            },
             colors = NavigationBarItemDefaults.colors(
                 selectedIconColor = MaterialTheme.colorScheme.primary,
                 unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,

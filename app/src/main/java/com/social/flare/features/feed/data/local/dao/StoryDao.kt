@@ -19,6 +19,12 @@ interface StoryDao {
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertStoryView(storyView: StoryViewEntity)
+
+    @Transaction
+    suspend fun markStoryAsViewedTransaction(storyId: String, view: StoryViewEntity) {
+        insertStoryView(view)
+        markStoryAsViewed(storyId)
+    }
     @Query("""
         SELECT s.*, 
                c.avatar_url AS authorAvatarUrl, 

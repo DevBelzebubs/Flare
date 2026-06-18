@@ -29,6 +29,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import coil.request.ImageRequest
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.layout.ContentScale
@@ -109,17 +111,18 @@ fun PostCard(
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .heightIn(max = 450.dp)
+                                .heightIn(min = 180.dp, max = 450.dp)
                                 .clip(RoundedCornerShape(12.dp))
                                 .clickable { onImageClick(mediaUrl) }
                         ) {
                             AsyncImage(
-                                model = mediaUrl,
+                                model = ImageRequest.Builder(LocalContext.current)
+                                    .data(mediaUrl)
+                                    .crossfade(true)
+                                    .build(),
                                 contentDescription = "Post image",
                                 contentScale = ContentScale.Crop,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .wrapContentHeight()
+                                modifier = Modifier.fillMaxSize()
                             )
                         }
                     }
@@ -150,7 +153,9 @@ fun PostCard(
             PostStats(
                 likesCount = post.likesCount,
                 commentsCount = post.commentsCount,
-                isLikedByMe = post.isLikedByMe
+                sharesCount = post.sharesCount,
+                isLikedByMe = post.isLikedByMe,
+                isSharedByMe = post.isSharedByMe
             )
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -308,7 +313,7 @@ private fun PostHeader(
 }
 
 @Composable
-private fun PostStats(likesCount: Int, commentsCount: Int, isLikedByMe: Boolean) {
+private fun PostStats(likesCount: Int, commentsCount: Int, sharesCount: Int, isLikedByMe: Boolean, isSharedByMe: Boolean) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -340,6 +345,21 @@ private fun PostStats(likesCount: Int, commentsCount: Int, isLikedByMe: Boolean)
         Text(
             text = "$commentsCount",
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontSize = 13.sp
+        )
+
+        Spacer(modifier = Modifier.weight(1f))
+
+        Icon(
+            imageVector = if (isSharedByMe) Icons.Filled.Repeat else Icons.Outlined.Repeat,
+            contentDescription = "Compartidos",
+            tint = if (isSharedByMe) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(16.dp)
+        )
+        Spacer(modifier = Modifier.width(6.dp))
+        Text(
+            text = "$sharesCount",
+            color = if (isSharedByMe) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 13.sp
         )
     }
@@ -374,13 +394,10 @@ private fun PostActionButtons(
                 )
             }
 
-            IconButton(onClick = onShareClick) {
-                Icon(
-                    imageVector = if (isSharedByMe) Icons.Filled.Repeat else Icons.Outlined.Repeat,
-                    contentDescription = "Repost",
-                    tint = if (isSharedByMe) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
-                )
-            }
+            AnimatedShareButton(
+                isShared = isSharedByMe,
+                onClick = onShareClick
+            )
         }
         IconButton(
             onClick = onSaveClick
@@ -391,6 +408,36 @@ private fun PostActionButtons(
                 tint = if (isSavedByMe) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
             )
         }
+    }
+}
+
+@Composable
+fun AnimatedShareButton(
+    isShared: Boolean,
+    onClick: () -> Unit
+) {
+    val tint by animateColorAsState(
+        targetValue = if (isShared) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+        animationSpec = tween(durationMillis = 200),
+        label = "shareColorAnimation"
+    )
+
+    val scale by animateFloatAsState(
+        targetValue = if (isShared) 1.2f else 1.0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioHighBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "shareScaleAnimation"
+    )
+
+    IconButton(onClick = onClick) {
+        Icon(
+            imageVector = if (isShared) Icons.Filled.Repeat else Icons.Outlined.Repeat,
+            contentDescription = "Share",
+            tint = tint,
+            modifier = Modifier.scale(scale)
+        )
     }
 }
 

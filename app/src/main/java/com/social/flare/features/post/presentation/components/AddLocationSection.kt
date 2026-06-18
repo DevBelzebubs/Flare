@@ -32,6 +32,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.Priority
 import com.google.android.gms.tasks.Tasks
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -64,7 +65,7 @@ fun AddLocationSection(
                 val fusedClient = LocationServices.getFusedLocationProviderClient(context)
                 try {
                     val locationResult = withContext(Dispatchers.IO) {
-                        Tasks.await(fusedClient.lastLocation)
+                        Tasks.await(fusedClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, null))
                     }
                     if (locationResult != null) {
                         val lat = locationResult.latitude
@@ -87,8 +88,29 @@ fun AddLocationSection(
                         }
                         onLocationChanged(PostLocationData(name = name, lat = lat, lng = lng))
                     }
-                } catch (_: Exception) { }
-            }
+                    } catch (_: Exception) {
+                        try {
+                            val fallback = withContext(Dispatchers.IO) {
+                                Tasks.await(fusedClient.lastLocation)
+                            }
+                            if (fallback != null) {
+                                val lat = fallback.latitude
+                                val lng = fallback.longitude
+                                val name = withContext(Dispatchers.IO) {
+                                    try {
+                                        val geocoder = Geocoder(context, Locale.getDefault())
+                                        val addresses = geocoder.getFromLocation(lat, lng, 1)
+                                        if (!addresses.isNullOrEmpty()) {
+                                            val addr = addresses[0]
+                                            listOfNotNull(addr.locality, addr.adminArea, addr.countryName).take(2).joinToString(", ")
+                                        } else "Ubicación actual"
+                                    } catch (_: Exception) { "Ubicación actual" }
+                                }
+                                onLocationChanged(PostLocationData(name = name, lat = lat, lng = lng))
+                            }
+                        } catch (_: Exception) { }
+                    }
+                }
         } else {
             permissionDenied = true
         }

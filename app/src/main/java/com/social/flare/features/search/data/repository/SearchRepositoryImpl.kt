@@ -15,14 +15,12 @@ import com.social.flare.features.search.domain.model.TrendingHashtag
 import com.social.flare.features.search.domain.repository.SearchRepository
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 
 class SearchRepositoryImpl(
@@ -32,10 +30,8 @@ class SearchRepositoryImpl(
     private val supabase: SupabaseClient
 ) : SearchRepository {
 
-    private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
-
     override fun searchUsers(query: String): Flow<List<CitizenEntity>> = flow {
-        scope.launch {
+        withContext(Dispatchers.IO) {
             try {
                 val results = supabase.postgrest["citizens"]
                     .select {
@@ -51,7 +47,7 @@ class SearchRepositoryImpl(
     }
 
     override fun searchPosts(query: String, currentUserId: String): Flow<List<Post>> = flow {
-        scope.launch {
+        withContext(Dispatchers.IO) {
             try {
                 val results = supabase.postgrest["posts"]
                     .select {
@@ -79,19 +75,24 @@ class SearchRepositoryImpl(
     }
 
     override fun getExplorePosts(currentUserId: String): Flow<List<Post>> = flow {
-        try {
-            val posts = supabase.postgrest["posts"]
-                .select()
-                .decodeList<PostEntity>()
-            val authorIds = posts.map { it.author_id }.distinct()
-            if (authorIds.isNotEmpty()) {
-                val authors = supabase.postgrest["citizens"]
-                    .select { filter { isIn("citizen_id", authorIds) } }
-                    .decodeList<CitizenEntity>()
-                authors.forEach { citizenDao.insertCitizen(it) }
-            }
-            posts.forEach { postDao.insertPost(it) }
-        } catch (_: Exception) {}
+        withContext(Dispatchers.IO) {
+            try {
+                val posts = supabase.postgrest["posts"]
+                    .select {
+                        order("created_at", io.github.jan.supabase.postgrest.query.Order.DESCENDING)
+                        limit(100)
+                    }
+                    .decodeList<PostEntity>()
+                val authorIds = posts.map { it.author_id }.distinct()
+                if (authorIds.isNotEmpty()) {
+                    val authors = supabase.postgrest["citizens"]
+                        .select { filter { isIn("citizen_id", authorIds) } }
+                        .decodeList<CitizenEntity>()
+                    authors.forEach { citizenDao.insertCitizen(it) }
+                }
+                posts.forEach { postDao.insertPost(it) }
+            } catch (_: Exception) {}
+        }
         emitAll(
             postDao.getFeedPosts(currentUserId).map { entities ->
                 val now = System.currentTimeMillis()
@@ -110,18 +111,15 @@ class SearchRepositoryImpl(
     }
 
     override fun getTrendingHashtags(): Flow<List<TrendingHashtag>> = flow {
-        scope.launch {
+        withContext(Dispatchers.IO) {
             try {
-                postDao.clearAllHashtags()
-                postDao.clearAllPostHashtags()
                 val hashtags = supabase.postgrest["hashtags"]
-                    .select()
+                    .select { limit(50) }
                     .decodeList<HashtagEntity>()
-                hashtags.forEach { postDao.insertHashtag(it) }
                 val relations = supabase.postgrest["post_hashtags"]
-                    .select()
+                    .select { limit(200) }
                     .decodeList<PostHashtagEntity>()
-                relations.forEach { postDao.insertPostHashtag(it) }
+                postDao.syncHashtagsTransaction(hashtags, relations)
             } catch (_: Exception) {}
         }
         emitAll(searchDao.getTrendingHashtags())

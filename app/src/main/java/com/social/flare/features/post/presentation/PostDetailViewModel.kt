@@ -100,6 +100,11 @@ class PostDetailViewModel(
         }
     }
 
+    override fun onCleared() {
+        super.onCleared()
+        detailJob?.cancel()
+    }
+
     fun createReply(authorId: String, content: String, parentPostId: String, mediaUris: List<Uri> = emptyList()) {
         viewModelScope.launch {
             val result = runCatching {

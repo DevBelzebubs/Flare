@@ -8,6 +8,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -24,7 +25,7 @@ fun AdminUsersScreen(
     viewModel: AdminViewModel,
     onNavigateBack: () -> Unit
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var showStatusDialog by remember { mutableStateOf<String?>(null) }
     val colorScheme = MaterialTheme.colorScheme
 
@@ -58,11 +59,13 @@ fun AdminUsersScreen(
                     .padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(uiState.users) { user ->
+                items(uiState.users, key = { it.citizenId }) { user ->
+                    val onStatusChange = remember(user) { { showStatusDialog = user.citizenId } }
+                    val onDelete = remember(user) { { viewModel.deleteUser(user.citizenId) } }
                     AdminUserCard(
                         user = user,
-                        onStatusChange = { showStatusDialog = user.citizenId },
-                        onDelete = { viewModel.deleteUser(user.citizenId) }
+                        onStatusChange = onStatusChange,
+                        onDelete = onDelete
                     )
                 }
             }

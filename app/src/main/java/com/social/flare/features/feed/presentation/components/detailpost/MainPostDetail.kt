@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bookmark
@@ -35,7 +34,9 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalContext
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.social.flare.core.utils.TimeUtils.formatRelativeTime
 import com.social.flare.features.feed.domain.model.Post
 import com.social.flare.features.feed.presentation.components.LocationDisplay
@@ -174,13 +175,15 @@ public fun MainPostDetail(
                 )
             } else {
                 AsyncImage(
-                    model = mediaUrl,
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(mediaUrl)
+                        .crossfade(true)
+                        .build(),
                     contentDescription = "Post image",
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .wrapContentHeight()
-                        .heightIn(max = 450.dp)
+                        .heightIn(min = 180.dp, max = 450.dp)
                         .clickable { onImageClick(mediaUrl) }
                 )
             }

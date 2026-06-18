@@ -41,7 +41,7 @@ import com.social.flare.features.search.data.local.dao.SearchDao
         HashtagEntity::class,
         PostHashtagEntity::class,
     ],
-    version = 20,
+    version = 22,
     exportSchema = false
 )
 abstract class FlareDatabase : RoomDatabase() {

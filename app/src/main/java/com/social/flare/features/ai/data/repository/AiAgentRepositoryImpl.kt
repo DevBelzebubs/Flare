@@ -1,6 +1,7 @@
 package com.social.flare.features.ai.data.repository
 
 import android.content.Context
+import android.net.Uri
 import com.cloudinary.android.MediaManager
 import com.cloudinary.android.callback.ErrorInfo
 import com.google.gson.Gson
@@ -165,24 +166,27 @@ class AiAgentRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun generateAndUploadImage(prompt: String): Result<String> = withContext(Dispatchers.IO) {
-        var tempFile: File?=null
-        try {
-            val token = "Bearer \${com.social.flare.BuildConfig.HUGGING_FACE_API_KEY}"
-            val request = HuggingFaceRequest(inputs = prompt)
-            val response = huggingFaceApi.generateImage(authorization = token, request = request)
-            if (!response.isSuccessful || response.body() == null) {
-                return@withContext Result.failure(Exception("Error de Hugging Face ${response.code()}"))
+    override suspend fun generateAndUploadImage(prompt: String): Result<String> =
+        withContext(Dispatchers.IO) {
+            var tempFile: File? = null
+            try {
+                val token = "Bearer ${com.social.flare.BuildConfig.HUGGING_FACE_API_KEY}"
+                val request = HuggingFaceRequest(inputs = prompt)
+                val response =
+                    huggingFaceApi.generateImage(authorization = token, request = request)
+                if (!response.isSuccessful || response.body() == null) {
+                    return@withContext Result.failure(Exception("Error de Hugging Face ${response.code()}"))
+                }
+                tempFile = saveResponseBodyToFile(response.body()!!)
+                    ?: return@withContext Result.failure(Exception("No se pudo guardar la imagen temporal"))
+                val cloudinaryUrl = uploadToCloudinary(tempFile)
+                Result.success(cloudinaryUrl)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                tempFile?.delete()
+                Result.failure(e)
             }
-            tempFile = saveResponseBodyToFile(response.body()!!)
-                ?: return@withContext Result.failure(Exception("No se pudo guardar la imagen temporal"))
-            val cloudinaryUrl = uploadToCloudinary(tempFile)
-            Result.success(cloudinaryUrl)
-        } catch (e: Exception) {
-            e.printStackTrace()
-            Result.failure(e)
         }
-    }
 
     override suspend fun generateVisualPrompt(
         persona: AiPersona,
@@ -207,7 +211,8 @@ class AiAgentRepositoryImpl @Inject constructor(
             )
             val response = openRouterApi.generateCompletion(request)
             if (response.isSuccessful) {
-                val rawText = response.body()?.choices?.firstOrNull()?.message?.content?.trim() ?: ""
+                val rawText =
+                    response.body()?.choices?.firstOrNull()?.message?.content?.trim() ?: ""
                 Result.success(rawText)
             } else {
                 Result.failure(Exception("Error OpenRouter al generar prompt visual: ${response.code()}"))
@@ -230,6 +235,28 @@ class AiAgentRepositoryImpl @Inject constructor(
             supabase.postgrest["follows"].insert(followData)
             Result.success(Unit)
         } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun generateLocalImageUri(prompt: String): Result<Uri> = withContext(Dispatchers.IO) {
+        var tempFile: File? = null
+        try {
+            val token = "Bearer ${com.social.flare.BuildConfig.HUGGING_FACE_API_KEY}"
+            val request = HuggingFaceRequest(inputs = prompt)
+            val response = huggingFaceApi.generateImage(authorization = token, request = request)
+
+            if (!response.isSuccessful || response.body() == null) {
+                return@withContext Result.failure(Exception("Error HF: ${response.code()}"))
+            }
+
+            tempFile = saveResponseBodyToFile(response.body()!!)
+                ?: return@withContext Result.failure(Exception("Error guardando foto temporal"))
+
+            Result.success(Uri.fromFile(tempFile))
+        } catch (e: Exception) {
+            e.printStackTrace()
+            tempFile?.delete()
             Result.failure(e)
         }
     }

@@ -1,5 +1,8 @@
 package com.social.flare.features.admin.domain.model
 
+import androidx.compose.runtime.Immutable
+
+@Immutable
 data class AdminDashboardData(
     val totalUsers: Int,
     val activeUsers: Int,
@@ -8,6 +11,7 @@ data class AdminDashboardData(
     val totalNews: Int
 )
 
+@Immutable
 data class AdminUser(
     val citizenId: String,
     val username: String,
@@ -19,6 +23,7 @@ data class AdminUser(
     val postsCount: Int
 )
 
+@Immutable
 data class AdminPost(
     val postId: String,
     val authorId: String,
@@ -31,6 +36,7 @@ data class AdminPost(
     val commentsCount: Int
 )
 
+@Immutable
 data class NewsItem(
     val newsId: String,
     val title: String,

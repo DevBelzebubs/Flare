@@ -8,43 +8,27 @@ import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.postgrest.postgrest
-import io.ktor.client.HttpClient
-import io.ktor.client.engine.android.Android
-import io.ktor.client.request.header
-import io.ktor.client.request.post
-import io.ktor.client.request.setBody
-import io.ktor.client.statement.bodyAsText
-import io.ktor.http.ContentType
-import io.ktor.http.contentType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 
 class AuthRepositoryImpl(
     private val citizenDao: CitizenDao,
     private val supabase: SupabaseClient
 ) : AuthRepository {
 
-    private val httpClient = HttpClient(Android)
-    private val json = Json { ignoreUnknownKeys = true }
-
-    private val baseUrl: String by lazy {
-        BuildConfig.SUPABASE_URL.substringBefore("/rest/v1")
-    }
-
-    override suspend fun login(username: String, pass: String): Result<String> = withContext(Dispatchers.IO) {
+    override suspend fun login(email: String, pass: String): Result<String> = withContext(Dispatchers.IO) {
         try {
-            val isEmail = username.contains("@")
+            val isEmail = email.indexOf('@') > 0
 
             val finalEmailToLogin = if (isEmail) {
-                username
+                email
             } else {
                 val citizenResult = supabase.postgrest["citizens"]
                     .select {
-                        filter { eq("username", username) }
+                        filter { eq("username", email) }
                     }
 
                 val citizenList = citizenResult.decodeList<CitizenEntity>()
@@ -88,23 +72,31 @@ class AuthRepositoryImpl(
         username: String,
         email: String,
         pass: String
-    ): Result<String> {
-        return try {
-            val requestBody = """
-                {"email":"$email","password":"$pass","email_confirm":true,"user_metadata":{"username":"$username","display_name":"$displayName"}}
-            """.trimIndent()
-
-            val response = httpClient.post("$baseUrl/auth/v1/admin/users") {
-                header("apikey", BuildConfig.SUPABASE_SERVICE_ROLE_KEY)
-                header("Authorization", "Bearer ${BuildConfig.SUPABASE_SERVICE_ROLE_KEY}")
-                contentType(ContentType.Application.Json)
-                setBody(requestBody)
+    ): Result<String> = withContext(Dispatchers.IO) {
+        try {
+            val registerEmail = email
+            supabase.auth.signUpWith(Email) {
+                this.email = registerEmail
+                password = pass
+                data = buildJsonObject {
+                    put("username", username)
+                    put("display_name", displayName)
+                }
             }
 
-            val body = response.bodyAsText()
-            val parsed = json.parseToJsonElement(body).jsonObject
-            val userId = parsed["id"]?.jsonPrimitive?.content
-                ?: return Result.failure(Exception("Error al registrar usuario: $body"))
+            val session = supabase.auth.currentSessionOrNull()
+            if (session == null) {
+                val citizen = supabase.postgrest["citizens"]
+                    .select { filter { eq("email", email) } }
+                    .decodeSingleOrNull<CitizenEntity>()
+                if (citizen != null) {
+                    citizenDao.insertCitizen(citizen)
+                    return@withContext Result.success(citizen.citizen_id)
+                }
+                return@withContext Result.failure(Exception("Cuenta creada. Revisa tu correo para confirmar el registro."))
+            }
+            val userId = session.user?.id
+                ?: return@withContext Result.failure(Exception("Error al registrar: No se generó usuario"))
 
             citizenDao.insertCitizen(
                 CitizenEntity(
@@ -125,17 +117,17 @@ class AuthRepositoryImpl(
         }
     }
 
-    override suspend fun logout() {
+    override suspend fun logout() = withContext(Dispatchers.IO) {
         try {
             supabase.auth.signOut()
         } catch (e: Throwable) { e.printStackTrace() }
     }
 
-    override suspend fun changePassword(newPassword: String): Result<Unit> {
-        return try {
+    override suspend fun changePassword(newPassword: String): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
             supabase.auth.awaitInitialization()
             if (supabase.auth.currentSessionOrNull() == null) {
-                return Result.failure(Exception("No active session found. Please log in again."))
+                return@withContext Result.failure(Exception("No active session found. Please log in again."))
             }
 
             supabase.auth.updateUser {

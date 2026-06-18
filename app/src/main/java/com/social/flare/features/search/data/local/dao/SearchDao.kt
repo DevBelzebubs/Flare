@@ -26,10 +26,11 @@ interface SearchDao {
         INNER JOIN citizen_table c ON p.author_id = c.citizen_id
         WHERE p.content LIKE '%' || :query || '%' AND p.parent_post_id IS NULL AND p.shared_post_id IS NULL
         ORDER BY p.created_at DESC
+        LIMIT 50
     """)
     fun searchPosts(query: String): Flow<List<PostWithDetails>>
 
-    @Query("SELECT * FROM hashtags WHERE name LIKE '%' || :query || '%'")
+    @Query("SELECT * FROM hashtags WHERE name LIKE '%' || :query || '%' LIMIT 20")
     fun searchHashtags(query: String): Flow<List<HashtagEntity>>
 
     @Transaction
@@ -45,6 +46,7 @@ interface SearchDao {
         INNER JOIN citizen_table c ON p.author_id = c.citizen_id
         WHERE h.name = :hashtag
         ORDER BY p.created_at DESC
+        LIMIT 100
     """)
     fun getPostsByHashtag(hashtag: String): Flow<List<PostWithDetails>>
 

@@ -16,5 +16,6 @@ data class StoryEntity(
     val media_url: String,
     val created_at: Long,
     val expires_at: Long,
-    val is_viewed: Boolean = false
+    val is_viewed: Boolean = false,
+    val music_url: String? = null
 )

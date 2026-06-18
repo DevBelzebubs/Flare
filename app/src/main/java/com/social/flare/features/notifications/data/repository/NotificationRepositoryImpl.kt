@@ -17,23 +17,29 @@ import io.github.jan.supabase.postgrest.query.filter.FilterOperator
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class NotificationRepositoryImpl(
     private val notificationDao: NotificationDao,
     private val supabase: SupabaseClient
 ) : NotificationRepository {
-
-    private val coroutineScope = CoroutineScope(Dispatchers.IO)
+    @Volatile
     private var realtimeChannel: io.github.jan.supabase.realtime.RealtimeChannel? = null
+    @Volatile
     private var realtimeJob: Job? = null
-
-    override fun getNotifications(userId: String): Flow<List<FlareNotification>> {
-        coroutineScope.launch {
+    private var realtimeScope: CoroutineScope? = null
+    private val cleanupScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    override fun getNotifications(userId: String): Flow<List<FlareNotification>> = flow {
+        withContext(Dispatchers.IO) {
             try {
                 val notifications = supabase.postgrest["notifications"]
                     .select { filter { eq("recipientId", userId) } }
@@ -43,16 +49,16 @@ class NotificationRepositoryImpl(
                 e.printStackTrace()
             }
         }
-        return notificationDao.getNotifications(userId).map { entities ->
+        emitAll(notificationDao.getNotifications(userId).map { entities ->
             entities.map { it.toDomain() }
-        }
+        })
     }
 
     override fun getUnreadCount(userId: String): Flow<Int> {
         return notificationDao.getUnreadCount(userId)
     }
 
-    override suspend fun markAsRead(notificationId: String) {
+    override suspend fun markAsRead(notificationId: String) = withContext(Dispatchers.IO) {
         try {
             supabase.postgrest["notifications"].update({
                 set("isRead", true)
@@ -63,7 +69,7 @@ class NotificationRepositoryImpl(
         notificationDao.markAsRead(notificationId)
     }
 
-    override suspend fun markAllAsRead(userId: String) {
+    override suspend fun markAllAsRead(userId: String) = withContext(Dispatchers.IO) {
         try {
             supabase.postgrest["notifications"].update({
                 set("isRead", true)
@@ -74,10 +80,11 @@ class NotificationRepositoryImpl(
         notificationDao.markAllAsRead(userId)
     }
 
-    override fun connectToRealtimeNotifications(userId: String) {
+    override fun connectToRealtimeNotifications(userId: String, scope: CoroutineScope) {
         disconnectFromRealtimeNotifications()
+        realtimeScope = scope
 
-        coroutineScope.launch {
+        scope.launch {
             try {
                 supabase.realtime.connect()
 
@@ -90,7 +97,7 @@ class NotificationRepositoryImpl(
                     val newNotification = action.decodeRecord<NotificationEntity>()
                     Log.d("FLARE_SYNC", "Notificación recibida: ${newNotification.type}")
                     notificationDao.insertNotification(newNotification)
-                }.launchIn(coroutineScope)
+                }.launchIn(scope)
 
                 channel.subscribe()
                 realtimeChannel = channel
@@ -104,7 +111,7 @@ class NotificationRepositoryImpl(
         realtimeJob?.cancel()
         realtimeJob = null
         realtimeChannel?.let { channel ->
-            coroutineScope.launch {
+            cleanupScope.launch {
                 try {
                     channel.unsubscribe()
                     supabase.realtime.removeChannel(channel)
@@ -114,5 +121,7 @@ class NotificationRepositoryImpl(
             }
         }
         realtimeChannel = null
+        realtimeScope = null
+        cleanupScope.cancel()
     }
 }

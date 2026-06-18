@@ -1,11 +1,15 @@
 package com.social.flare.features.admin.data.local.entity
 
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 import kotlinx.serialization.Serializable
 
 @Serializable
-@Entity(tableName = "news_table")
+@Entity(
+    tableName = "news_table",
+    indices = [Index("is_active")]
+)
 data class NewsItemEntity(
     @PrimaryKey
     val news_id: String,

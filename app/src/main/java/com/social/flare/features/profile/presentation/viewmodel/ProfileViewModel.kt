@@ -36,16 +36,18 @@ class ProfileViewModel(
     val followStats: StateFlow<FollowStats> = _followStats.asStateFlow()
 
     private var loadJob: Job? = null
+    private var followStatsJob: Job? = null
 
     // Renombrado a loadProfileData para reflejar que carga CUALQUIER perfil
     fun loadProfileData(targetCitizenId: String, currentCitizenId: String?) {
         loadJob?.cancel()
+        followStatsJob?.cancel()
 
         loadJob = viewModelScope.launch {
             _uiState.value = ProfileUiState.Loading
             try {
                 // 1. Escuchar los Stats de seguimiento en tiempo real
-                launch {
+                followStatsJob = launch {
                     getFollowStatsUseCase(
                         targetUserId = targetCitizenId,
                         currentUserId = currentCitizenId ?: ""
@@ -99,5 +101,11 @@ class ProfileViewModel(
     }
     fun loadActiveUserProfile(citizenId: String) {
         loadProfileData(targetCitizenId = citizenId, currentCitizenId = citizenId)
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        loadJob?.cancel()
+        followStatsJob?.cancel()
     }
 }

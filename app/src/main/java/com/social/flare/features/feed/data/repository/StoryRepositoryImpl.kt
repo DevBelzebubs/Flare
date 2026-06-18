@@ -14,40 +14,40 @@ import com.social.flare.features.feed.domain.model.StoryComment
 import com.social.flare.features.feed.domain.repository.StoryRepository
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.postgrest
-
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.UUID
+import javax.inject.Inject
 
-class StoryRepositoryImpl(
+class StoryRepositoryImpl @Inject constructor(
     private val storyDao: StoryDao,
     private val citizenDao: CitizenDao,
     private val cloudinaryService: CloudinaryService,
     private val supabase: SupabaseClient
 ) : StoryRepository {
 
-    private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
-
-    override suspend fun createStory(authorId: String, imageUri: Uri): Result<Unit> {
-        return try {
+    override suspend fun createStory(authorId: String, imageUri: Uri, musicUrl: String?): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
             val imageUrl = try {
                 cloudinaryService.uploadImage(imageUri)
             } catch (e: Exception) {
-                return Result.failure(Exception("Error al subir la imagen a la nube", e))
+                return@withContext Result.failure(Exception("Error al subir la imagen a la nube", e))
             }
             val currentTime = System.currentTimeMillis()
             val expiresIn24Hours = currentTime + (24 * 60 * 60 * 1000L)
+
             val newStory = StoryEntity(
                 story_id = UUID.randomUUID().toString(),
                 author_id = authorId,
                 media_url = imageUrl,
-                created_at = System.currentTimeMillis(),
+                created_at = currentTime,
                 expires_at = expiresIn24Hours,
-                is_viewed = false
+                is_viewed = false,
+                music_url = musicUrl
             )
 
             supabase.postgrest["stories"].insert(newStory)
@@ -60,8 +60,8 @@ class StoryRepositoryImpl(
         }
     }
 
-    override fun getActiveStories(currentUserId: String): Flow<List<StoryWithAuthor>> {
-        scope.launch {
+    override fun getActiveStories(currentUserId: String): Flow<List<StoryWithAuthor>> = flow {
+        withContext(Dispatchers.IO) {
             try {
                 val currentTime = System.currentTimeMillis()
 
@@ -92,21 +92,21 @@ class StoryRepositoryImpl(
             }
         }
 
-        return storyDao.getActiveStories(
+        emitAll(storyDao.getActiveStories(
             currentUserId = currentUserId,
             currentTime = System.currentTimeMillis()
-        )
+        ))
     }
 
     override suspend fun markStoryAsViewed(storyId: String, citizenId: String) {
+        withContext(Dispatchers.IO) {
         val view = StoryViewEntity(
             story_id = storyId,
             citizen_id = citizenId,
             viewed_at = System.currentTimeMillis()
         )
 
-        storyDao.insertStoryView(view)
-        storyDao.markStoryAsViewed(storyId)
+        storyDao.markStoryAsViewedTransaction(storyId, view)
 
         try {
             supabase.postgrest["story_views"].insert(view)
@@ -118,6 +118,7 @@ class StoryRepositoryImpl(
             }
         } catch (e: Throwable) {
             e.printStackTrace()
+        }
         }
     }
 
@@ -131,7 +132,7 @@ class StoryRepositoryImpl(
         storyId: String,
         authorId: String,
         content: String
-    ) {
+    ) = withContext(Dispatchers.IO) {
         val commentEntity = StoryCommentEntity(
             comment_id = UUID.randomUUID().toString(),
             story_id = storyId,
@@ -145,7 +146,7 @@ class StoryRepositoryImpl(
         storyDao.insertStoryComment(commentEntity)
     }
 
-    override suspend fun deleteStory(storyId: String) {
+    override suspend fun deleteStory(storyId: String) = withContext(Dispatchers.IO) {
         try {
             val story = storyDao.getStoryByIdSync(storyId)
             if (story != null) {
@@ -159,5 +160,4 @@ class StoryRepositoryImpl(
         }
         storyDao.deleteStory(storyId)
     }
-
 }

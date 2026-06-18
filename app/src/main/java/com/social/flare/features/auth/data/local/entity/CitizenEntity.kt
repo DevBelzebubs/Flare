@@ -1,12 +1,20 @@
 package com.social.flare.features.auth.data.local.entity
 
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 
 @Serializable
-@Entity(tableName = "citizen_table")
+@Entity(
+    tableName = "citizen_table",
+    indices = [
+        Index("username"),
+        Index("email"),
+        Index("is_admin")
+    ]
+)
 data class CitizenEntity(
     @PrimaryKey
     val citizen_id: String,

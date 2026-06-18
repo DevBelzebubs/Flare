@@ -1,11 +1,15 @@
 package com.social.flare.features.notifications.domain.model
 
+import androidx.compose.runtime.Immutable
+
 enum class NotificationType {
     LIKE,
     COMMENT,
-    FOLLOW
+    FOLLOW,
+    MENTION
 }
 
+@Immutable
 data class FlareNotification(
     val id: String,
     val recipientId: String,

@@ -187,18 +187,26 @@ fun PostDetailScreen(
                                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
                             )
                         }
-                        items(detail.replies) { reply ->
+                        items(detail.replies, key = { it.id }) { reply ->
                             val isNestedReply = reply.parentPostId != detail.mainPost.id
+                            val onLikeClick = remember(reply) { {
+                                activeCitizenId?.let { viewModel.toggleLike(reply.id, it) }
+                                Unit
+                            } }
+                            val onReplyClick = remember(reply) { {
+                                replyingToPostId = reply.id
+                                replyingToUsername = reply.authorUsername
+                                Unit
+                            } }
+                            val onImageClick = remember { { url: String -> fullScreenImageUrl = url } }
+                            val onBodyClick = remember(reply) { { onCommentNavigate(reply.id) } }
                             CommentItem(
                                 post = reply,
                                 isNestedReply = isNestedReply,
-                                onLikeClick = { activeCitizenId?.let { viewModel.toggleLike(reply.id, it) } },
-                                onReplyClick = {
-                                    replyingToPostId = reply.id
-                                    replyingToUsername = reply.authorUsername
-                                },
-                                onImageClick = { url -> fullScreenImageUrl = url },
-                                onBodyClick = { onCommentNavigate(reply.id) },
+                                onLikeClick = onLikeClick,
+                                onReplyClick = onReplyClick,
+                                onImageClick = onImageClick,
+                                onBodyClick = onBodyClick,
                                 onAuthorClick = onAuthorClick
                             )
 
