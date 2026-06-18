@@ -1,6 +1,7 @@
 package com.social.flare.features.post.presentation.components
 
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -52,6 +53,7 @@ fun AddPostTopBar(
                 Text("Post", fontWeight = FontWeight.Bold)
             }
         },
-        colors = TopAppBarDefaults.topAppBarColors(containerColor = colorScheme.background)
+        colors = TopAppBarDefaults.topAppBarColors(containerColor = colorScheme.background),
+        windowInsets = WindowInsets(0, 0, 0, 0)
     )
 }
