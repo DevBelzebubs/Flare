@@ -52,6 +52,7 @@ fun StoryViewerScreen(
     var showMenu by remember { mutableStateOf(false) }
 
     var isPaused by remember { mutableStateOf(false) }
+    val colorScheme = MaterialTheme.colorScheme
 
     val progressAnim = remember { Animatable(0f) }
 
@@ -171,11 +172,11 @@ fun StoryViewerScreen(
                         DropdownMenu(
                             expanded = showMenu,
                             onDismissRequest = { showMenu = false; isPaused = false },
-                            modifier = Modifier.background(Color(0xFF1E1E1E))
+                            modifier = Modifier.background(colorScheme.surface)
                         ) {
                             DropdownMenuItem(
-                                text = { Text("Eliminar historia", color = Color.Red) },
-                                leadingIcon = { Icon(Icons.Outlined.Delete, contentDescription = null, tint = Color.Red) },
+                                text = { Text("Eliminar historia", color = colorScheme.error) },
+                                leadingIcon = { Icon(Icons.Outlined.Delete, contentDescription = null, tint = colorScheme.error) },
                                 onClick = {
                                     showMenu = false
                                     viewModel.deleteStory(currentStory.story.story_id)

@@ -21,7 +21,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -38,6 +37,7 @@ fun CustomGalleryScreen(
     val context = LocalContext.current
     var hasPermission by remember { mutableStateOf(false) }
     var galleryImages by remember { mutableStateOf<List<Uri>>(emptyList()) }
+    val colorScheme = MaterialTheme.colorScheme
 
     val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
         hasPermission = isGranted
@@ -58,18 +58,18 @@ fun CustomGalleryScreen(
         }
     }
 
-    Column(modifier = Modifier.fillMaxSize().background(Color.Black)) {
+    Column(modifier = Modifier.fillMaxSize().background(colorScheme.background)) {
         // 1. TOP BAR (Add Story & Close)
         Row(
             modifier = Modifier.fillMaxWidth().height(56.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = onClose) {
-                Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White)
+                Icon(Icons.Default.Close, contentDescription = "Close", tint = colorScheme.onBackground)
             }
             Text(
                 text = "Add Story",
-                color = Color.White,
+                color = colorScheme.onBackground,
                 fontWeight = FontWeight.Bold,
                 fontSize = 18.sp,
                 modifier = Modifier.weight(1f),
@@ -84,16 +84,16 @@ fun CustomGalleryScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable { /* TODO: Dropdown albums */ }) {
-                Text("Recents", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                Icon(Icons.Default.KeyboardArrowDown, contentDescription = "Select folder", tint = Color.White)
+                Text("Recents", color = colorScheme.onBackground, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                Icon(Icons.Default.KeyboardArrowDown, contentDescription = "Select folder", tint = colorScheme.onBackground)
             }
 
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                Box(modifier = Modifier.size(32.dp).background(Color.DarkGray, CircleShape), contentAlignment = Alignment.Center) {
-                    Icon(Icons.Outlined.FilterNone, contentDescription = "Multiple", tint = Color.White, modifier = Modifier.size(16.dp))
+                Box(modifier = Modifier.size(32.dp).background(colorScheme.surfaceVariant, CircleShape), contentAlignment = Alignment.Center) {
+                    Icon(Icons.Outlined.FilterNone, contentDescription = "Multiple", tint = colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
                 }
-                Box(modifier = Modifier.size(32.dp).background(Color.DarkGray, CircleShape), contentAlignment = Alignment.Center) {
-                    Icon(Icons.Default.CameraAlt, contentDescription = "Camera", tint = Color.White, modifier = Modifier.size(16.dp))
+                Box(modifier = Modifier.size(32.dp).background(colorScheme.surfaceVariant, CircleShape), contentAlignment = Alignment.Center) {
+                    Icon(Icons.Default.CameraAlt, contentDescription = "Camera", tint = colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
                 }
             }
         }
@@ -112,14 +112,14 @@ fun CustomGalleryScreen(
                         contentScale = ContentScale.Crop,
                         modifier = Modifier
                             .aspectRatio(9f / 16f)
-                            .background(Color.DarkGray)
+                            .background(colorScheme.surfaceVariant)
                             .clickable { onImageSelected(uri) }
                     )
                 }
             }
         } else {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("Se necesita permiso para ver tus fotos.", color = Color.Gray)
+                Text("Se necesita permiso para ver tus fotos.", color = colorScheme.onSurfaceVariant)
             }
         }
     }
