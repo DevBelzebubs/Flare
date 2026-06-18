@@ -1,6 +1,7 @@
 package com.social.flare.features.profile.presentation
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -24,6 +25,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -35,7 +37,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -58,6 +59,7 @@ fun FollowListScreen(
     val users by viewModel.users.collectAsState()
     val followedIds by viewModel.followedIds.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+    val colorScheme = MaterialTheme.colorScheme
 
     val title = if (type == "followers") "Followers" else "Following"
 
@@ -68,16 +70,16 @@ fun FollowListScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(title, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 20.sp) },
+                title = { Text(title, color = colorScheme.onBackground, fontWeight = FontWeight.Bold, fontSize = 20.sp) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = colorScheme.onBackground)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Black)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = colorScheme.background)
             )
         },
-        containerColor = Color.Black
+        containerColor = colorScheme.background
     ) { paddingValues ->
         Box(
             modifier = Modifier
@@ -86,13 +88,13 @@ fun FollowListScreen(
         ) {
             if (isLoading) {
                 CircularProgressIndicator(
-                    color = Color(0xFFFF5722),
+                    color = colorScheme.primary,
                     modifier = Modifier.align(Alignment.Center)
                 )
             } else if (users.isEmpty()) {
                 Text(
                     text = if (type == "followers") "No followers yet" else "Not following anyone yet",
-                    color = Color.Gray,
+                    color = colorScheme.onSurfaceVariant,
                     modifier = Modifier
                         .align(Alignment.Center)
                         .padding(32.dp)
@@ -136,12 +138,13 @@ private fun FollowUserItem(
             modifier = Modifier
                 .size(48.dp)
                 .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.surfaceVariant)
         )
         Spacer(modifier = Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = citizen.display_name,
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onBackground,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
                 maxLines = 1,
@@ -149,7 +152,7 @@ private fun FollowUserItem(
             )
             Text(
                 text = citizen.username,
-                color = Color.Gray,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 12.sp,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
@@ -160,7 +163,16 @@ private fun FollowUserItem(
             Button(
                 onClick = onFollowClick,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isFollowing) Color.DarkGray else Color(0xFFFF5722)
+                    containerColor = if (isFollowing) {
+                        MaterialTheme.colorScheme.surfaceVariant
+                    } else {
+                        MaterialTheme.colorScheme.primary
+                    },
+                    contentColor = if (isFollowing) {
+                        MaterialTheme.colorScheme.onSurface
+                    } else {
+                        MaterialTheme.colorScheme.onPrimary
+                    }
                 ),
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
                 shape = RoundedCornerShape(8.dp),
@@ -169,8 +181,7 @@ private fun FollowUserItem(
                 Text(
                     text = if (isFollowing) "Siguiendo" else "Seguir",
                     fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    fontWeight = FontWeight.Bold
                 )
             }
         }
