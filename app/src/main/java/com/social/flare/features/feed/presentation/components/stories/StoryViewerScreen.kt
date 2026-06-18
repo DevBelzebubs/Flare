@@ -141,7 +141,11 @@ fun StoryViewerScreen(
         Box(modifier = Modifier.fillMaxWidth().height(120.dp).align(Alignment.BottomCenter).background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.8f)))))
 
         Column(
-            modifier = Modifier.fillMaxWidth().align(Alignment.TopCenter).padding(top = 16.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .align(Alignment.TopCenter)
+                .statusBarsPadding()
+                .padding(top = 8.dp)
         ) {
             StoryProgressBar(storiesCount = userStories.size, currentIndex = currentIndex, progress = progressAnim.value)
             Spacer(modifier = Modifier.height(12.dp))
