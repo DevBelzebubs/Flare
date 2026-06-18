@@ -1,7 +1,10 @@
 package com.social.flare.di
 
+import android.content.Context
+import androidx.work.WorkManager
 import com.social.flare.FlareApp
 import com.social.flare.core.media.CloudinaryService
+import com.social.flare.core.sync.data.local.dao.SyncDao
 import com.social.flare.features.admin.data.repository.AdminRepositoryImpl
 import com.social.flare.features.admin.domain.repository.AdminRepository
 import com.social.flare.features.ai.data.repository.AiAgentRepositoryImpl
@@ -17,6 +20,7 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import io.github.jan.supabase.SupabaseClient
 import javax.inject.Singleton
@@ -68,15 +72,26 @@ abstract class RepositoryModule {
         }
         @Provides
         @Singleton
+        fun provideSyncDao(
+            app: FlareApp
+        ): SyncDao {
+            return app.database.syncDao()
+        }
+
+        @Provides
+        @Singleton
         fun provideAdminRepository(
             app: FlareApp,
             supabase: SupabaseClient,
-            cloudinaryService: CloudinaryService
+            cloudinaryService: CloudinaryService,
+            @ApplicationContext context: Context
         ): AdminRepository {
             return AdminRepositoryImpl(
                 citizenDao = app.database.citizenDao(),
                 postDao = app.database.postDao(),
                 newsDao = app.database.newsDao(),
+                syncDao = app.database.syncDao(),
+                workManager = WorkManager.getInstance(context),
                 supabase = supabase,
                 cloudinaryService = cloudinaryService
             )

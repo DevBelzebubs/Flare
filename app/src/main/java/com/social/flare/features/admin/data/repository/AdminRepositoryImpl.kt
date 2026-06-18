@@ -1,7 +1,14 @@
 package com.social.flare.features.admin.data.repository
 
 import android.net.Uri
+import androidx.work.Constraints
+import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
 import com.social.flare.core.media.CloudinaryService
+import com.social.flare.core.sync.data.local.dao.SyncDao
+import com.social.flare.core.sync.data.local.entity.SyncQueueEntity
+import com.social.flare.core.sync.worker.SyncWorker
 import com.social.flare.features.admin.data.local.dao.NewsDao
 import com.social.flare.features.admin.data.local.entity.NewsItemEntity
 import com.social.flare.features.admin.data.remote.dto.CreateBotRpcRequest
@@ -27,7 +34,6 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import java.util.UUID
-import kotlin.collections.map
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -46,10 +52,13 @@ private data class CitizenMinimalDto(
     val username: String,
     val display_name: String
 )
+
 class AdminRepositoryImpl(
     private val citizenDao: CitizenDao,
     private val postDao: PostDao,
     private val newsDao: NewsDao,
+    private val syncDao: SyncDao,
+    private val workManager: WorkManager,
     private val supabase: SupabaseClient,
     private val cloudinaryService: CloudinaryService
 ) : AdminRepository {
@@ -165,24 +174,54 @@ class AdminRepositoryImpl(
 
     override suspend fun createNews(title: String, description: String, imageUri: Uri): Result<Unit> = withContext(Dispatchers.IO) {
         return@withContext try {
-            val imageUrl = cloudinaryService.uploadImage(imageUri)
+            val newsId = UUID.randomUUID().toString()
+            val currentTime = System.currentTimeMillis()
 
-            val news = NewsItemEntity(
-                news_id = UUID.randomUUID().toString(),
+            // 1. Guardar en caché local (UI se actualiza instantáneamente)
+            val localNews = NewsItemEntity(
+                news_id = newsId,
                 title = title,
                 description = description,
-                image_url = imageUrl,
-                created_at = System.currentTimeMillis(),
+                image_url = imageUri.toString(),
+                created_at = currentTime,
                 is_active = true
             )
+            newsDao.insertNews(localNews)
 
-            supabase.postgrest["news"].insert(news)
-            newsDao.insertNews(news)
+            // 2. Preparamos el Payload usando Kotlinx Serialization en lugar de org.json
+            val payload = buildJsonObject {
+                put("news_id", newsId)
+                put("title", title)
+                put("description", description)
+                put("created_at", currentTime)
+            }.toString()
+
+            // 3. Insertamos en la cola de sincronización
+            val syncTask = SyncQueueEntity(
+                id = UUID.randomUUID().toString(),
+                operation_type = "CREATE_NEWS",
+                payload_json = payload,
+                media_uri = imageUri.toString(),
+                created_at = currentTime,
+                status = "PENDING"
+            )
+            syncDao.insertSyncTask(syncTask)
+
+            // 4. Activamos el Worker para que intente procesarlo
+            val constraints = Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build()
+
+            val workRequest = OneTimeWorkRequestBuilder<SyncWorker>()
+                .setConstraints(constraints)
+                .build()
+
+            workManager.enqueue(workRequest)
 
             Result.success(Unit)
         } catch (e: Exception) {
             e.printStackTrace()
-            Result.failure(Exception("Error al crear noticia: ${e.message}"))
+            Result.failure(Exception("Error en encolamiento: ${e.message}"))
         }
     }
 
