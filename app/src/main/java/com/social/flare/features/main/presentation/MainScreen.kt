@@ -90,6 +90,9 @@ import com.social.flare.features.admin.presentation.viewmodel.AdminViewModel
 import com.social.flare.features.ai.data.repository.AiAgentRepositoryImpl
 import com.social.flare.features.notifications.domain.usecase.GetSuggestedAccountsUseCase
 import com.social.flare.features.profile.presentation.FollowListScreen
+import com.social.flare.features.profile.presentation.HelpCenterScreen
+import com.social.flare.features.profile.presentation.PrivacyPolicyScreen
+import com.social.flare.features.profile.presentation.TermsOfServiceScreen
 import com.social.flare.features.profile.presentation.viewmodel.FollowListViewModel
 import com.social.flare.features.search.data.repository.SearchRepositoryImpl
 
@@ -581,8 +584,23 @@ fun MainScreen() {
                         onLogout = { scope.launch { sessionManager.clearSession(); navController.navigate(Screen.Login.route) { popUpTo(0) { inclusive = true } } } },
                         onLogin = { navController.navigate(Screen.Login.route) },
                         onChangePassword = { newPassword -> changePasswordUseCase(newPassword) },
-                        onNavigateToAdmin = { navController.navigate(Screen.AdminDashboard.route) }
+                        onNavigateToAdmin = { navController.navigate(Screen.AdminDashboard.route) },
+                        onNavigateToPrivacyPolicy = { navController.navigate(Screen.PrivacyPolicy.route) },
+                        onNavigateToTermsOfService = { navController.navigate(Screen.TermsOfService.route) },
+                        onNavigateToHelpCenter = { navController.navigate(Screen.HelpCenter.route) }
                     )
+                }
+
+                composable(Screen.PrivacyPolicy.route) {
+                    PrivacyPolicyScreen(onNavigateBack = { navController.popBackStack() })
+                }
+
+                composable(Screen.TermsOfService.route) {
+                    TermsOfServiceScreen(onNavigateBack = { navController.popBackStack() })
+                }
+
+                composable(Screen.HelpCenter.route) {
+                    HelpCenterScreen(onNavigateBack = { navController.popBackStack() })
                 }
 
                 composable(Screen.EditProfile.route) {

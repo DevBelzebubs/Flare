@@ -43,7 +43,10 @@ fun SettingsScreen(
     onChangePassword: suspend (String) -> Result<Unit> = {
         Result.failure(Exception("Change password is not available"))
     },
-    onNavigateToAdmin: () -> Unit = {}
+    onNavigateToAdmin: () -> Unit = {},
+    onNavigateToPrivacyPolicy: () -> Unit = {},
+    onNavigateToTermsOfService: () -> Unit = {},
+    onNavigateToHelpCenter: () -> Unit = {}
 ) {
     val isGuest = activeCitizenId == null
     val context = LocalContext.current
@@ -56,7 +59,6 @@ fun SettingsScreen(
     val privateAccountEnabled by settingsManager.privateAccountEnabledFlow.collectAsState(initial = false)
     val showActivityStatusEnabled by settingsManager.showActivityStatusEnabledFlow.collectAsState(initial = true)
     val allowProfileSearchEnabled by settingsManager.allowProfileSearchEnabledFlow.collectAsState(initial = true)
-    var supportDialog by remember { mutableStateOf<SettingsSupportDialog?>(null) }
     var showChangePasswordDialog by remember { mutableStateOf(false) }
     var showPrivacySettingsDialog by remember { mutableStateOf(false) }
 
@@ -220,17 +222,17 @@ fun SettingsScreen(
             SettingsItem(
                 icon = Icons.Default.Description,
                 title = "Privacy Policy",
-                onClick = { supportDialog = SettingsSupportDialog.PrivacyPolicy }
+                onClick = onNavigateToPrivacyPolicy
             )
             SettingsItem(
                 icon = Icons.Default.Assignment,
                 title = "Terms of Service",
-                onClick = { supportDialog = SettingsSupportDialog.TermsOfService }
+                onClick = onNavigateToTermsOfService
             )
             SettingsItem(
                 icon = Icons.Default.Help,
                 title = "Help Center",
-                onClick = { supportDialog = SettingsSupportDialog.HelpCenter }
+                onClick = onNavigateToHelpCenter
             )
 
             Spacer(modifier = Modifier.height(32.dp))
@@ -255,13 +257,6 @@ fun SettingsScreen(
             }
             Spacer(modifier = Modifier.height(50.dp))
         }
-    }
-
-    supportDialog?.let { dialog ->
-        SettingsSupportDialog(
-            dialog = dialog,
-            onDismiss = { supportDialog = null }
-        )
     }
 
     if (showChangePasswordDialog) {
@@ -297,45 +292,6 @@ fun SettingsScreen(
             onDismiss = { showPrivacySettingsDialog = false }
         )
     }
-}
-
-private enum class SettingsSupportDialog {
-    PrivacyPolicy,
-    TermsOfService,
-    HelpCenter
-}
-
-@Composable
-private fun SettingsSupportDialog(
-    dialog: SettingsSupportDialog,
-    onDismiss: () -> Unit
-) {
-    val title = when (dialog) {
-        SettingsSupportDialog.PrivacyPolicy -> "Privacy Policy"
-        SettingsSupportDialog.TermsOfService -> "Terms of Service"
-        SettingsSupportDialog.HelpCenter -> "Help Center"
-    }
-    val message = when (dialog) {
-        SettingsSupportDialog.PrivacyPolicy -> "Flare stores the account information needed to provide your profile and app experience. Your settings preferences are saved locally on this device. We do not sell your personal information."
-        SettingsSupportDialog.TermsOfService -> "Use Flare respectfully and do not post harmful, abusive, or illegal content. You are responsible for the activity on your account and for following community guidelines."
-        SettingsSupportDialog.HelpCenter -> "Need help with Flare? Contact the support team or review the app documentation for account, profile, notification, and settings guidance."
-    }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        containerColor = MaterialTheme.colorScheme.surface,
-        title = {
-            Text(title, color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
-        },
-        text = {
-            Text(message, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text("OK", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
-            }
-        }
-    )
 }
 
 @Composable
