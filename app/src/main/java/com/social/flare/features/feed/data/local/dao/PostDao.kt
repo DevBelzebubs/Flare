@@ -63,8 +63,8 @@ interface PostDao {
     @Query("""
         SELECT 
         p.*, 
-        c.display_name AS authorDisplayName, 
-        c.username AS authorUsername, 
+        COALESCE(c.display_name, 'Usuario') AS authorDisplayName, 
+        COALESCE(c.username, '@usuario') AS authorUsername, 
         c.avatar_url AS authorAvatarUrl,
         p.likes_count AS likesCount,
         p.comments_count AS commentsCount,
@@ -73,7 +73,7 @@ interface PostDao {
         EXISTS(SELECT 1 FROM post_table WHERE shared_post_id = p.post_id AND author_id = :currentUserId) AS isSharedByMe,
         (SELECT COUNT(*) FROM post_table WHERE shared_post_id = p.post_id) AS sharesCount
     FROM post_table p
-    INNER JOIN citizen_table c ON p.author_id = c.citizen_id
+    LEFT JOIN citizen_table c ON p.author_id = c.citizen_id
     WHERE p.parent_post_id IS NULL AND p.shared_post_id IS NULL 
     ORDER BY p.created_at DESC
     LIMIT 100
@@ -82,8 +82,8 @@ interface PostDao {
     @Query("""
         SELECT 
         p.*, 
-        c.display_name AS authorDisplayName, 
-        c.username AS authorUsername, 
+        COALESCE(c.display_name, 'Usuario') AS authorDisplayName, 
+        COALESCE(c.username, '@usuario') AS authorUsername, 
         c.avatar_url AS authorAvatarUrl,
         p.likes_count AS likesCount,
         p.comments_count AS commentsCount,
@@ -92,7 +92,7 @@ interface PostDao {
         0 AS isSharedByMe,
         (SELECT COUNT(*) FROM post_table WHERE shared_post_id = p.post_id) AS sharesCount
     FROM post_table p
-    INNER JOIN citizen_table c ON p.author_id = c.citizen_id
+    LEFT JOIN citizen_table c ON p.author_id = c.citizen_id
     WHERE p.parent_post_id IS NULL AND p.shared_post_id IS NULL
     ORDER BY p.created_at DESC
     LIMIT 100
@@ -102,8 +102,8 @@ interface PostDao {
     @Query("""
         SELECT 
         p.*, 
-        c.display_name AS authorDisplayName, 
-        c.username AS authorUsername, 
+        COALESCE(c.display_name, 'Usuario') AS authorDisplayName, 
+        COALESCE(c.username, '@usuario') AS authorUsername, 
         c.avatar_url AS authorAvatarUrl,
         p.likes_count AS likesCount,
         p.comments_count AS commentsCount,
@@ -112,15 +112,15 @@ interface PostDao {
         EXISTS(SELECT 1 FROM post_table WHERE shared_post_id = p.post_id AND author_id = :currentUserId) AS isSharedByMe,
         (SELECT COUNT(*) FROM post_table WHERE shared_post_id = p.post_id) AS sharesCount
     FROM post_table p
-    INNER JOIN citizen_table c ON p.author_id = c.citizen_id
+    LEFT JOIN citizen_table c ON p.author_id = c.citizen_id
     WHERE p.post_id = :postId
     """)
     fun getPostById(postId: String, currentUserId: String): Flow<PostWithDetails?>
     @Query("""
         SELECT 
         p.*, 
-        c.display_name AS authorDisplayName, 
-        c.username AS authorUsername, 
+        COALESCE(c.display_name, 'Usuario') AS authorDisplayName, 
+        COALESCE(c.username, '@usuario') AS authorUsername, 
         c.avatar_url AS authorAvatarUrl,
         p.likes_count AS likesCount,
         p.comments_count AS commentsCount,
@@ -129,7 +129,7 @@ interface PostDao {
         EXISTS(SELECT 1 FROM post_table WHERE shared_post_id = p.post_id AND author_id = :currentUserId) AS isSharedByMe,
         (SELECT COUNT(*) FROM post_table WHERE shared_post_id = p.post_id) AS sharesCount
     FROM post_table p
-    INNER JOIN citizen_table c ON p.author_id = c.citizen_id
+    LEFT JOIN citizen_table c ON p.author_id = c.citizen_id
     WHERE p.parent_post_id = :parentPostId
     ORDER BY p.created_at ASC
     LIMIT 50
@@ -171,8 +171,8 @@ interface PostDao {
     @Query("""
         SELECT 
         p.*, 
-        c.display_name AS authorDisplayName, 
-        c.username AS authorUsername, 
+        COALESCE(c.display_name, 'Usuario') AS authorDisplayName, 
+        COALESCE(c.username, '@usuario') AS authorUsername, 
         c.avatar_url AS authorAvatarUrl,
         p.likes_count AS likesCount,
         p.comments_count AS commentsCount,
@@ -181,7 +181,7 @@ interface PostDao {
         EXISTS(SELECT 1 FROM post_table WHERE shared_post_id = p.post_id AND author_id = :userId) AS isSharedByMe,
         (SELECT COUNT(*) FROM post_table WHERE shared_post_id = p.post_id) AS sharesCount
     FROM post_table p
-    INNER JOIN citizen_table c ON p.author_id = c.citizen_id
+    LEFT JOIN citizen_table c ON p.author_id = c.citizen_id
     WHERE p.author_id = :userId AND p.parent_post_id IS NULL AND p.shared_post_id IS NULL
     ORDER BY p.created_at DESC
     LIMIT 100
@@ -191,8 +191,8 @@ interface PostDao {
     @Query("""
         SELECT 
         p.*, 
-        c.display_name AS authorDisplayName, 
-        c.username AS authorUsername, 
+        COALESCE(c.display_name, 'Usuario') AS authorDisplayName, 
+        COALESCE(c.username, '@usuario') AS authorUsername, 
         c.avatar_url AS authorAvatarUrl,
         p.likes_count AS likesCount,
         p.comments_count AS commentsCount,
@@ -201,7 +201,7 @@ interface PostDao {
         EXISTS(SELECT 1 FROM post_table WHERE shared_post_id = p.post_id AND author_id = :currentUserId) AS isSharedByMe,
         (SELECT COUNT(*) FROM post_table WHERE shared_post_id = p.post_id) AS sharesCount
     FROM post_table p
-    INNER JOIN citizen_table c ON p.author_id = c.citizen_id
+    LEFT JOIN citizen_table c ON p.author_id = c.citizen_id
     WHERE p.parent_post_id = :parentId
     ORDER BY p.created_at ASC
     LIMIT 50
@@ -210,8 +210,8 @@ interface PostDao {
 
     @Query("""
         SELECT p.*,
-           c.display_name AS authorDisplayName,
-           c.username AS authorUsername,
+           COALESCE(c.display_name, 'Usuario') AS authorDisplayName,
+           COALESCE(c.username, '@usuario') AS authorUsername,
            c.avatar_url AS authorAvatarUrl,
            p.likes_count AS likesCount,
            p.comments_count AS commentsCount,
@@ -221,7 +221,7 @@ interface PostDao {
            (SELECT COUNT(*) FROM post_table WHERE shared_post_id = p.post_id) AS sharesCount
     FROM post_table p
     INNER JOIN saved_post_table sp ON p.post_id = sp.post_id
-    INNER JOIN citizen_table c ON p.author_id = c.citizen_id
+    LEFT JOIN citizen_table c ON p.author_id = c.citizen_id
     WHERE sp.citizen_id = :currentUserId
     ORDER BY sp.saved_at DESC
     LIMIT 100
@@ -230,8 +230,8 @@ interface PostDao {
     @Query("""
         SELECT 
         p.*, 
-        c.display_name AS authorDisplayName, 
-        c.username AS authorUsername, 
+        COALESCE(c.display_name, 'Usuario') AS authorDisplayName, 
+        COALESCE(c.username, '@usuario') AS authorUsername, 
         c.avatar_url AS authorAvatarUrl,
         p.likes_count AS likesCount,
         p.comments_count AS commentsCount,
@@ -240,7 +240,7 @@ interface PostDao {
         0 AS isSharedByMe,
         (SELECT COUNT(*) FROM post_table WHERE shared_post_id = p.post_id) AS sharesCount
     FROM post_table p
-    INNER JOIN citizen_table c ON p.author_id = c.citizen_id
+    LEFT JOIN citizen_table c ON p.author_id = c.citizen_id
     WHERE p.post_id = :postId
     """)
     suspend fun getPostById(postId: String): PostWithDetails?
@@ -248,8 +248,8 @@ interface PostDao {
     @Query("""
         SELECT 
         p.*, 
-        c.display_name AS authorDisplayName, 
-        c.username AS authorUsername, 
+        COALESCE(c.display_name, 'Usuario') AS authorDisplayName, 
+        COALESCE(c.username, '@usuario') AS authorUsername, 
         c.avatar_url AS authorAvatarUrl,
         p.likes_count AS likesCount,
         p.comments_count AS commentsCount,
@@ -258,7 +258,7 @@ interface PostDao {
         0 AS isSharedByMe,
         (SELECT COUNT(*) FROM post_table WHERE shared_post_id = p.post_id) AS sharesCount
     FROM post_table p
-    INNER JOIN citizen_table c ON p.author_id = c.citizen_id
+    LEFT JOIN citizen_table c ON p.author_id = c.citizen_id
     WHERE p.parent_post_id IS NULL
     ORDER BY p.created_at DESC
     LIMIT 500
@@ -281,8 +281,8 @@ interface PostDao {
     @Query("""
         SELECT 
         p.*, 
-        c.display_name AS authorDisplayName, 
-        c.username AS authorUsername, 
+        COALESCE(c.display_name, 'Usuario') AS authorDisplayName, 
+        COALESCE(c.username, '@usuario') AS authorUsername, 
         c.avatar_url AS authorAvatarUrl,
         p.likes_count AS likesCount,
         p.comments_count AS commentsCount,
@@ -291,7 +291,7 @@ interface PostDao {
         0 AS isSharedByMe,
         (SELECT COUNT(*) FROM post_table WHERE shared_post_id = p.post_id) AS sharesCount
     FROM post_table p
-    INNER JOIN citizen_table c ON p.author_id = c.citizen_id
+    LEFT JOIN citizen_table c ON p.author_id = c.citizen_id
     WHERE p.author_id = :userId AND p.shared_post_id IS NOT NULL
     ORDER BY p.created_at DESC
     LIMIT 100

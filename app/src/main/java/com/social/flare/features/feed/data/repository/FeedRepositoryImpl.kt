@@ -1,5 +1,6 @@
 package com.social.flare.features.feed.data.repository
 
+import android.util.Log
 import com.social.flare.features.auth.data.local.dao.CitizenDao
 import com.social.flare.features.auth.data.local.entity.CitizenEntity
 import com.social.flare.features.feed.data.local.dao.PostDao
@@ -125,19 +126,22 @@ class FeedRepositoryImpl(
                 }
                 .decodeList<PostEntity>()
 
+            android.util.Log.d("FeedSync", "Synced ${posts.size} posts from Supabase")
+
             val authorIds = posts.map { it.author_id }.distinct()
             if (authorIds.isNotEmpty()) {
                 val authors = supabase.postgrest["citizens"]
                     .select { filter { isIn("citizen_id", authorIds) } }
                     .decodeList<CitizenEntity>()
 
+                android.util.Log.d("FeedSync", "Synced ${authors.size} authors from Supabase (${authorIds.size} unique)")
                 authors.forEach { citizenDao.insertCitizen(it) }
             }
             val (topLevel, replies) = posts.partition { it.parent_post_id == null }
             topLevel.forEach { postDao.insertPost(it) }
             replies.forEach { postDao.insertPost(it) }
         } catch (e: Throwable) {
-            android.util.Log.e("FeedRepo", "syncPostsFromSupabase failed", e)
+            Log.e("FeedSync", "Error syncing posts from Supabase", e)
         }
 
         if (!isGuest && currentUserId != null) {
@@ -146,8 +150,9 @@ class FeedRepositoryImpl(
                     .select { filter { eq("citizen_id", currentUserId) } }
                     .decodeList<PostLikeEntity>()
                 likes.forEach { postDao.insertLike(it) }
+                Log.d("FeedSync", "Synced ${likes.size} likes")
             } catch (e: Throwable) {
-                android.util.Log.e("FeedRepo", "syncLikes failed", e)
+                Log.e("FeedSync", "Error syncing likes", e)
             }
 
             try {
@@ -155,17 +160,18 @@ class FeedRepositoryImpl(
                     .select { filter { eq("citizen_id", currentUserId) } }
                     .decodeList<SavedPostEntity>()
                 saves.forEach { postDao.insertSavedPost(it) }
+                Log.d("FeedSync", "Synced ${saves.size} saves")
             } catch (e: Throwable) {
-                android.util.Log.e("FeedRepo", "syncSaves failed", e)
+                android.util.Log.e("FeedSync", "Error syncing saves", e)
             }
-
             try {
                 val votes = supabase.postgrest["post_votes"]
                     .select { filter { eq("citizen_id", currentUserId) } }
                     .decodeList<PostVoteEntity>()
                 votes.forEach { postDao.insertVote(it) }
+                android.util.Log.d("FeedSync", "Synced ${votes.size} votes")
             } catch (e: Throwable) {
-                e.printStackTrace()
+                android.util.Log.e("FeedSync", "Error syncing votes", e)
             }
         }
     }
