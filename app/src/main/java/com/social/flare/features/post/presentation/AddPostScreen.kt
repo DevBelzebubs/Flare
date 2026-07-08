@@ -4,8 +4,6 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -17,6 +15,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.social.flare.core.ui.components.FlareLoadingOverlay
 import com.social.flare.features.post.presentation.components.AddPollSection
 import com.social.flare.features.post.presentation.components.AddPostBottomToolbar
 import com.social.flare.features.post.presentation.components.AddPostInputArea
@@ -32,6 +32,7 @@ fun AddPostScreen(
     onNavigateBack: () -> Unit,
     onPostClick: (String, List<Uri>, String?, List<String>?, Long?, String?, Double?, Double?) -> Unit,
     isSuccess: Boolean = false,
+    isUploading: Boolean = false,
     onSuccessHandled: () -> Unit = {},
     activeUserAvatarUrl: String? = null
 ) {
@@ -52,7 +53,7 @@ fun AddPostScreen(
 
     val hasPoll = pollData != null
     val hasLocation = locationData != null
-    val isPostEnabled = content.isNotBlank() || selectedMedia.isNotEmpty()
+    val isPostEnabled = (content.isNotBlank() || selectedMedia.isNotEmpty()) && !isUploading
 
     val mediaPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickMultipleVisualMedia(maxItems = 4)
@@ -95,6 +96,7 @@ fun AddPostScreen(
             )
         }
     ) { paddingValues ->
+        FlareLoadingOverlay(isLoading = isUploading) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -192,6 +194,7 @@ fun AddPostScreen(
                 }
                 }
             }
+        }
         }
     }
 }

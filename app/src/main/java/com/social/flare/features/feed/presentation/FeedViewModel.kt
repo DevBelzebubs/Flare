@@ -116,18 +116,16 @@ class FeedViewModel(
 
     private fun handleShare(postId: String) {
         val userId = currentUserId ?: return
-        val post = _uiState.value.posts.find { it.id == postId } ?: return
         viewModelScope.launch {
+            val post = _uiState.value.posts.find { it.id == postId } ?: return@launch
             repository.toggleSharePost(authorId = userId, originalPostId = postId, isCurrentlyShared = post.isSharedByMe)
-            _uiState.update { it.copy(error = null) }
         }
     }
 
     private fun handleLike(postId: String) {
         val userId = currentUserId ?: return
-        val post = _uiState.value.posts.find { it.id == postId } ?: return
-
         viewModelScope.launch {
+            val post = _uiState.value.posts.find { it.id == postId } ?: return@launch
             repository.toggleLike(
                 postId = post.id,
                 citizenId = userId,
@@ -140,8 +138,8 @@ class FeedViewModel(
     }
     private fun handleSave(postId: String) {
         val userId = currentUserId ?: return
-        val post = _uiState.value.posts.find { it.id == postId } ?: return
         viewModelScope.launch {
+            val post = _uiState.value.posts.find { it.id == postId } ?: return@launch
             repository.toggleSavePost(
                 postId = post.id,
                 citizenId = userId,
@@ -151,20 +149,26 @@ class FeedViewModel(
     }
     private fun deletePost(postId: String) {
         val userId = currentUserId ?: return
+        _uiState.update { it.copy(loadingPostIds = it.loadingPostIds + "delete:$postId") }
         viewModelScope.launch {
             val result = deletePostUseCase(postId, userId)
             if (result.isFailure) {
-                _uiState.update { it.copy(error = result.exceptionOrNull()?.message) }
+                _uiState.update { it.copy(loadingPostIds = it.loadingPostIds - "delete:$postId", error = result.exceptionOrNull()?.message) }
+            } else {
+                _uiState.update { it.copy(loadingPostIds = it.loadingPostIds - "delete:$postId") }
             }
         }
     }
 
     private fun editPost(postId: String, newContent: String) {
         val userId = currentUserId ?: return
+        _uiState.update { it.copy(loadingPostIds = it.loadingPostIds + "edit:$postId") }
         viewModelScope.launch {
             val result = updatePostUseCase(postId, userId, newContent)
             if (result.isFailure) {
-                _uiState.update { it.copy(error = result.exceptionOrNull()?.message) }
+                _uiState.update { it.copy(loadingPostIds = it.loadingPostIds - "edit:$postId", error = result.exceptionOrNull()?.message) }
+            } else {
+                _uiState.update { it.copy(loadingPostIds = it.loadingPostIds - "edit:$postId") }
             }
         }
     }

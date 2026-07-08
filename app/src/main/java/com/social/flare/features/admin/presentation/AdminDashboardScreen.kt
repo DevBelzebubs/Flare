@@ -31,6 +31,7 @@ fun AdminDashboardScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var showAddAiDialog by remember { mutableStateOf(false) }
+    var editingBot by remember { mutableStateOf<AiPersona?>(null) }
 
     LaunchedEffect(Unit) {
         viewModel.loadDashboard()
@@ -42,6 +43,17 @@ fun AdminDashboardScreen(
             onConfirm = { username, displayName, prompt, temp ->
                 viewModel.createAiProfile(username, displayName, prompt, temp)
                 showAddAiDialog = false
+            }
+        )
+    }
+
+    editingBot?.let { bot ->
+        AddAiProfileDialog(
+            editingBot = bot,
+            onDismiss = { editingBot = null },
+            onConfirm = { username, displayName, prompt, temp ->
+                viewModel.updateAiProfile(bot.citizenId, username, displayName, prompt, temp)
+                editingBot = null
             }
         )
     }
@@ -184,9 +196,11 @@ fun AdminDashboardScreen(
                 uiState.bots.forEach { bot ->
                     BotItem(
                         persona = bot,
+                        onEdit = { editingBot = bot },
                         onToggle = { isChecked ->
                             viewModel.toggleBotStatus(bot.citizenId, isChecked)
-                        }
+                        },
+                        isLoading = "bot:${bot.citizenId}" in uiState.actionLoading
                     )
                 }
             }
@@ -230,7 +244,9 @@ private fun AdminMenuItem(
 @Composable
 fun BotItem(
     persona: AiPersona,
-    onToggle: (Boolean) -> Unit
+    onEdit: () -> Unit,
+    onToggle: (Boolean) -> Unit,
+    isLoading: Boolean = false
 ) {
     val colorScheme = MaterialTheme.colorScheme
 
@@ -244,9 +260,18 @@ fun BotItem(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
+                .padding(horizontal = 8.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            IconButton(onClick = onEdit) {
+                Icon(
+                    Icons.Default.Edit,
+                    contentDescription = "Editar bot",
+                    tint = colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = persona.displayName,
@@ -261,16 +286,24 @@ fun BotItem(
                 )
             }
 
-            Switch(
-                checked = persona.isActive,
-                onCheckedChange = { onToggle(it) },
-                colors = SwitchDefaults.colors(
-                    checkedThumbColor = colorScheme.onPrimary,
-                    checkedTrackColor = colorScheme.primary,
-                    uncheckedThumbColor = colorScheme.onSurfaceVariant,
-                    uncheckedTrackColor = colorScheme.surfaceVariant
+            if (isLoading) {
+                CircularProgressIndicator(
+                    color = colorScheme.primary,
+                    strokeWidth = 2.dp,
+                    modifier = Modifier.size(24.dp)
                 )
-            )
+            } else {
+                Switch(
+                    checked = persona.isActive,
+                    onCheckedChange = { onToggle(it) },
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = colorScheme.onPrimary,
+                        checkedTrackColor = colorScheme.primary,
+                        uncheckedThumbColor = colorScheme.onSurfaceVariant,
+                        uncheckedTrackColor = colorScheme.surfaceVariant
+                    )
+                )
+            }
         }
     }
 }

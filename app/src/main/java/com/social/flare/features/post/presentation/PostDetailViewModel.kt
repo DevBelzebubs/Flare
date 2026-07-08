@@ -78,18 +78,24 @@ class PostDetailViewModel(
 
     fun updatePost(postId: String, currentUserId: String, newContent: String) {
         viewModelScope.launch {
+            _uiState.update { it.copy(isEditing = true) }
             val result = repository.updatePost(postId, currentUserId, newContent)
             if (result.isFailure) {
-                _uiState.update { it.copy(errorMessage = result.exceptionOrNull()?.message) }
+                _uiState.update { it.copy(isEditing = false, errorMessage = result.exceptionOrNull()?.message) }
+            } else {
+                _uiState.update { it.copy(isEditing = false) }
             }
         }
     }
 
     fun deletePost(postId: String, currentUserId: String) {
         viewModelScope.launch {
+            _uiState.update { it.copy(isDeleting = true) }
             val result = repository.deletePost(postId, currentUserId)
             if (result.isFailure) {
-                _uiState.update { it.copy(errorMessage = result.exceptionOrNull()?.message) }
+                _uiState.update { it.copy(isDeleting = false, errorMessage = result.exceptionOrNull()?.message) }
+            } else {
+                _uiState.update { it.copy(isDeleting = false) }
             }
         }
     }
@@ -107,6 +113,7 @@ class PostDetailViewModel(
 
     fun createReply(authorId: String, content: String, parentPostId: String, mediaUris: List<Uri> = emptyList()) {
         viewModelScope.launch {
+            _uiState.update { it.copy(isReplying = true) }
             val result = runCatching {
                 createPostUseCase(
                     authorId = authorId,
@@ -118,7 +125,9 @@ class PostDetailViewModel(
 
             if (result.isFailure) {
                 val errorMsg = result.exceptionOrNull()?.message ?: "Error al publicar respuesta"
-                _uiState.update { it.copy(errorMessage = errorMsg) }
+                _uiState.update { it.copy(isReplying = false, errorMessage = errorMsg) }
+            } else {
+                _uiState.update { it.copy(isReplying = false) }
             }
         }
     }

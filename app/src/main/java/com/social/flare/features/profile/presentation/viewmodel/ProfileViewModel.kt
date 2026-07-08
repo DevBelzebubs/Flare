@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class ProfileViewModel(
@@ -32,6 +33,8 @@ class ProfileViewModel(
 
     private val _followStats = MutableStateFlow(FollowStats(0, 0, false))
     val followStats: StateFlow<FollowStats> = _followStats.asStateFlow()
+    private val _isFollowingLoading = MutableStateFlow(false)
+    val isFollowingLoading: StateFlow<Boolean> = _isFollowingLoading.asStateFlow()
 
     private var loadJob: Job? = null
     private var followStatsJob: Job? = null
@@ -88,11 +91,13 @@ class ProfileViewModel(
 
     fun toggleFollow(followerId: String, followedId: String) {
         viewModelScope.launch {
+            _isFollowingLoading.value = true
             toggleFollowUseCase(
                 followerId = followerId,
                 followedId = followedId,
                 isCurrentlyFollowing = _followStats.value.isFollowingByMe
             )
+            _isFollowingLoading.value = false
         }
     }
     fun loadActiveUserProfile(citizenId: String) {

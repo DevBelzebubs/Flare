@@ -16,6 +16,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.social.flare.core.ui.components.FlareSmallLoader
 import com.social.flare.features.admin.domain.model.AdminPost
 import com.social.flare.features.admin.presentation.viewmodel.AdminViewModel
 import java.text.SimpleDateFormat
@@ -69,7 +70,8 @@ fun AdminPostsScreen(
                     val onDelete = remember(post) { { viewModel.deletePost(post.postId) } }
                     AdminPostCard(
                         post = post,
-                        onDelete = onDelete
+                        onDelete = onDelete,
+                        isLoadingDelete = "deletepost:${post.postId}" in uiState.actionLoading
                     )
                 }
             }
@@ -80,7 +82,8 @@ fun AdminPostsScreen(
 @Composable
 private fun AdminPostCard(
     post: AdminPost,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    isLoadingDelete: Boolean = false
 ) {
     var showDeleteConfirm by remember { mutableStateOf(false) }
     val dateFormat = remember { SimpleDateFormat("dd/MM/yy HH:mm", Locale.getDefault()) }
@@ -140,8 +143,12 @@ private fun AdminPostCard(
                     )
                 }
             }
-            IconButton(onClick = { showDeleteConfirm = true }) {
-                Icon(Icons.Default.Delete, contentDescription = "Eliminar post", tint = colorScheme.error, modifier = Modifier.size(20.dp))
+            if (isLoadingDelete) {
+                FlareSmallLoader(modifier = Modifier.size(20.dp).padding(0.dp))
+            } else {
+                IconButton(onClick = { showDeleteConfirm = true }) {
+                    Icon(Icons.Default.Delete, contentDescription = "Eliminar post", tint = colorScheme.error, modifier = Modifier.size(20.dp))
+                }
             }
         }
     }

@@ -24,7 +24,8 @@ data class AdminUiState(
     val news: List<NewsItem> = emptyList(),
     val bots: List<AiPersona> = emptyList(),
     val errorMessage: String? = null,
-    val successMessage: String? = null
+    val successMessage: String? = null,
+    val actionLoading: Set<String> = emptySet()
 )
 
 class AdminViewModel(
@@ -65,24 +66,26 @@ class AdminViewModel(
 
     fun updateUserStatus(citizenId: String, status: String) {
         viewModelScope.launch {
+            _uiState.update { it.copy(actionLoading = it.actionLoading + "status:$citizenId") }
             try {
                 adminRepository.updateUserStatus(citizenId, status)
                 loadUsers()
-                _uiState.update { it.copy(successMessage = "Estado actualizado a $status") }
+                _uiState.update { it.copy(actionLoading = it.actionLoading - "status:$citizenId", successMessage = "Estado actualizado a $status") }
             } catch (e: Exception) {
-                _uiState.update { it.copy(errorMessage = e.message) }
+                _uiState.update { it.copy(actionLoading = it.actionLoading - "status:$citizenId", errorMessage = e.message) }
             }
         }
     }
 
     fun deleteUser(citizenId: String) {
         viewModelScope.launch {
+            _uiState.update { it.copy(actionLoading = it.actionLoading + "deleteuser:$citizenId") }
             try {
                 adminRepository.deleteUser(citizenId)
                 loadUsers()
-                _uiState.update { it.copy(successMessage = "Usuario eliminado") }
+                _uiState.update { it.copy(actionLoading = it.actionLoading - "deleteuser:$citizenId", successMessage = "Usuario eliminado") }
             } catch (e: Exception) {
-                _uiState.update { it.copy(errorMessage = e.message) }
+                _uiState.update { it.copy(actionLoading = it.actionLoading - "deleteuser:$citizenId", errorMessage = e.message) }
             }
         }
     }
@@ -102,12 +105,13 @@ class AdminViewModel(
 
     fun deletePost(postId: String) {
         viewModelScope.launch {
+            _uiState.update { it.copy(actionLoading = it.actionLoading + "deletepost:$postId") }
             try {
                 adminRepository.deletePost(postId)
                 loadPosts()
-                _uiState.update { it.copy(successMessage = "Publicación eliminada") }
+                _uiState.update { it.copy(actionLoading = it.actionLoading - "deletepost:$postId", successMessage = "Publicación eliminada") }
             } catch (e: Exception) {
-                _uiState.update { it.copy(errorMessage = e.message) }
+                _uiState.update { it.copy(actionLoading = it.actionLoading - "deletepost:$postId", errorMessage = e.message) }
             }
         }
     }
@@ -156,24 +160,26 @@ class AdminViewModel(
 
     fun toggleNewsActive(newsId: String, isActive: Boolean) {
         viewModelScope.launch {
+            _uiState.update { it.copy(actionLoading = it.actionLoading + "togglenews:$newsId") }
             try {
                 adminRepository.toggleNewsActive(newsId, isActive)
                 loadNews()
-                _uiState.update { it.copy(successMessage = if (isActive) "Noticia activada" else "Noticia desactivada") }
+                _uiState.update { it.copy(actionLoading = it.actionLoading - "togglenews:$newsId", successMessage = if (isActive) "Noticia activada" else "Noticia desactivada") }
             } catch (e: Exception) {
-                _uiState.update { it.copy(errorMessage = e.message) }
+                _uiState.update { it.copy(actionLoading = it.actionLoading - "togglenews:$newsId", errorMessage = e.message) }
             }
         }
     }
 
     fun deleteNews(newsId: String) {
         viewModelScope.launch {
+            _uiState.update { it.copy(actionLoading = it.actionLoading + "deletenews:$newsId") }
             try {
                 adminRepository.deleteNews(newsId)
                 loadNews()
-                _uiState.update { it.copy(successMessage = "Noticia eliminada") }
+                _uiState.update { it.copy(actionLoading = it.actionLoading - "deletenews:$newsId", successMessage = "Noticia eliminada") }
             } catch (e: Exception) {
-                _uiState.update { it.copy(errorMessage = e.message) }
+                _uiState.update { it.copy(actionLoading = it.actionLoading - "deletenews:$newsId", errorMessage = e.message) }
             }
         }
     }
@@ -210,6 +216,7 @@ class AdminViewModel(
 
     fun toggleBotStatus(citizenId: String, isActive: Boolean) {
         viewModelScope.launch {
+            _uiState.update { it.copy(actionLoading = it.actionLoading + "bot:$citizenId") }
             try {
                 _uiState.update { currentState ->
                     val updatedBots = currentState.bots.map { bot ->
@@ -222,7 +229,7 @@ class AdminViewModel(
 
                 if (result.isSuccess) {
                     _uiState.update {
-                        it.copy(successMessage = if (isActive) "Bot activado" else "Bot desactivado")
+                        it.copy(actionLoading = it.actionLoading - "bot:$citizenId", successMessage = if (isActive) "Bot activado" else "Bot desactivado")
                     }
                 } else {
                     _uiState.update { currentState ->
@@ -231,6 +238,7 @@ class AdminViewModel(
                         }
                         currentState.copy(
                             bots = revertedBots,
+                            actionLoading = currentState.actionLoading - "bot:$citizenId",
                             errorMessage = result.exceptionOrNull()?.message
                         )
                     }
@@ -240,11 +248,43 @@ class AdminViewModel(
                     val revertedBots = currentState.bots.map { bot ->
                         if (bot.citizenId == citizenId) bot.copy(isActive = !isActive) else bot
                     }
-                    currentState.copy(bots = revertedBots, errorMessage = e.message)
+                    currentState.copy(bots = revertedBots, actionLoading = currentState.actionLoading - "bot:$citizenId", errorMessage = e.message)
                 }
             }
         }
     }
+    fun updateAiProfile(citizenId: String, username: String, displayName: String, prompt: String, temp: Double) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(actionLoading = it.actionLoading + "editbot:$citizenId") }
+            try {
+                val result = adminRepository.updateAiPersona(citizenId, displayName, username, prompt, temp)
+                if (result.isSuccess) {
+                    _uiState.update {
+                        it.copy(
+                            actionLoading = it.actionLoading - "editbot:$citizenId",
+                            successMessage = "Agente IA '$username' actualizado"
+                        )
+                    }
+                    loadDashboard()
+                } else {
+                    _uiState.update {
+                        it.copy(
+                            actionLoading = it.actionLoading - "editbot:$citizenId",
+                            errorMessage = result.exceptionOrNull()?.message ?: "Error al actualizar"
+                        )
+                    }
+                }
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        actionLoading = it.actionLoading - "editbot:$citizenId",
+                        errorMessage = e.message
+                    )
+                }
+            }
+        }
+    }
+
     fun clearMessages() {
         _uiState.update { it.copy(errorMessage = null, successMessage = null) }
     }

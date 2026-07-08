@@ -495,6 +495,7 @@ fun MainScreen() {
                                     )
                                 }
                             },
+                            isUploading = uiState.isUploading,
                             isSuccess = uiState.isSuccess,
                             onSuccessHandled = {
                                 viewModel.clearState()

@@ -114,7 +114,7 @@ fun FeedScreen(
                                 post = displayPost,
                                 activeCitizenId = activeCitizenId,
                                 onEvent = onEvent,
-                                onImageClick = onImageClick
+                                onImageClick = onImageClick,
                             )
                         }
                     }

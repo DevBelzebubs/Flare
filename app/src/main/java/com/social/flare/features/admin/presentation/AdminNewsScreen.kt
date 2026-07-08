@@ -25,6 +25,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.social.flare.core.ui.components.FlareSmallLoader
 import com.social.flare.features.admin.domain.model.NewsItem
 import com.social.flare.features.admin.presentation.viewmodel.AdminViewModel
 import java.text.SimpleDateFormat
@@ -95,7 +96,9 @@ fun AdminNewsScreen(
                         news = news,
                         onEdit = onEdit,
                         onToggleActive = onToggleActive,
-                        onDelete = onDelete
+                        onDelete = onDelete,
+                        isLoadingToggle = "togglenews:${news.newsId}" in uiState.actionLoading,
+                        isLoadingDelete = "deletenews:${news.newsId}" in uiState.actionLoading
                     )
                 }
             }
@@ -138,7 +141,9 @@ private fun AdminNewsCard(
     news: NewsItem,
     onEdit: () -> Unit,
     onToggleActive: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    isLoadingToggle: Boolean = false,
+    isLoadingDelete: Boolean = false
 ) {
     val dateFormat = remember { SimpleDateFormat("dd/MM/yy", Locale.getDefault()) }
     val colorScheme = MaterialTheme.colorScheme
@@ -200,19 +205,27 @@ private fun AdminNewsCard(
                 )
             }
             Row {
-                IconButton(onClick = onToggleActive) {
-                    Icon(
-                        if (news.isActive) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                        contentDescription = if (news.isActive) "Desactivar" else "Activar",
-                        tint = colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(20.dp)
-                    )
+                if (isLoadingToggle) {
+                    FlareSmallLoader(modifier = Modifier.size(20.dp).padding(0.dp))
+                } else {
+                    IconButton(onClick = onToggleActive) {
+                        Icon(
+                            if (news.isActive) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                            contentDescription = if (news.isActive) "Desactivar" else "Activar",
+                            tint = colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
                 }
                 IconButton(onClick = onEdit) {
                     Icon(Icons.Default.Edit, contentDescription = "Editar", tint = colorScheme.primary, modifier = Modifier.size(20.dp))
                 }
-                IconButton(onClick = onDelete) {
-                    Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = colorScheme.error, modifier = Modifier.size(20.dp))
+                if (isLoadingDelete) {
+                    FlareSmallLoader(modifier = Modifier.size(20.dp).padding(0.dp))
+                } else {
+                    IconButton(onClick = onDelete) {
+                        Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = colorScheme.error, modifier = Modifier.size(20.dp))
+                    }
                 }
             }
         }

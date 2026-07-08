@@ -20,6 +20,7 @@ import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.ViewList
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -51,6 +52,7 @@ fun ProfileContent(
     isOtherProfile: Boolean = false,
     activeCitizenId: String? = null,
     isFollowingByMe: Boolean = false,
+    isFollowingLoading: Boolean = false,
     onToggleFollow: () -> Unit = {}
 ) {
     val citizen = state.citizen
@@ -75,6 +77,7 @@ fun ProfileContent(
                 item(span = { GridItemSpan(3) }) {
                     Button(
                         onClick = onToggleFollow,
+                        enabled = !isFollowingLoading,
                         colors = ButtonDefaults.buttonColors(
                             containerColor = if (isFollowingByMe) {
                                 MaterialTheme.colorScheme.surfaceVariant
@@ -93,11 +96,19 @@ fun ProfileContent(
                             .height(44.dp)
                             .padding(horizontal = 16.dp)
                     ) {
-                        Text(
-                            text = if (isFollowingByMe) "Siguiendo" else "Seguir",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 14.sp
-                        )
+                        if (isFollowingLoading) {
+                            CircularProgressIndicator(
+                                color = MaterialTheme.colorScheme.primary,
+                                strokeWidth = 2.dp,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        } else {
+                            Text(
+                                text = if (isFollowingByMe) "Siguiendo" else "Seguir",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp
+                            )
+                        }
                     }
                     Spacer(modifier = Modifier.height(4.dp))
                 }

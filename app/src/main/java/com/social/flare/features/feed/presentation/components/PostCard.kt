@@ -8,6 +8,8 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -29,6 +31,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import coil.request.ImageRequest
 import androidx.compose.ui.draw.clip
@@ -98,35 +101,85 @@ fun PostCard(
                     fontSize = 15.sp,
                     lineHeight = 22.sp
                 )
-                if (post.mediaUrls.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(12.dp))
-                    val mediaUrl = post.mediaUrls.first()
-                    val isVideo = mediaUrl.endsWith(".mp4", ignoreCase = true) ||
-                            mediaUrl.endsWith(".webm", ignoreCase = true) ||
-                            mediaUrl.endsWith(".mkv", ignoreCase = true) ||
-                            mediaUrl.endsWith(".mov", ignoreCase = true)
-                    if (isVideo) {
-                        VideoPlayer(videoUrl = mediaUrl)
-                    } else {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .heightIn(min = 180.dp, max = 450.dp)
-                                .clip(RoundedCornerShape(12.dp))
-                                .clickable { onImageClick(mediaUrl) }
+            }
+
+            if (post.mediaUrls.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(12.dp))
+                val pagerState = rememberPagerState(pageCount = { post.mediaUrls.size })
+                Column {
+                    HorizontalPager(
+                        state = pagerState,
+                        modifier = Modifier.fillMaxWidth()
+                    ) { page ->
+                        val url = post.mediaUrls[page]
+                        val isVideo = url.endsWith(".mp4", ignoreCase = true) ||
+                                url.endsWith(".webm", ignoreCase = true) ||
+                                url.endsWith(".mkv", ignoreCase = true) ||
+                                url.endsWith(".mov", ignoreCase = true)
+                        val isGif = url.endsWith(".gif", ignoreCase = true)
+                        if (isVideo) {
+                            VideoPlayer(videoUrl = url)
+                        } else {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .heightIn(min = 180.dp, max = 450.dp)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .clickable { onImageClick(url) }
+                            ) {
+                                AsyncImage(
+                                    model = ImageRequest.Builder(LocalContext.current)
+                                        .data(url)
+                                        .apply { if (!isGif) crossfade(true) }
+                                        .build(),
+                                    contentDescription = "Post image",
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                                if (isGif) {
+                                    Box(
+                                        modifier = Modifier
+                                            .align(Alignment.TopEnd)
+                                            .padding(8.dp)
+                                            .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(4.dp))
+                                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                                    ) {
+                                        Text(
+                                            text = "GIF",
+                                            color = Color.White,
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    if (post.mediaUrls.size > 1) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.Center
                         ) {
-                            AsyncImage(
-                                model = ImageRequest.Builder(LocalContext.current)
-                                    .data(mediaUrl)
-                                    .crossfade(true)
-                                    .build(),
-                                contentDescription = "Post image",
-                                contentScale = ContentScale.Crop,
-                                modifier = Modifier.fillMaxSize()
-                            )
+                            repeat(post.mediaUrls.size) { index ->
+                                Box(
+                                    modifier = Modifier
+                                        .padding(horizontal = 4.dp)
+                                        .size(if (pagerState.currentPage == index) 8.dp else 6.dp)
+                                        .clip(CircleShape)
+                                        .background(
+                                            if (pagerState.currentPage == index)
+                                                MaterialTheme.colorScheme.primary
+                                            else MaterialTheme.colorScheme.outline
+                                        )
+                                )
+                            }
                         }
                     }
                 }
+            }
+
+            if (post.content != null || post.mediaUrls.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(16.dp))
             }
 

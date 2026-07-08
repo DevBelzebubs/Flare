@@ -21,7 +21,9 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.social.flare.core.ui.components.FlareSmallLoader
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -31,6 +33,7 @@ fun LoginScreen(
     onLoginSuccess: (String) -> Unit,
     viewModel: AuthViewModel = viewModel(factory = AuthViewModel.AuthViewModelFactory(LocalContext.current))
 ) {
+    val authState by viewModel.uiState.collectAsStateWithLifecycle()
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf<String?>(null) }
@@ -293,6 +296,7 @@ fun LoginScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(56.dp),
+                        enabled = !authState.isLoading,
                         colors = ButtonDefaults.buttonColors(
                             containerColor = colorScheme.primary,
                             contentColor = colorScheme.onPrimary
@@ -300,7 +304,15 @@ fun LoginScreen(
                         shape = RoundedCornerShape(16.dp),
                         elevation = ButtonDefaults.buttonElevation(defaultElevation = 8.dp)
                     ) {
-                        Text("Login", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                        if (authState.isLoading) {
+                            CircularProgressIndicator(
+                                color = colorScheme.onPrimary,
+                                strokeWidth = 2.dp,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        } else {
+                            Text("Login", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                        }
                     }
 
                     Spacer(modifier = Modifier.height(20.dp))

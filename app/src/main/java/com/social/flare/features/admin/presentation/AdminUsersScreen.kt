@@ -16,6 +16,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.social.flare.core.ui.components.FlareSmallLoader
 import com.social.flare.features.admin.domain.model.AdminUser
 import com.social.flare.features.admin.presentation.viewmodel.AdminViewModel
 
@@ -65,7 +66,9 @@ fun AdminUsersScreen(
                     AdminUserCard(
                         user = user,
                         onStatusChange = onStatusChange,
-                        onDelete = onDelete
+                        onDelete = onDelete,
+                        isLoadingStatus = "status:${user.citizenId}" in uiState.actionLoading,
+                        isLoadingDelete = "deleteuser:${user.citizenId}" in uiState.actionLoading
                     )
                 }
             }
@@ -134,7 +137,9 @@ private fun StatusOption(
 private fun AdminUserCard(
     user: AdminUser,
     onStatusChange: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    isLoadingStatus: Boolean = false,
+    isLoadingDelete: Boolean = false
 ) {
     var showDeleteConfirm by remember { mutableStateOf(false) }
     val colorScheme = MaterialTheme.colorScheme
@@ -199,11 +204,19 @@ private fun AdminUserCard(
                 }
             }
             if (!user.isAdmin) {
-                IconButton(onClick = onStatusChange) {
-                    Icon(Icons.Default.Shield, contentDescription = "Cambiar estado", tint = colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
+                if (isLoadingStatus) {
+                    FlareSmallLoader(modifier = Modifier.padding(12.dp))
+                } else {
+                    IconButton(onClick = onStatusChange) {
+                        Icon(Icons.Default.Shield, contentDescription = "Cambiar estado", tint = colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))
+                    }
                 }
-                IconButton(onClick = { showDeleteConfirm = true }) {
-                    Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = colorScheme.error, modifier = Modifier.size(20.dp))
+                if (isLoadingDelete) {
+                    FlareSmallLoader(modifier = Modifier.padding(12.dp))
+                } else {
+                    IconButton(onClick = { showDeleteConfirm = true }) {
+                        Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = colorScheme.error, modifier = Modifier.size(20.dp))
+                    }
                 }
             }
         }

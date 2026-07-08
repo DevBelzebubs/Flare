@@ -325,6 +325,33 @@ class AdminRepositoryImpl(
         }
     }
 
+    override suspend fun updateAiPersona(
+        citizenId: String,
+        displayName: String,
+        username: String,
+        systemPrompt: String,
+        temperature: Double
+    ): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
+            supabase.postgrest["citizens"].update({
+                set("display_name", displayName)
+                set("username", username)
+            }) {
+                filter { eq("citizen_id", citizenId) }
+            }
+            supabase.postgrest["ai_personas"].update({
+                set("system_prompt", systemPrompt)
+                set("temperature", temperature)
+            }) {
+                filter { eq("citizen_id", citizenId) }
+            }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Result.failure(e)
+        }
+    }
+
     private suspend fun syncAllData() {
         try {
             syncAllUsers()

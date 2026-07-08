@@ -19,6 +19,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.outlined.Image
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -45,7 +46,8 @@ public fun ReplyInputBar(
     onMediaRemove: () -> Unit,
     replyingToUsername: String?,
     onClearTarget: () -> Unit,
-    onSend: () -> Unit
+    onSend: () -> Unit,
+    isSending: Boolean = false
 ) {
     Column(
         modifier = Modifier
@@ -137,16 +139,24 @@ public fun ReplyInputBar(
                 maxLines = 4
             )
 
-            val isEnabled = replyText.isNotBlank() || selectedMediaUri != null
+            val isEnabled = (replyText.isNotBlank() || selectedMediaUri != null) && !isSending
             IconButton(
                 onClick = onSend,
                 enabled = isEnabled
             ) {
-                Icon(
-                    imageVector = Icons.Default.Send,
-                    contentDescription = "Send",
-                    tint = if (isEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
-                )
+                if (isSending) {
+                    CircularProgressIndicator(
+                        color = MaterialTheme.colorScheme.primary,
+                        strokeWidth = 2.dp,
+                        modifier = Modifier.size(20.dp)
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Default.Send,
+                        contentDescription = "Send",
+                        tint = if (isEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
+                    )
+                }
             }
         }
     }

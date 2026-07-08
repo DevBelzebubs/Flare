@@ -22,16 +22,19 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import com.social.flare.features.ai.domain.model.AiPersona
 
 @Composable
 fun AddAiProfileDialog(
     onDismiss: () -> Unit,
-    onConfirm: (username: String, displayName: String, prompt: String, temperature: Double) -> Unit
+    onConfirm: (username: String, displayName: String, prompt: String, temperature: Double) -> Unit,
+    editingBot: AiPersona? = null
 ) {
-    var username by remember { mutableStateOf("") }
-    var displayName by remember { mutableStateOf("") }
-    var systemPrompt by remember { mutableStateOf("") }
-    var temperature by remember { mutableStateOf(0.7f) }
+    val isEdit = editingBot != null
+    var username by remember { mutableStateOf(editingBot?.username ?: "") }
+    var displayName by remember { mutableStateOf(editingBot?.displayName ?: "") }
+    var systemPrompt by remember { mutableStateOf(editingBot?.systemPrompt ?: "") }
+    var temperature by remember { mutableStateOf(editingBot?.temperature?.toFloat() ?: 0.7f) }
 
     Dialog(onDismissRequest = onDismiss) {
         Surface(
@@ -45,7 +48,7 @@ fun AddAiProfileDialog(
                     .fillMaxWidth()
             ) {
                 Text(
-                    text = "Añadir Perfil de IA",
+                    text = if (isEdit) "Editar Perfil de IA" else "Añadir Perfil de IA",
                     style = MaterialTheme.typography.titleLarge,
                     color = MaterialTheme.colorScheme.primary
                 )
@@ -63,7 +66,7 @@ fun AddAiProfileDialog(
                 OutlinedTextField(
                     value = displayName,
                     onValueChange = { displayName = it },
-                    label = { Text("Nombre visible (ej. Juan Pérez \uD83E\uDD16)") },
+                    label = { Text("Nombre visible (ej. Juan Pérez 🤖)") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -104,7 +107,7 @@ fun AddAiProfileDialog(
                         },
                         enabled = username.isNotBlank() && systemPrompt.isNotBlank()
                     ) {
-                        Text("Crear Bot")
+                    Text(if (isEdit) "Guardar Cambios" else "Crear Bot")
                     }
                 }
             }

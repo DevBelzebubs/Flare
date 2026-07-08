@@ -125,7 +125,6 @@ class FlareApp : Application(), ImageLoaderFactory, Configuration.Provider {
                     .maxSizePercent(0.05)
                     .build()
             }
-            .crossfade(true)
             .build()
     }
 }

@@ -10,5 +10,6 @@ data class FeedUiState(
     val error: String? = null,
     val isGuest : Boolean = true,
     val activeUser: CitizenEntity? = null,
-    val stories: List<StoryWithAuthor> = emptyList()
+    val stories: List<StoryWithAuthor> = emptyList(),
+    val loadingPostIds: Set<String> = emptySet()
 )

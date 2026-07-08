@@ -133,9 +133,11 @@ class FeedRepositoryImpl(
 
                 authors.forEach { citizenDao.insertCitizen(it) }
             }
-            posts.forEach { postDao.insertPost(it) }
+            val (topLevel, replies) = posts.partition { it.parent_post_id == null }
+            topLevel.forEach { postDao.insertPost(it) }
+            replies.forEach { postDao.insertPost(it) }
         } catch (e: Throwable) {
-            e.printStackTrace()
+            android.util.Log.e("FeedRepo", "syncPostsFromSupabase failed", e)
         }
 
         if (!isGuest && currentUserId != null) {
@@ -145,7 +147,7 @@ class FeedRepositoryImpl(
                     .decodeList<PostLikeEntity>()
                 likes.forEach { postDao.insertLike(it) }
             } catch (e: Throwable) {
-                e.printStackTrace()
+                android.util.Log.e("FeedRepo", "syncLikes failed", e)
             }
 
             try {
@@ -154,7 +156,7 @@ class FeedRepositoryImpl(
                     .decodeList<SavedPostEntity>()
                 saves.forEach { postDao.insertSavedPost(it) }
             } catch (e: Throwable) {
-                e.printStackTrace()
+                android.util.Log.e("FeedRepo", "syncSaves failed", e)
             }
 
             try {

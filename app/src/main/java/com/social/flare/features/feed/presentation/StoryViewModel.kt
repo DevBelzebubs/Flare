@@ -47,8 +47,10 @@ class StoryViewModel(
     fun loadCommentsForStory(storyId: String) {
         commentsJob?.cancel()
         commentsJob = viewModelScope.launch {
+            _uiState.update { it.copy(isLoadingComments = true) }
             storyRepository.getStoryComments(storyId).collect { commentList ->
                 _comments.update { commentList }
+                _uiState.update { it.copy(isLoadingComments = false) }
             }
         }
     }
@@ -56,7 +58,9 @@ class StoryViewModel(
     fun addComment(storyId: String, authorId: String, content: String) {
         if (content.isBlank()) return
         viewModelScope.launch {
+            _uiState.update { it.copy(isAddingComment = true) }
             storyRepository.addCommentToStory(storyId, authorId, content)
+            _uiState.update { it.copy(isAddingComment = false) }
         }
     }
     fun markStoryAsViewed(storyId: String, citizenId: String) {
@@ -66,7 +70,9 @@ class StoryViewModel(
     }
     fun deleteStory(storyId: String) {
         viewModelScope.launch {
+            _uiState.update { it.copy(isDeleting = true) }
             storyRepository.deleteStory(storyId)
+            _uiState.update { it.copy(isDeleting = false) }
         }
     }
 

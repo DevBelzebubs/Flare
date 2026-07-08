@@ -26,6 +26,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -36,6 +37,7 @@ fun SignUpScreen(
     onSignUpSuccess: (String) -> Unit,
     viewModel: AuthViewModel = viewModel(factory = AuthViewModel.AuthViewModelFactory(LocalContext.current))
 ) {
+    val authState by viewModel.uiState.collectAsStateWithLifecycle()
     var firstName by remember { mutableStateOf("") }
     var lastName by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
@@ -283,6 +285,7 @@ fun SignUpScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(50.dp),
+                        enabled = !authState.isLoading,
                         colors = ButtonDefaults.buttonColors(
                             containerColor = colorScheme.primary,
                             contentColor = colorScheme.onPrimary
@@ -290,7 +293,15 @@ fun SignUpScreen(
                         shape = RoundedCornerShape(16.dp),
                         elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
                     ) {
-                        Text("Create Account", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                        if (authState.isLoading) {
+                            CircularProgressIndicator(
+                                color = colorScheme.onPrimary,
+                                strokeWidth = 2.dp,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        } else {
+                            Text("Create Account", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                        }
                     }
 
 

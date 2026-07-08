@@ -33,6 +33,7 @@ fun ProfileScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val followStats by viewModel.followStats.collectAsStateWithLifecycle()
+    val isFollowingLoading by viewModel.isFollowingLoading.collectAsStateWithLifecycle()
 
     val isOtherProfile = citizenId != null && citizenId != activeCitizenId
 
@@ -65,6 +66,7 @@ fun ProfileScreen(
                         isOtherProfile = isOtherProfile,
                         activeCitizenId = activeCitizenId,
                         isFollowingByMe = followStats.isFollowingByMe,
+                        isFollowingLoading = isFollowingLoading,
                         onToggleFollow = {
                             activeCitizenId?.let { follower ->
                                 viewModel.toggleFollow(followerId = follower, followedId = citizenId)

@@ -7,13 +7,17 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Favorite
@@ -30,6 +34,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -56,7 +61,9 @@ public fun MainPostDetail(
     onDeleteClick: () -> Unit,
     onAuthorClick: (String) -> Unit,
     onVoteClick: ((Int) -> Unit)? = null,
-    activeUserId: String? = null
+    activeUserId: String? = null,
+    isEditing: Boolean = false,
+    isDeleting: Boolean = false
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
     var showEditDialog by remember { mutableStateOf(false) }
@@ -161,31 +168,77 @@ public fun MainPostDetail(
         Spacer(modifier = Modifier.height(12.dp))
 
         if (post.mediaUrls.isNotEmpty()) {
-            val mediaUrl = post.mediaUrls.first()
-            val isVideo = mediaUrl.endsWith(".mp4", ignoreCase = true) ||
-                    mediaUrl.endsWith(".webm", ignoreCase = true) ||
-                    mediaUrl.endsWith(".mkv", ignoreCase = true) ||
-                    mediaUrl.endsWith(".mov", ignoreCase = true)
-            if (isVideo) {
-                VideoPlayer(
-                    videoUrl = mediaUrl,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(max = 450.dp)
-                )
-            } else {
-                AsyncImage(
-                    model = ImageRequest.Builder(LocalContext.current)
-                        .data(mediaUrl)
-                        .crossfade(true)
-                        .build(),
-                    contentDescription = "Post image",
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = 180.dp, max = 450.dp)
-                        .clickable { onImageClick(mediaUrl) }
-                )
+            val pagerState = rememberPagerState(pageCount = { post.mediaUrls.size })
+            Column {
+                HorizontalPager(
+                    state = pagerState,
+                    modifier = Modifier.fillMaxWidth()
+                ) { page ->
+                    val url = post.mediaUrls[page]
+                    val isVideo = url.endsWith(".mp4", ignoreCase = true) ||
+                            url.endsWith(".webm", ignoreCase = true) ||
+                            url.endsWith(".mkv", ignoreCase = true) ||
+                            url.endsWith(".mov", ignoreCase = true)
+                    val isGif = url.endsWith(".gif", ignoreCase = true)
+                    if (isVideo) {
+                        VideoPlayer(videoUrl = url)
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(min = 180.dp, max = 450.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable { onImageClick(url) }
+                        ) {
+                            AsyncImage(
+                                model = ImageRequest.Builder(LocalContext.current)
+                                    .data(url)
+                                    .apply { if (!isGif) crossfade(true) }
+                                    .build(),
+                                contentDescription = "Post image",
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.fillMaxSize()
+                            )
+                            if (isGif) {
+                                Box(
+                                    modifier = Modifier
+                                        .align(Alignment.TopEnd)
+                                        .padding(8.dp)
+                                        .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(4.dp))
+                                        .padding(horizontal = 6.dp, vertical = 2.dp)
+                                ) {
+                                    Text(
+                                        text = "GIF",
+                                        color = Color.White,
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+                if (post.mediaUrls.size > 1) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        repeat(post.mediaUrls.size) { index ->
+                            Box(
+                                modifier = Modifier
+                                    .padding(horizontal = 4.dp)
+                                    .size(if (pagerState.currentPage == index) 8.dp else 6.dp)
+                                    .clip(CircleShape)
+                                    .background(
+                                        if (pagerState.currentPage == index)
+                                            MaterialTheme.colorScheme.primary
+                                        else MaterialTheme.colorScheme.outline
+                                    )
+                            )
+                        }
+                    }
+                }
             }
         }
 

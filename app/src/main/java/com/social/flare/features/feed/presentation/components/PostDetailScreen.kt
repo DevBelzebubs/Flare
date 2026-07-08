@@ -99,6 +99,7 @@ fun PostDetailScreen(
                         replyingToPostId = postId
                         replyingToUsername = null
                     },
+                    isSending = uiState.isReplying,
                     onSend = {
                         activeCitizenId?.let { userId ->
                             if (replyText.isNotBlank() || selectedMediaUri != null) {
@@ -174,7 +175,9 @@ fun PostDetailScreen(
                                 onVoteClick = { optionIndex ->
                                     activeCitizenId?.let { viewModel.castVote(detail.mainPost.id, it, optionIndex) }
                                 },
-                                activeUserId = activeCitizenId
+                                activeUserId = activeCitizenId,
+                                isEditing = uiState.isEditing,
+                                isDeleting = uiState.isDeleting
                             )
                         }
                         item {
@@ -207,7 +210,7 @@ fun PostDetailScreen(
                                 onReplyClick = onReplyClick,
                                 onImageClick = onImageClick,
                                 onBodyClick = onBodyClick,
-                                onAuthorClick = onAuthorClick
+                                onAuthorClick = onAuthorClick,
                             )
 
                             if (!isNestedReply) {
