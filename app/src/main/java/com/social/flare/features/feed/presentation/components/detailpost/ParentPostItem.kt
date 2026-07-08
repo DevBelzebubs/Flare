@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -23,11 +24,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.social.flare.core.utils.TimeUtils.formatRelativeTime
 import com.social.flare.features.feed.domain.model.Post
 import com.social.flare.features.feed.presentation.components.LocationDisplay
@@ -119,17 +123,47 @@ fun ParentPostItem(
                             .heightIn(max = 350.dp)
                     )
                 } else {
-                    AsyncImage(
-                        model = mediaUrl,
-                        contentDescription = "Post image",
-                        contentScale = ContentScale.Crop,
+                    val isGif = mediaUrl.endsWith(".gif", ignoreCase = true)
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .wrapContentHeight()
                             .heightIn(max = 350.dp)
                             .clip(RoundedCornerShape(12.dp))
                             .clickable { onImageClick(mediaUrl) }
-                    )
+                    ) {
+                        AsyncImage(
+                            model = ImageRequest.Builder(LocalContext.current)
+                                .data(mediaUrl)
+                                .apply {
+                                    if (isGif) {
+                                        allowConversionToBitmap(false)
+                                    } else {
+                                        crossfade(true)
+                                    }
+                                }
+                                .build(),
+                            contentDescription = "Post image",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                        if (isGif) {
+                            Box(
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .padding(8.dp)
+                                    .background(Color.Black.copy(alpha = 0.6f), RoundedCornerShape(4.dp))
+                                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                            ) {
+                                Text(
+                                    text = "GIF",
+                                    color = Color.White,
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
                 }
             }
 

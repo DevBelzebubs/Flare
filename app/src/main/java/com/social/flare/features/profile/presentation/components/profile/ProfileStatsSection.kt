@@ -21,6 +21,8 @@ import com.social.flare.features.profile.presentation.viewmodel.ProfileUiState
 @Composable
 fun ProfileStatsSection(
     state: ProfileUiState.Success,
+    followersCount: Int,
+    followingCount: Int,
     onFollowersClick: () -> Unit = {},
     onFollowingClick: () -> Unit = {}
 ) {
@@ -42,11 +44,11 @@ fun ProfileStatsSection(
             }
             HorizontalDivider(modifier = Modifier.height(36.dp).width(1.dp), color = MaterialTheme.colorScheme.outline)
             Box(modifier = Modifier.clickable { onFollowersClick() }) {
-                StatItem(state.followersCount.toString(), "Followers")
+                StatItem(followersCount.toString(), "Followers")
             }
             HorizontalDivider(modifier = Modifier.height(36.dp).width(1.dp), color = MaterialTheme.colorScheme.outline)
             Box(modifier = Modifier.clickable { onFollowingClick() }) {
-                StatItem(state.followingCount.toString(), "Following")
+                StatItem(followingCount.toString(), "Following")
             }
         }
     }

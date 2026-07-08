@@ -130,7 +130,13 @@ fun PostCard(
                                 AsyncImage(
                                     model = ImageRequest.Builder(LocalContext.current)
                                         .data(url)
-                                        .apply { if (!isGif) crossfade(true) }
+                                        .apply {
+                                            if (isGif) {
+                                                allowConversionToBitmap(false)
+                                            } else {
+                                                crossfade(true)
+                                            }
+                                        }
                                         .build(),
                                     contentDescription = "Post image",
                                     contentScale = ContentScale.Crop,

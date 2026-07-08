@@ -53,7 +53,9 @@ fun ProfileContent(
     activeCitizenId: String? = null,
     isFollowingByMe: Boolean = false,
     isFollowingLoading: Boolean = false,
-    onToggleFollow: () -> Unit = {}
+    onToggleFollow: () -> Unit = {},
+    followersCount: Int = 0,
+    followingCount: Int = 0
 ) {
     val citizen = state.citizen
     var selectedTab by remember { mutableIntStateOf(0) }
@@ -117,6 +119,8 @@ fun ProfileContent(
         item(span = { GridItemSpan(3) }) {
             ProfileStatsSection(
                 state = state,
+                followersCount = followersCount,
+                followingCount = followingCount,
                 onFollowersClick = onFollowersClick,
                 onFollowingClick = onFollowingClick
             )

@@ -47,6 +47,7 @@ class AiInteractionWorker @AssistedInject constructor(
             for (persona in activePersonas) {
                 try {
                     executeAiAction(persona)
+                    kotlinx.coroutines.delay(120_000)
                 } catch (e: Exception) {
                     Log.e("AiBot", "Error en acción para ${persona.username}: ${e.message}")
                 }

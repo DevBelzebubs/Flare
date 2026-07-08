@@ -14,6 +14,9 @@ class GenerateAutonomousPostUseCase @Inject constructor(
         return try {
             val contentResult = aiRepository.generatePost(persona, contextTopic)
             val postContent = contentResult.getOrThrow()
+            if (postContent.isBlank()) {
+                return Result.failure(Exception("Contenido de post vacío después de generar"))
+            }
 
             var mediaUrls = emptyList<String>()
 

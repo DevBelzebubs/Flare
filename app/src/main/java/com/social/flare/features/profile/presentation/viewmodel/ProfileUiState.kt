@@ -9,8 +9,6 @@ sealed interface ProfileUiState {
     data class Success(
         val citizen: CitizenEntity?,
         val postsCount: Int = 0,
-        val followersCount: Int = 0,
-        val followingCount: Int = 0,
         val myPosts: List<Post> = emptyList(),
         val savedPosts: List<Post> = emptyList(),
         val sharedPosts: List<Post> = emptyList()

@@ -1,6 +1,8 @@
 package com.social.flare.features.notifications.data.repository
 
 import android.util.Log
+import com.social.flare.features.auth.data.local.dao.CitizenDao
+import com.social.flare.features.auth.data.local.entity.CitizenEntity
 import com.social.flare.features.notifications.data.local.dao.NotificationDao
 import com.social.flare.features.notifications.data.local.entity.NotificationEntity
 import com.social.flare.features.notifications.data.mapper.toDomain
@@ -29,6 +31,7 @@ import kotlinx.coroutines.withContext
 
 class NotificationRepositoryImpl(
     private val notificationDao: NotificationDao,
+    private val citizenDao: CitizenDao,
     private val supabase: SupabaseClient
 ) : NotificationRepository {
     @Volatile
@@ -42,7 +45,25 @@ class NotificationRepositoryImpl(
                 val notifications = supabase.postgrest["notifications"]
                     .select { filter { eq("recipientId", userId) } }
                     .decodeList<NotificationEntity>()
-                notifications.forEach { notificationDao.insertNotification(it) }
+                val missingIds = mutableListOf<String>()
+                notifications.forEach { notification ->
+                    if (notification.actorAvatarUrl.isNullOrBlank()) {
+                        val citizen = citizenDao.getCitizenById(notification.actorId)
+                        if (citizen?.avatar_url != null) {
+                            notificationDao.insertNotification(
+                                notification.copy(actorAvatarUrl = citizen.avatar_url)
+                            )
+                        } else {
+                            missingIds.add(notification.actorId)
+                            notificationDao.insertNotification(notification)
+                        }
+                    } else {
+                        notificationDao.insertNotification(notification)
+                    }
+                }
+                if (missingIds.isNotEmpty()) {
+                    resolveMissingAvatars(notifications, missingIds)
+                }
             } catch (e: Throwable) {
                 e.printStackTrace()
             }
@@ -50,6 +71,30 @@ class NotificationRepositoryImpl(
         emitAll(notificationDao.getNotifications(userId).map { entities ->
             entities.map { it.toDomain() }
         })
+    }
+
+    private suspend fun resolveMissingAvatars(
+        notifications: List<NotificationEntity>,
+        missingIds: MutableList<String>
+    ) {
+        for (id in missingIds) {
+            try {
+                val citizen = supabase.postgrest["citizens"]
+                    .select { filter { eq("citizen_id", id) } }
+                    .decodeSingle<CitizenEntity>()
+                if (citizen?.avatar_url != null) {
+                    citizenDao.insertCitizen(citizen)
+                    val notif = notifications.find { it.actorId == id }
+                    if (notif != null) {
+                        notificationDao.insertNotification(
+                            notif.copy(actorAvatarUrl = citizen.avatar_url)
+                        )
+                    }
+                }
+            } catch (e: Throwable) {
+                Log.e("FLARE_SYNC", "Error fetching citizen $id for avatar", e)
+            }
+        }
     }
 
     override fun getUnreadCount(userId: String): Flow<Int> {
@@ -94,6 +139,29 @@ class NotificationRepositoryImpl(
                 }.onEach { action ->
                     val newNotification = action.decodeRecord<NotificationEntity>()
                     Log.d("FLARE_SYNC", "Notificación recibida: ${newNotification.type}")
+                    if (newNotification.actorAvatarUrl.isNullOrBlank()) {
+                        val existing = citizenDao.getCitizenById(newNotification.actorId)
+                        if (existing?.avatar_url != null) {
+                            notificationDao.insertNotification(
+                                newNotification.copy(actorAvatarUrl = existing.avatar_url)
+                            )
+                            return@onEach
+                        }
+                        try {
+                            val remote = supabase.postgrest["citizens"]
+                                .select { filter { eq("citizen_id", newNotification.actorId) } }
+                                .decodeSingle<CitizenEntity>()
+                            if (remote?.avatar_url != null) {
+                                citizenDao.insertCitizen(remote)
+                                notificationDao.insertNotification(
+                                    newNotification.copy(actorAvatarUrl = remote.avatar_url)
+                                )
+                                return@onEach
+                            }
+                        } catch (e: Throwable) {
+                            Log.e("FLARE_SYNC", "Error fetching citizen for realtime avatar", e)
+                        }
+                    }
                     notificationDao.insertNotification(newNotification)
                 }.launchIn(scope)
 

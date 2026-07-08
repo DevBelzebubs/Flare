@@ -67,6 +67,8 @@ fun ProfileScreen(
                         activeCitizenId = activeCitizenId,
                         isFollowingByMe = followStats.isFollowingByMe,
                         isFollowingLoading = isFollowingLoading,
+                        followersCount = followStats.followersCount,
+                        followingCount = followStats.followingCount,
                         onToggleFollow = {
                             activeCitizenId?.let { follower ->
                                 viewModel.toggleFollow(followerId = follower, followedId = citizenId)

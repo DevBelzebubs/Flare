@@ -166,6 +166,7 @@ fun MainScreen() {
     val notificationRepository = remember {
         NotificationRepositoryImpl(
             notificationDao = app.database.notificationDao(),
+            citizenDao = citizenDao,
             supabase = app.supabase
         )
     }

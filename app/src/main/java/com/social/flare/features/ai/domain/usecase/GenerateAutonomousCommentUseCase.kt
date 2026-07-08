@@ -15,6 +15,9 @@ class GenerateAutonomousCommentUseCase @Inject constructor(
 
         return if (commentResult.isSuccess) {
             val finalCommentText = commentResult.getOrThrow()
+            if (finalCommentText.isBlank()) {
+                return Result.failure(Exception("Comentario vacío después de generar"))
+            }
 
             try {
                 feedRepository.createPost(

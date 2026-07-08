@@ -12,6 +12,7 @@ import com.social.flare.features.profile.domain.repository.ProfileRepository
 import com.social.flare.features.profile.domain.usecase.GetFollowStatsUseCase
 import com.social.flare.features.profile.domain.usecase.ToggleFollowUseCase
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -46,11 +47,16 @@ class ProfileViewModel(
         _uiState.value = ProfileUiState.Loading
 
         followStatsJob = viewModelScope.launch {
-            getFollowStatsUseCase(
-                targetUserId = targetCitizenId,
-                currentUserId = currentCitizenId ?: ""
-            ).collect { stats ->
-                _followStats.value = stats
+            try {
+                getFollowStatsUseCase(
+                    targetUserId = targetCitizenId,
+                    currentUserId = currentCitizenId ?: ""
+                ).collect { stats ->
+                    _followStats.value = stats
+                }
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                e.printStackTrace()
             }
         }
 
@@ -64,7 +70,7 @@ class ProfileViewModel(
                     postDao.getSavedPosts(targetCitizenId),
                     feedRepository.getSharedPosts(targetCitizenId),
                     _followStats
-                ) { citizen, myPosts, savedPostsDetails, sharedPosts, stats ->
+                ) { citizen, myPosts, savedPostsDetails, sharedPosts, _ ->
                     if (citizen == null) {
                         ProfileUiState.UserNotFound
                     } else {
@@ -72,8 +78,6 @@ class ProfileViewModel(
                         ProfileUiState.Success(
                             citizen = citizen,
                             postsCount = myPosts.size,
-                            followersCount = stats.followersCount,
-                            followingCount = stats.followingCount,
                             myPosts = myPosts,
                             savedPosts = savedPosts,
                             sharedPosts = sharedPosts
@@ -92,11 +96,25 @@ class ProfileViewModel(
     fun toggleFollow(followerId: String, followedId: String) {
         viewModelScope.launch {
             _isFollowingLoading.value = true
+            val wasFollowing = _followStats.value.isFollowingByMe
             toggleFollowUseCase(
                 followerId = followerId,
                 followedId = followedId,
-                isCurrentlyFollowing = _followStats.value.isFollowingByMe
+                isCurrentlyFollowing = wasFollowing
             )
+            _followStats.update { currentStats ->
+                if (wasFollowing) {
+                    currentStats.copy(
+                        isFollowingByMe = false,
+                        followersCount = (currentStats.followersCount - 1).coerceAtLeast(0)
+                    )
+                } else {
+                    currentStats.copy(
+                        isFollowingByMe = true,
+                        followersCount = currentStats.followersCount + 1
+                    )
+                }
+            }
             _isFollowingLoading.value = false
         }
     }

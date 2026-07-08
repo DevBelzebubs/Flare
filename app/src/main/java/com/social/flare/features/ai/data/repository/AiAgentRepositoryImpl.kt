@@ -2,6 +2,7 @@ package com.social.flare.features.ai.data.repository
 
 import android.content.Context
 import android.net.Uri
+import android.util.Log
 import com.cloudinary.android.MediaManager
 import com.cloudinary.android.callback.ErrorInfo
 import com.google.gson.Gson
@@ -47,11 +48,13 @@ class AiAgentRepositoryImpl @Inject constructor(
         try {
             val systemMessage = AiMessage(
                 role = "system",
-                content = "${persona.systemPrompt} Debes escribir una publicación corta para la red social Flare. Responde ÚNICAMENTE con un objeto JSON plano con la estructura: {\"content\": \"tu publicación aquí\"}. No agregues introducciones ni saludos."
+                content = persona.systemPrompt
             )
             val userMessage = AiMessage(
                 role = "user",
-                content = "Escribe sobre el siguiente tema o situación actual: $topicContext"
+                content = "Escribe sobre: $topicContext\n\n" +
+                        "IMPORTANTE: Sigue EXACTAMENTE el estilo indicado en las instrucciones del sistema. " +
+                        "Responde SOLO con JSON plano: {\"content\": \"tu publicación aquí\"}. No incluyas nada más."
             )
 
             val request = OpenRouterRequest(
@@ -65,7 +68,12 @@ class AiAgentRepositoryImpl @Inject constructor(
                 val cleanJson = extractJson(rawText)
 
                 val parsed = gson.fromJson(cleanJson, AiPostResponse::class.java)
-                Result.success(parsed.content)
+                val content = parsed.content
+                if (content.isNullOrBlank()) {
+                    Log.w("AiBot", "generatePost: IA generó contenido vacío. Raw: $rawText")
+                    return@withContext Result.failure(Exception("La IA generó contenido vacío"))
+                }
+                Result.success(content)
             } else {
                 Result.failure(Exception("Error de API OpenRouter: ${response.code()}"))
             }
@@ -81,11 +89,14 @@ class AiAgentRepositoryImpl @Inject constructor(
         try {
             val systemMessage = AiMessage(
                 role = "system",
-                content = "${persona.systemPrompt} Vas a comentar una publicación de otro usuario en Flare. Sé natural y breve (máximo 2 líneas). Responde ÚNICAMENTE con un objeto JSON plano con la estructura: {\"content\": \"tu comentario aquí\"}."
+                content = persona.systemPrompt
             )
             val userMessage = AiMessage(
                 role = "user",
-                content = "Publicación a la que vas a responder: '$targetPostContent'"
+                content = "Responde al siguiente post de otro usuario en Flare. Sé natural y breve (máximo 2 líneas).\n\n" +
+                        "Post: '$targetPostContent'\n\n" +
+                        "IMPORTANTE: Sigue EXACTAMENTE el estilo indicado en las instrucciones del sistema. " +
+                        "Responde SOLO con JSON plano: {\"content\": \"tu comentario aquí\"}. No incluyas nada más."
             )
 
             val request = OpenRouterRequest(
@@ -98,7 +109,12 @@ class AiAgentRepositoryImpl @Inject constructor(
                 val rawText = response.body()?.choices?.firstOrNull()?.message?.content ?: ""
                 val cleanJson = extractJson(rawText)
                 val parsed = gson.fromJson(cleanJson, AiPostResponse::class.java)
-                Result.success(parsed.content)
+                val content = parsed.content
+                if (content.isNullOrBlank()) {
+                    Log.w("AiBot", "generateComment: IA generó contenido vacío. Raw: $rawText")
+                    return@withContext Result.failure(Exception("La IA generó comentario vacío"))
+                }
+                Result.success(content)
             } else {
                 Result.failure(Exception("Error de API OpenRouter: ${response.code()}"))
             }
@@ -330,7 +346,7 @@ class AiAgentRepositoryImpl @Inject constructor(
             })
             .dispatch()
     }
-    private data class AiPostResponse(val content: String)
+    private data class AiPostResponse(val content: String?)
 
     @Serializable
     private data class AiDecisionResponse(val action: String)
