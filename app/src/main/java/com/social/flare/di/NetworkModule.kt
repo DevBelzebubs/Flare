@@ -1,7 +1,7 @@
 package com.social.flare.di
 
 import com.social.flare.BuildConfig
-import com.social.flare.features.ai.data.remote.HuggingFaceApi
+import com.social.flare.features.ai.data.remote.DeepInfraApi
 import com.social.flare.features.ai.data.remote.OpenRouterApi
 import dagger.Module
 import dagger.Provides
@@ -45,6 +45,7 @@ object NetworkModule {
             .writeTimeout(30, TimeUnit.SECONDS)
             .build()
     }
+
     @Provides
     @Singleton
     fun provideOpenRouterApi(@Named("openrouter") client: OkHttpClient): OpenRouterApi {
@@ -55,25 +56,37 @@ object NetworkModule {
             .build()
             .create(OpenRouterApi::class.java)
     }
+
     @Provides
     @Singleton
-    @Named("huggingface")
-    fun provideHuggingFaceOkHttpClient(): OkHttpClient {
+    @Named("deepinfra")
+    fun provideDeepInfraOkHttpClient(): OkHttpClient {
+        val logging = HttpLoggingInterceptor().apply {
+            level = if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BODY else HttpLoggingInterceptor.Level.NONE
+        }
+        val headerInterceptor = Interceptor { chain ->
+            val request = chain.request().newBuilder()
+                .addHeader("Authorization", "Bearer ${BuildConfig.DEEP_INFRA_API_KEY}")
+                .build()
+            chain.proceed(request)
+        }
+
         return OkHttpClient.Builder()
+            .addInterceptor(headerInterceptor)
+            .addInterceptor(logging)
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(120, TimeUnit.SECONDS)
-            .writeTimeout(60, TimeUnit.SECONDS)
             .build()
     }
 
     @Provides
     @Singleton
-    fun provideHuggingFaceApi(@Named("huggingface") client: OkHttpClient): HuggingFaceApi {
-        val retrofit = Retrofit.Builder()
-            .baseUrl("https://api-inference.huggingface.co/")
+    fun provideDeepInfraApi(@Named("deepinfra") client: OkHttpClient): DeepInfraApi {
+        return Retrofit.Builder()
+            .baseUrl("https://api.deepinfra.com/v1/")
             .client(client)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
-        return retrofit.create(HuggingFaceApi::class.java)
+            .create(DeepInfraApi::class.java)
     }
 }

@@ -43,7 +43,7 @@ import com.social.flare.core.sync.data.local.entity.SyncQueueEntity
         PostHashtagEntity::class,
         SyncQueueEntity::class
     ],
-    version = 23,
+    version = 24,
     exportSchema = false
 )
 abstract class FlareDatabase : RoomDatabase() {

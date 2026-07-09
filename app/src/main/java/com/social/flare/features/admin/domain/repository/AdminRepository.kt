@@ -34,4 +34,5 @@ interface AdminRepository {
         systemPrompt: String,
         temperature: Double
     ): Result<Unit>
+    suspend fun deleteBot(citizenId: String): Result<Unit>
 }

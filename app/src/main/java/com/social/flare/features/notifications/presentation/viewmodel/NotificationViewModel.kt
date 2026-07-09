@@ -6,6 +6,7 @@ import com.social.flare.features.notifications.domain.usecase.GetNotificationsUs
 import com.social.flare.features.notifications.domain.usecase.GetSuggestedAccountsUseCase
 import com.social.flare.features.notifications.domain.usecase.ManageRealtimeNotificationsUseCase
 import com.social.flare.features.notifications.domain.usecase.MarkNotificationReadUseCase
+import com.social.flare.features.profile.domain.repository.FollowRepository
 import com.social.flare.features.profile.domain.usecase.ToggleFollowUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,7 +19,8 @@ class NotificationViewModel(
     private val manageRealtimeNotificationsUseCase: ManageRealtimeNotificationsUseCase,
     private val markNotificationReadUseCase: MarkNotificationReadUseCase,
     private val toggleFollowUseCase: ToggleFollowUseCase,
-    private val getSuggestedAccountsUseCase: GetSuggestedAccountsUseCase
+    private val getSuggestedAccountsUseCase: GetSuggestedAccountsUseCase,
+    private val followRepository: FollowRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(NotificationUiState())
@@ -32,8 +34,17 @@ class NotificationViewModel(
 
         viewModelScope.launch {
             getNotificationsUseCase(userId).collect { notifications ->
+                val followedIds = try {
+                    followRepository.getFollowedIds(userId).toSet()
+                } catch (_: Exception) {
+                    emptySet()
+                }
                 _uiState.update {
-                    it.copy(notifications = notifications, isLoading = false)
+                    it.copy(
+                        notifications = notifications,
+                        isLoading = false,
+                        notificationFollowedActorIds = followedIds
+                    )
                 }
             }
         }
@@ -68,10 +79,16 @@ class NotificationViewModel(
         }
     }
 
-    fun toggleFollowBack(followedId: String, isCurrentlyFollowing: Boolean) {
+    fun toggleFollowBack(followedId: String) {
         val followerId = activeUserId ?: return
+        val isCurrentlyFollowing = followedId in _uiState.value.notificationFollowedActorIds
         viewModelScope.launch {
             toggleFollowUseCase(followerId, followedId, isCurrentlyFollowing)
+            _uiState.update {
+                val updated = if (isCurrentlyFollowing) it.notificationFollowedActorIds - followedId
+                else it.notificationFollowedActorIds + followedId
+                it.copy(notificationFollowedActorIds = updated)
+            }
         }
     }
 

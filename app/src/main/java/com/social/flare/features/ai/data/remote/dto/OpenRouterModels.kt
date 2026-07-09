@@ -28,7 +28,4 @@ data class Choice(
     @SerializedName("finish_reason") val finishReason: String?
 )
 
-data class HuggingFaceRequest(
-    @SerializedName("inputs")
-    val inputs: String
-)
+

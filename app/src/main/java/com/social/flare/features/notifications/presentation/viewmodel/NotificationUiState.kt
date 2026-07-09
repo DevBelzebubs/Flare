@@ -8,5 +8,6 @@ data class NotificationUiState(
     val notifications: List<FlareNotification> = emptyList(),
     val suggestedAccounts: List<CitizenEntity> = emptyList(),
     val error: String? = null,
-    val suggestedFollowedIds: Set<String> = emptySet()
+    val suggestedFollowedIds: Set<String> = emptySet(),
+    val notificationFollowedActorIds: Set<String> = emptySet()
 )

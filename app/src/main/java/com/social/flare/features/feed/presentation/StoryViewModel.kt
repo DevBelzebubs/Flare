@@ -11,6 +11,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -26,10 +27,17 @@ class StoryViewModel(
 
     private var commentsJob: Job? = null
 
-    fun createStory(authorId: String, imageUri: Uri,musicUrl: String? = null) {
+    fun createStory(
+        authorId: String,
+        imageUri: Uri,
+        musicUrl: String? = null,
+        musicTitle: String? = null,
+        musicArtist: String? = null,
+        musicCoverUrl: String? = null
+    ) {
         viewModelScope.launch {
             _uiState.update { it.copy(isUploading = true, errorMessage = null, isSuccess = false) }
-            val result = storyRepository.createStory(authorId, imageUri, musicUrl)
+            val result = storyRepository.createStory(authorId, imageUri, musicUrl, musicTitle, musicArtist, musicCoverUrl)
             result.fold(
                 onSuccess = {
                     _uiState.update { it.copy(isUploading = false, isSuccess = true) }
@@ -69,7 +77,7 @@ class StoryViewModel(
         }
     }
     fun deleteStory(storyId: String) {
-        viewModelScope.launch {
+        viewModelScope.launch(NonCancellable) {
             _uiState.update { it.copy(isDeleting = true) }
             storyRepository.deleteStory(storyId)
             _uiState.update { it.copy(isDeleting = false) }

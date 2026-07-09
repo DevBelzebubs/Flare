@@ -29,7 +29,7 @@ class PostDetailViewModel(
             try {
                 repository.getPostDetail(postId, activeUserId).collect { detail ->
                     _uiState.update {
-                        it.copy(isLoading = false, postDetail = detail)
+                        it.copy(isLoading = false, postDetail = detail, errorMessage = null)
                     }
                 }
             } catch (e: Exception) {
@@ -40,6 +40,8 @@ class PostDetailViewModel(
 
     fun toggleLike(postId: String, activeUserId: String) {
         viewModelScope.launch {
+            _uiState.update { it.copy(errorMessage = null) }
+
             val currentDetail = _uiState.value.postDetail ?: return@launch
 
             val isCurrentlyLiked = if (currentDetail.mainPost.id == postId) {

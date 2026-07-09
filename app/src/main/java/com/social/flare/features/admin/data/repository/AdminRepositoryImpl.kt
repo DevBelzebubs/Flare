@@ -352,6 +352,18 @@ class AdminRepositoryImpl(
         }
     }
 
+    override suspend fun deleteBot(citizenId: String): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
+            supabase.postgrest["ai_personas"].delete { filter { eq("citizen_id", citizenId) } }
+            supabase.postgrest["citizens"].delete { filter { eq("citizen_id", citizenId) } }
+            citizenDao.deleteCitizen(citizenId)
+            Result.success(Unit)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Result.failure(e)
+        }
+    }
+
     private suspend fun syncAllData() {
         try {
             syncAllUsers()

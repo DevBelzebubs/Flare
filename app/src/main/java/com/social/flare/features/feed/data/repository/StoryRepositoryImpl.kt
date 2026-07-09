@@ -30,7 +30,14 @@ class StoryRepositoryImpl @Inject constructor(
     private val supabase: SupabaseClient
 ) : StoryRepository {
 
-    override suspend fun createStory(authorId: String, imageUri: Uri, musicUrl: String?): Result<Unit> = withContext(Dispatchers.IO) {
+    override suspend fun createStory(
+        authorId: String,
+        imageUri: Uri,
+        musicUrl: String?,
+        musicTitle: String?,
+        musicArtist: String?,
+        musicCoverUrl: String?
+    ): Result<Unit> = withContext(Dispatchers.IO) {
         try {
             val imageUrl = try {
                 cloudinaryService.uploadImage(imageUri)
@@ -47,7 +54,10 @@ class StoryRepositoryImpl @Inject constructor(
                 created_at = currentTime,
                 expires_at = expiresIn24Hours,
                 is_viewed = false,
-                music_url = musicUrl
+                music_url = musicUrl,
+                music_title = musicTitle,
+                music_artist = musicArtist,
+                music_cover_url = musicCoverUrl
             )
 
             supabase.postgrest["stories"].insert(newStory)
@@ -59,6 +69,8 @@ class StoryRepositoryImpl @Inject constructor(
             Result.failure(e)
         }
     }
+
+    private val deletedStoryIds = mutableSetOf<String>()
 
     override fun getActiveStories(currentUserId: String): Flow<List<StoryWithAuthor>> = flow {
         withContext(Dispatchers.IO) {
@@ -84,8 +96,11 @@ class StoryRepositoryImpl @Inject constructor(
                     .decodeList<StoryViewEntity>()
 
                 authors.forEach { citizenDao.insertCitizen(it) }
-                stories.forEach { storyDao.insertStory(it) }
+                stories.filter { it.story_id !in deletedStoryIds }.forEach { storyDao.insertStory(it) }
                 myViews.forEach { storyDao.insertStoryView(it) }
+
+                deletedStoryIds.toList().forEach { storyDao.deleteStory(it) }
+                deletedStoryIds.clear()
 
             } catch (e: Throwable) {
                 e.printStackTrace()
@@ -147,6 +162,8 @@ class StoryRepositoryImpl @Inject constructor(
     }
 
     override suspend fun deleteStory(storyId: String) = withContext(Dispatchers.IO) {
+        deletedStoryIds.add(storyId)
+        storyDao.deleteStory(storyId)
         try {
             val story = storyDao.getStoryByIdSync(storyId)
             if (story != null) {

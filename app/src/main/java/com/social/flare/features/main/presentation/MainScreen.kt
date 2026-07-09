@@ -405,9 +405,13 @@ fun MainScreen() {
                             activeUserAvatarUrl = avatarUrl,
                             musicViewModel = musicViewModel,
                             onCancel = { navController.popBackStack() },
-                            onShareToStory = { uri, musicUrl ->
+                            onShareToStory = { uri, musicUrl, musicTitle, musicArtist, musicCoverUrl ->
                                 activeCitizenId?.let { userId ->
-                                    storyViewModel.createStory(authorId = userId, imageUri = uri, musicUrl = musicUrl)
+                                    storyViewModel.createStory(
+                                        authorId = userId, imageUri = uri,
+                                        musicUrl = musicUrl, musicTitle = musicTitle,
+                                        musicArtist = musicArtist, musicCoverUrl = musicCoverUrl
+                                    )
                                 }
                             }
                         )
@@ -522,7 +526,8 @@ fun MainScreen() {
                                     manageRealtimeNotificationsUseCase = manageRealtimeNotificationsUseCase,
                                     markNotificationReadUseCase = markNotificationReadUseCase,
                                     toggleFollowUseCase = toggleFollowUseCase,
-                                    getSuggestedAccountsUseCase = getSuggestedAccountsUseCase
+                                    getSuggestedAccountsUseCase = getSuggestedAccountsUseCase,
+                                    followRepository = followRepository
                                 ) as T
                             }
                         }

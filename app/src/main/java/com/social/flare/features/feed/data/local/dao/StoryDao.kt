@@ -41,7 +41,7 @@ interface StoryDao {
                 SELECT followedId FROM follow_table WHERE followerId = :currentUserId
             )
         )
-        ORDER BY isViewedByMe ASC, s.created_at DESC
+        ORDER BY isViewedByMe ASC, s.created_at ASC
     """)
     fun getActiveStories(currentUserId: String, currentTime: Long): Flow<List<StoryWithAuthor>>
 

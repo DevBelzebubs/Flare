@@ -56,6 +56,7 @@ fun StoryViewerScreen(
 
     val mediaPlayer = remember { MediaPlayer() }
     var isMediaPrepared by remember { mutableStateOf(false) }
+    var musicDurationMs by remember { mutableIntStateOf(0) }
 
     DisposableEffect(mediaPlayer) {
         onDispose {
@@ -91,6 +92,7 @@ fun StoryViewerScreen(
                 mediaPlayer.prepareAsync()
                 mediaPlayer.setOnPreparedListener { mp ->
                     isMediaPrepared = true
+                    musicDurationMs = try { mp.duration } catch (_: Exception) { 0 }
                     if (!isPaused) {
                         try { mp.start() } catch (_: Exception) {}
                     }
@@ -116,7 +118,7 @@ fun StoryViewerScreen(
                 } catch (_: Exception) {}
             }
 
-            val totalDuration = 5000f
+            val totalDuration = if (musicDurationMs > 0) musicDurationMs.toFloat() else 5000f
             val remainingTime = (1f - progressAnim.value) * totalDuration
 
             if (remainingTime > 0) {

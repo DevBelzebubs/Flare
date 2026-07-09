@@ -91,11 +91,12 @@ fun NotificationScreen(
                                     onNavigateToPost(notification.referencedPostId)
                                 }
                             } }
-                            val onFollowClick = remember(notification) { { viewModel.toggleFollowBack(notification.actorId, isCurrentlyFollowing = false) } }
+                            val isFollowingBack = notification.actorId in uiState.notificationFollowedActorIds
+                            val onFollowClick = remember(notification) { { viewModel.toggleFollowBack(notification.actorId) } }
                             val onAvatarClick = remember { { authorId: String -> onNavigateToProfile(authorId) } }
                             NotificationItem(
                                 notification = notification,
-                                isFollowingBack = false,
+                                isFollowingBack = isFollowingBack,
                                 onClick = onClick,
                                 onFollowClick = onFollowClick,
                                 onAvatarClick = onAvatarClick

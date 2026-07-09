@@ -17,5 +17,8 @@ data class StoryEntity(
     val created_at: Long,
     val expires_at: Long,
     val is_viewed: Boolean = false,
-    val music_url: String? = null
+    val music_url: String? = null,
+    val music_title: String? = null,
+    val music_artist: String? = null,
+    val music_cover_url: String? = null
 )

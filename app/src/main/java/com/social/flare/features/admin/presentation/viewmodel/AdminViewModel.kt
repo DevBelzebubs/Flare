@@ -212,8 +212,6 @@ class AdminViewModel(
         }
     }
 
-
-
     fun toggleBotStatus(citizenId: String, isActive: Boolean) {
         viewModelScope.launch {
             _uiState.update { it.copy(actionLoading = it.actionLoading + "bot:$citizenId") }
@@ -265,7 +263,8 @@ class AdminViewModel(
                             successMessage = "Agente IA '$username' actualizado"
                         )
                     }
-                    loadDashboard()
+                    val updatedBots = adminRepository.getAllBots()
+                    _uiState.update { it.copy(bots = updatedBots) }
                 } else {
                     _uiState.update {
                         it.copy(
@@ -278,6 +277,39 @@ class AdminViewModel(
                 _uiState.update {
                     it.copy(
                         actionLoading = it.actionLoading - "editbot:$citizenId",
+                        errorMessage = e.message
+                    )
+                }
+            }
+        }
+    }
+
+    fun deleteBot(citizenId: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(actionLoading = it.actionLoading + "deletebot:$citizenId") }
+            try {
+                val result = adminRepository.deleteBot(citizenId)
+                if (result.isSuccess) {
+                    val updatedBots = adminRepository.getAllBots()
+                    _uiState.update {
+                        it.copy(
+                            bots = updatedBots,
+                            actionLoading = it.actionLoading - "deletebot:$citizenId",
+                            successMessage = "Bot eliminado"
+                        )
+                    }
+                } else {
+                    _uiState.update {
+                        it.copy(
+                            actionLoading = it.actionLoading - "deletebot:$citizenId",
+                            errorMessage = result.exceptionOrNull()?.message ?: "Error al eliminar bot"
+                        )
+                    }
+                }
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        actionLoading = it.actionLoading - "deletebot:$citizenId",
                         errorMessage = e.message
                     )
                 }

@@ -32,6 +32,7 @@ fun AdminDashboardScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var showAddAiDialog by remember { mutableStateOf(false) }
     var editingBot by remember { mutableStateOf<AiPersona?>(null) }
+    var showDeleteConfirm by remember { mutableStateOf<AiPersona?>(null) }
 
     LaunchedEffect(Unit) {
         viewModel.loadDashboard()
@@ -54,6 +55,27 @@ fun AdminDashboardScreen(
             onConfirm = { username, displayName, prompt, temp ->
                 viewModel.updateAiProfile(bot.citizenId, username, displayName, prompt, temp)
                 editingBot = null
+            }
+        )
+    }
+
+    showDeleteConfirm?.let { bot ->
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirm = null },
+            title = { Text("Eliminar Bot") },
+            text = { Text("¿Estás seguro de eliminar al bot \"${bot.displayName}\"? Esta acción no se puede deshacer.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.deleteBot(bot.citizenId)
+                    showDeleteConfirm = null
+                }) {
+                    Text("Eliminar", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirm = null }) {
+                    Text("Cancelar")
+                }
             }
         )
     }
@@ -197,6 +219,7 @@ fun AdminDashboardScreen(
                     BotItem(
                         persona = bot,
                         onEdit = { editingBot = bot },
+                        onDelete = { showDeleteConfirm = bot },
                         onToggle = { isChecked ->
                             viewModel.toggleBotStatus(bot.citizenId, isChecked)
                         },
@@ -245,6 +268,7 @@ private fun AdminMenuItem(
 fun BotItem(
     persona: AiPersona,
     onEdit: () -> Unit,
+    onDelete: () -> Unit,
     onToggle: (Boolean) -> Unit,
     isLoading: Boolean = false
 ) {
@@ -293,16 +317,26 @@ fun BotItem(
                     modifier = Modifier.size(24.dp)
                 )
             } else {
-                Switch(
-                    checked = persona.isActive,
-                    onCheckedChange = { onToggle(it) },
-                    colors = SwitchDefaults.colors(
-                        checkedThumbColor = colorScheme.onPrimary,
-                        checkedTrackColor = colorScheme.primary,
-                        uncheckedThumbColor = colorScheme.onSurfaceVariant,
-                        uncheckedTrackColor = colorScheme.surfaceVariant
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = onDelete) {
+                        Icon(
+                            Icons.Default.Delete,
+                            contentDescription = "Eliminar bot",
+                            tint = colorScheme.error,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                    Switch(
+                        checked = persona.isActive,
+                        onCheckedChange = { onToggle(it) },
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = colorScheme.onPrimary,
+                            checkedTrackColor = colorScheme.primary,
+                            uncheckedThumbColor = colorScheme.onSurfaceVariant,
+                            uncheckedTrackColor = colorScheme.surfaceVariant
+                        )
                     )
-                )
+                }
             }
         }
     }

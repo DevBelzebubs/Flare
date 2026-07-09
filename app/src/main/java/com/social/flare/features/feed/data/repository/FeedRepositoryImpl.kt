@@ -90,7 +90,9 @@ class FeedRepositoryImpl(
                     isFollowed = followedIds.contains(post.authorId)
                 )
             }
-            emit(posts)
+            val mostRecentOwnPost = posts.maxByOrNull { it.createdAt }
+            val rest = if (mostRecentOwnPost != null) posts - mostRecentOwnPost else posts
+            emit(listOfNotNull(mostRecentOwnPost) + rest)
         }
     }
 
@@ -330,7 +332,7 @@ class FeedRepositoryImpl(
                 .decodeSingle<PostEntity>()
 
             postDao.toggleLikeTransaction(postId, citizenId, !isCurrentlyLiked)
-            postDao.insertPost(updatedPost)
+            postDao.updatePostLikesCount(postId, updatedPost.likes_count)
 
             Result.success(Unit)
         } catch (e: Throwable) {

@@ -35,7 +35,7 @@ android {
         val supabaseAnonKey = localProperties.getProperty("SUPABASE_ANON_KEY", "")
         val supabaseServiceRoleKey = localProperties.getProperty("SUPABASE_SERVICE_ROLE_KEY", "")
         val llamaApiKey = localProperties.getProperty("LLAMA_API_KEY","")
-        val huggingFaceKey = localProperties.getProperty("HUGGING_FACE_API_KEY", "")
+        val deepInfraKey = localProperties.getProperty("DEEP_INFRA_API_KEY", "")
         val mapsApiKey = localProperties.getProperty("MAPS_API_KEY", "")
 
         buildConfigField("String", "CLOUDINARY_CLOUD_NAME", "\"$cloudName\"")
@@ -45,7 +45,7 @@ android {
         buildConfigField("String", "SUPABASE_ANON_KEY", "\"$supabaseAnonKey\"")
         buildConfigField("String", "SUPABASE_SERVICE_ROLE_KEY", "\"$supabaseServiceRoleKey\"")
         buildConfigField("String", "LLAMA_API_KEY", "\"$llamaApiKey\"")
-        buildConfigField("String", "HUGGING_FACE_API_KEY", "\"$huggingFaceKey\"")
+        buildConfigField("String", "DEEP_INFRA_API_KEY", "\"$deepInfraKey\"")
         manifestPlaceholders["MAPS_API_KEY"] = mapsApiKey
     }
 
@@ -121,6 +121,8 @@ dependencies {
     implementation(libs.ktor.client.okhttp)
     implementation("com.google.maps.android:maps-compose:4.3.3")
     implementation("com.google.android.gms:play-services-maps:18.2.0")
+    implementation("com.squareup.okhttp3:okhttp-dnsoverhttps:4.12.0")
+    implementation("io.coil-kt:coil-gif:2.6.0")
     ksp("androidx.hilt:hilt-compiler:1.2.0")
     ksp("com.google.dagger:hilt-compiler:2.59.2")
     ksp("androidx.room:room-compiler:$room_version")

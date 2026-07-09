@@ -2,14 +2,16 @@ package com.social.flare.features.ai.data.repository
 
 import android.content.Context
 import android.net.Uri
+import android.util.Base64
 import android.util.Log
 import com.cloudinary.android.MediaManager
 import com.cloudinary.android.callback.ErrorInfo
+import com.cloudinary.android.callback.UploadCallback
 import com.google.gson.Gson
-import com.social.flare.features.ai.data.remote.HuggingFaceApi
+import com.social.flare.features.ai.data.remote.DeepInfraApi
 import com.social.flare.features.ai.data.remote.OpenRouterApi
 import com.social.flare.features.ai.data.remote.dto.AiMessage
-import com.social.flare.features.ai.data.remote.dto.HuggingFaceRequest
+import com.social.flare.features.ai.data.remote.DeepInfraRequest
 import com.social.flare.features.ai.data.remote.dto.OpenRouterRequest
 import com.social.flare.features.ai.data.repository.dto.AiPersonaFetchDto
 import com.social.flare.features.ai.domain.model.AiPersona
@@ -22,21 +24,17 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
-import okhttp3.ResponseBody
 import java.io.File
 import java.io.FileOutputStream
-import java.io.InputStream
-import java.io.OutputStream
 import javax.inject.Inject
 import javax.inject.Singleton
-import com.cloudinary.android.callback.UploadCallback
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
 @Singleton
 class AiAgentRepositoryImpl @Inject constructor(
     private val openRouterApi: OpenRouterApi,
-    private val huggingFaceApi: HuggingFaceApi,
+    private val deepInfraApi: DeepInfraApi,
     private val gson: Gson,
     private val supabase: SupabaseClient,
     @ApplicationContext private val context: Context
@@ -188,14 +186,15 @@ class AiAgentRepositoryImpl @Inject constructor(
         withContext(Dispatchers.IO) {
             var tempFile: File? = null
             try {
-                val token = "Bearer ${com.social.flare.BuildConfig.HUGGING_FACE_API_KEY}"
-                val request = HuggingFaceRequest(inputs = prompt)
-                val response =
-                    huggingFaceApi.generateImage(authorization = token, request = request)
+                val request = DeepInfraRequest(prompt = prompt)
+                val response = deepInfraApi.generateImage(request)
                 if (!response.isSuccessful || response.body() == null) {
-                    return@withContext Result.failure(Exception("Error de Hugging Face ${response.code()}"))
+                    return@withContext Result.failure(Exception("Error de DeepInfra ${response.code()}"))
                 }
-                tempFile = saveResponseBodyToFile(response.body()!!)
+                val imageData = response.body()!!.data.firstOrNull()
+                    ?: return@withContext Result.failure(Exception("DeepInfra no devolvió imágenes"))
+                val imageBytes = Base64.decode(imageData.b64_json, Base64.DEFAULT)
+                tempFile = saveBytesToFile(imageBytes)
                     ?: return@withContext Result.failure(Exception("No se pudo guardar la imagen temporal"))
                 val cloudinaryUrl = uploadToCloudinary(tempFile)
                 Result.success(cloudinaryUrl)
@@ -260,15 +259,17 @@ class AiAgentRepositoryImpl @Inject constructor(
     override suspend fun generateLocalImageUri(prompt: String): Result<Uri> = withContext(Dispatchers.IO) {
         var tempFile: File? = null
         try {
-            val token = "Bearer ${com.social.flare.BuildConfig.HUGGING_FACE_API_KEY}"
-            val request = HuggingFaceRequest(inputs = prompt)
-            val response = huggingFaceApi.generateImage(authorization = token, request = request)
+            val request = DeepInfraRequest(prompt = prompt)
+            val response = deepInfraApi.generateImage(request)
 
             if (!response.isSuccessful || response.body() == null) {
-                return@withContext Result.failure(Exception("Error HF: ${response.code()}"))
+                return@withContext Result.failure(Exception("Error DeepInfra: ${response.code()}"))
             }
 
-            tempFile = saveResponseBodyToFile(response.body()!!)
+            val imageData = response.body()!!.data.firstOrNull()
+                ?: return@withContext Result.failure(Exception("DeepInfra no devolvió imágenes"))
+            val imageBytes = Base64.decode(imageData.b64_json, Base64.DEFAULT)
+            tempFile = saveBytesToFile(imageBytes)
                 ?: return@withContext Result.failure(Exception("Error guardando foto temporal"))
 
             Result.success(Uri.fromFile(tempFile))
@@ -295,28 +296,11 @@ class AiAgentRepositoryImpl @Inject constructor(
         }
         return json
     }
-    private fun saveResponseBodyToFile(body: ResponseBody): File? {
+    private fun saveBytesToFile(bytes: ByteArray): File? {
         return try {
             val file = File(context.cacheDir, "ai_gen_${System.currentTimeMillis()}.jpg")
-            var inputStream: InputStream? = null
-            var outputStream: OutputStream? = null
-
-            try {
-                val fileReader = ByteArray(4096)
-                inputStream = body.byteStream()
-                outputStream = FileOutputStream(file)
-
-                while (true) {
-                    val read = inputStream.read(fileReader)
-                    if (read == -1) break
-                    outputStream.write(fileReader, 0, read)
-                }
-                outputStream.flush()
-                file
-            } finally {
-                inputStream?.close()
-                outputStream?.close()
-            }
+            FileOutputStream(file).use { it.write(bytes) }
+            file
         } catch (e: Exception) {
             e.printStackTrace()
             null
